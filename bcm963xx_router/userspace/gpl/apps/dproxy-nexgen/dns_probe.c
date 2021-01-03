@@ -23,7 +23,7 @@ static time_t probe_next_time;
 static int probe_tried;
 static time_t probe_timeout;
 static uint16_t probe_id;
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 static char probe_pkt[35] =
 	{0x0, 0x0, 0x1, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
 	 0x3, 'w','w','w', 0x9, 'm', 'i', 'c', 'r', 'o', 's','o','f','t', 0x3, 'c', 'o',
@@ -210,7 +210,7 @@ void dns_probe_set_recover_time(void)
           "Switching To Secondary DNS server (%s) "
           "for %d seconds.  \n",
           primary_ns, secondary_ns, DNS_RECOVER_TIMEOUT);
-#ifdef AEI_VDSL_CUSTOMER_TELUS
+#ifdef SUPPORT_GPL
 syslog(LOG_CRIT,"Primary DNS server (%s) Is Down...,Switching To Secondary DNS server (%s)",primary_ns, secondary_ns);
 #endif
    strncpy(config.name_server, secondary_ns, sizeof(config.name_server)-1);
@@ -240,7 +240,7 @@ void dns_probe_switchback(void)
 #endif
 
    printf("Switching back to primary dns server (%s).\n", primary_ns);
-#ifdef AEI_VDSL_CUSTOMER_TELUS
+#ifdef SUPPORT_GPL
 syslog(LOG_CRIT,"Switching back to primary DNS server (%s).\n", primary_ns);
 #endif
 	strncpy(config.name_server, primary_ns, sizeof(config.name_server)-1);

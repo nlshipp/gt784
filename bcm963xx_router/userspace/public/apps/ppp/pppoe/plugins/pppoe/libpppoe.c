@@ -491,7 +491,7 @@ int verify_packet( struct session *ses, struct pppoe_packet *p){
     else
 	poe_info(ses,"HOST_UNIQ successful match\n");
 
-#if defined (AEI_VDSL_CUSTOMER_QWEST)||defined(AEI_VDSL_CUSTOMER_CENTURYLINK)
+#if defined (CUSTOMER_NOT_USED_X)||defined(CUSTOMER_NOT_USED_X)
 	if (ses->state != PADS_CODE)
 #endif
     if(ses->filt->ntag &&

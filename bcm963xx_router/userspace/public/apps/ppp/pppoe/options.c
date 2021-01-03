@@ -38,7 +38,7 @@
 
 #include "pppd.h"
 #include "pathnames.h"
- #if defined(AEI_VDSL_CUSTOMER_NCS)//ken add mtu option for TDS V100W project,2010/05/19
+ #if defined(SUPPORT_GPL)//ken add mtu option for TDS V100W project,2010/05/19
 #include "fsm.h"
 #include "lcp.h"
 #endif
@@ -74,7 +74,7 @@ bool	updetach = 0;		/* Detach once link is up */
 int	maxconnect = 0;		/* Maximum connect time */
 char	user[MAXNAMELEN]="";	/* Username for PAP */
 char	passwd[MAXSECRETLEN]="";	/* Password for PAP */
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
 bool	persist = 0;		/* Reopen link after it goes down */
 #else
 bool	persist = 1;		/* Reopen link after it goes down */
@@ -305,7 +305,7 @@ option_t general_options[] = {
 #define IMPLEMENTATION ""
 #endif
 
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
 int convert_space(char *src,char *dst)
 {
     int i=0;
@@ -358,7 +358,7 @@ parse_args(argc, argv)
 {
     int opt;
     int retval, num[3];
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
     char strtmp1[MAXNAMELEN];
     char strtmp[MAXNAMELEN];
     int len=0;
@@ -394,7 +394,7 @@ parse_args(argc, argv)
 #endif
 
 //    while ((opt = getopt(argc, argv, "6s:xda:i:ku:p:o:lc:m:f:r:RA:")) != -1) {
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
     while ((opt = getopt(argc, argv, "s:xda:i:ku:n:p:o:lc:m:f:r:RA:t:T:CM:hD:")) != -1) {
 #else
     while ((opt = getopt(argc, argv, "s:xda:i:ku:p:o:lc:m:f:r:RA:t:T:C")) != -1) {
@@ -452,7 +452,7 @@ parse_args(argc, argv)
 		    persist = 1;
 		    break;
 	    case 'u':
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
             memset(strtmp1,0,sizeof(strtmp1));
             memset(strtmp,0,sizeof(strtmp));
             strncpy(strtmp1,optarg,MAXNAMELEN);
@@ -474,7 +474,7 @@ parse_args(argc, argv)
 #endif			
 		    break;
 	    case 'p':
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
             memset(strtmp1,0,sizeof(strtmp1));
             memset(strtmp,0,sizeof(strtmp));
             strncpy(strtmp1,optarg,MAXNAMELEN);
@@ -532,12 +532,12 @@ parse_args(argc, argv)
 	    case 'C':
 		    console=1;
 		    break;
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
             case 'h':
                     demand = 1;
                     break;
 #endif					
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
         case 'n':
             strncpy(pppoe_ac_name, optarg, MAXACNAMELEN);
             break;  
@@ -554,7 +554,7 @@ parse_args(argc, argv)
 //#ifdef INET6
 //		    fprintf(stderr, "usage: %s [-6] [-s] [-b] [-d] [-i interface] [-a vcc]  [-u username] [-p passwd] [-o idle] [-m prevmac/prevsid] [-A ipaddr]\n", argv[0]);
 //#else
-  #if defined(AEI_VDSL_CUSTOMER_NCS)
+  #if defined(SUPPORT_GPL)
 		    fprintf(stderr, "usage: %s [-s] [-b] [-d] [-i interface] [-a vcc]  [-u username] [-p passwd] [-o idle] [-m prevmac/prevsid] [-A ipaddr]  [-M mtu]\n", argv[0]);
 #else
 		    fprintf(stderr, "usage: %s [-s] [-b] [-d] [-i interface] [-a vcc]  [-u username] [-p passwd] [-o idle] [-m prevmac/prevsid] [-A ipaddr]\n", argv[0]);

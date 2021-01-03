@@ -64,7 +64,7 @@
 #define MAXNAMELEN	256	/* max length of hostname or name for auth */
 #define MAXSECRETLEN	256	/* max length of password or secret */
 #define MAXSRVNAMELEN	256
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 #define MAXACNAMELEN    256
 extern char	pppoe_ac_name[];
 #endif

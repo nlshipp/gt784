@@ -118,7 +118,7 @@ CmsRet cmsTms_getXSIDateTime(UINT32 t, char *buf, UINT32 bufLen)
    return (oalTms_getXSIDateTime(t, buf, bufLen));
 }
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 CmsRet cmsTms_getGUIDateTime(char *buf, UINT32 bufLen)
 {
    return (oalTms_getGUIDateTime(buf, bufLen));

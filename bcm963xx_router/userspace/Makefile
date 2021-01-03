@@ -23,7 +23,7 @@
 # traversal into each directory because we need to build all libraries
 # before building any of the apps.  See the "all" target.
 #
-USERSPACE_DIRS = public gpl
+USERSPACE_DIRS = public private gpl
 
 
 
@@ -36,14 +36,13 @@ USERSPACE_DIRS = public gpl
 .PHONY : $(USERSPACE_DIRS)
 
 
-all    : public-include public-libs gpl-apps gpl-libs public-apps 
+all    : public-include private-libs public-libs gpl-apps gpl-libs private-apps public-apps 
 
 
 public-include:
 	$(MAKE) -C public/include
 
 private-libs:
-	$(MAKE) -C private/libs
 
 public-libs:
 	$(MAKE) -C public/libs
@@ -58,7 +57,6 @@ public-apps:
 	$(MAKE) -C public/apps
 
 private-apps:
-	$(MAKE) -C private/apps
 
 
 #

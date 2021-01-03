@@ -163,7 +163,7 @@ CmsRet devCtl_boardIoctl(UINT32 boardIoctl,
         ioctlParms.offset = offset;
         ioctlParms.action = action;
         ioctlParms.buf    = data;
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
         if(boardIoctl == BOARD_IOCTL_FLASH_WRITE && (action ==PERSISTENT))
         {
             FILE *fp = NULL;
@@ -180,7 +180,7 @@ CmsRet devCtl_boardIoctl(UINT32 boardIoctl,
         rc = ioctl(boardFd, boardIoctl, &ioctlParms);
         close(boardFd);
 #endif
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
         if(boardIoctl == BOARD_IOCTL_FLASH_WRITE && (action ==PERSISTENT))
             unlink("/var/write_psi_lock");
 #endif

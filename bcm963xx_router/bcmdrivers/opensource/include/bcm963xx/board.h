@@ -71,7 +71,7 @@ extern "C" {
 #define BOARD_IOCTL_GET_SYSLOG_SIZE     _IOWR(BOARD_IOCTL_MAGIC, 29, BOARD_IOCTL_PARMS)
 #define BOARD_IOCTL_SET_SHUTDOWN_MODE   _IOWR(BOARD_IOCTL_MAGIC, 30, BOARD_IOCTL_PARMS)
 #define BOARD_IOCTL_SET_STANDBY_TIMER   _IOWR(BOARD_IOCTL_MAGIC, 31, BOARD_IOCTL_PARMS)
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 #define BOARD_IOCTL_GET_SN              _IOWR(BOARD_IOCTL_MAGIC, 32, BOARD_IOCTL_PARMS)    
 #define BOARD_IOCTL_POWER_LED_ON        _IOWR(BOARD_IOCTL_MAGIC, 33, BOARD_IOCTL_PARMS)
 #define BOARD_IOCTL_POWER_LED_FLASH     _IOWR(BOARD_IOCTL_MAGIC, 34, BOARD_IOCTL_PARMS)
@@ -141,7 +141,7 @@ typedef enum
     kLedDect,
     kLedGpon,
     kLedMoCA,
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
     kLedUsb,
     kLedPower,
 #endif
@@ -154,7 +154,7 @@ typedef enum
     kLedStateOn,                         /* turn led on */
     kLedStateFail,                       /* turn led on red */
     kLedStateSlowBlinkContinues,         /* slow blink continues at 2HZ interval */
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
     kLedStateRedSlowBlinkContinues,      /* Red slow blink continues at 2HZ interval */
 #endif
     kLedStateFastBlinkContinues,         /* fast blink continues at 4HZ interval */
@@ -223,7 +223,7 @@ typedef struct cs_config_pars_tag
 #define IF_NAME_MOCA   "moca"
 #define IF_NAME_ATM    "atm"
 #define IF_NAME_PTM    "ptm"
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 #define IF_NAME_EWAN "ewan"
 #endif
 
@@ -275,7 +275,7 @@ extern int kerSysGetSdramSize( void );
 #if defined(CONFIG_BCM96368)
 extern unsigned int kerSysGetSdramWidth( void );
 #endif
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 int kerClearScratchPad(int blk_size);
 extern int kerSysGetDslDatapump(unsigned char *dslDatapump);
 extern void restoreDatapump(int value);

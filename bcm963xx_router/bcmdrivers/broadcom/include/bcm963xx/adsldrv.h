@@ -93,7 +93,7 @@ extern "C" {
     _IOR(ADSLDRV_MAJOR, 22, ADSLDRV_GET_OBJ)
 
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 /* Since the ioctl number is defined only in this file and used both in kernel and userspace,
    Don't do any macro especially macro within a macro for IOCTL number since that makes adding a new one hard and messy...
    Add IOCTL without macro and increment MAX_ADSLDRV_IOCTL_COMMANDS here 
@@ -107,7 +107,7 @@ extern "C" {
     _IOW(ADSLDRV_MAJOR,25,int)
 #define MAX_ADSLDRV_IOCTL_COMMANDS   26
 
-#else /* AEI_VDSL_CUSTOMER_NCS */
+#else /* SUPPORT_GPL */
 
 #ifdef HMI_QA_SUPPORT    
 #define ADSLIOCTL_HMI_COMMAND \
@@ -117,7 +117,7 @@ extern "C" {
 #define MAX_ADSLDRV_IOCTL_COMMANDS   23
 #endif 
 
-#endif /* AEI_VDSL_CUSTOMER_NCS */
+#endif /* SUPPORT_GPL */
 
 /* Typedefs. */
 typedef struct

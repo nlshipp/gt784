@@ -1925,7 +1925,7 @@ gso:
 #ifdef CONFIG_NET_CLS_ACT
 	skb->tc_verd = SET_TC_AT(skb->tc_verd,AT_EGRESS);
 #endif
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 	if (q->enqueue && 
 	    (skb->protocol != ETH_P_MIRROR) &&
 	    (skb->protocol != ETH_P_MIRROR_WLAN)) {
@@ -1947,7 +1947,7 @@ gso:
 
 		goto out;
 	}
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 	if (skb->protocol == ETH_P_MIRROR)
 	    skb->protocol = ETH_P_802_3;
 #endif
@@ -4177,7 +4177,7 @@ static int dev_ifsioc(struct net *net, struct ifreq *ifr, unsigned int cmd)
 
 		default:
 			if ((cmd >= SIOCDEVPRIVATE &&
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 			    cmd <= SIOCDEVPRIVATE + 22) ||
 #else
 			    cmd <= SIOCDEVPRIVATE + 15) ||
@@ -4381,7 +4381,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, void __user *arg)
                             cmd == SIOCCIFSTATS ||
 #endif                
 			    (cmd >= SIOCDEVPRIVATE &&
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 			     cmd <= SIOCDEVPRIVATE + 22)) {
 #else
 			     cmd <= SIOCDEVPRIVATE + 15)) {
@@ -4414,7 +4414,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, void __user *arg)
 static int dev_new_index(struct net *net)
 {
 	static int ifindex;
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 	/* For xtm interfaces, code can unregister device and subsequent registers push ifindex up.
 	   This will exhaust the multificast vif index beyond 32 (bitmap) with repetition.
 	   But this change below is not standard linux way of doing things...

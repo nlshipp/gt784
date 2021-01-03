@@ -636,7 +636,7 @@ UINT32 cmsTmr_Event_TimeRemaining(const void *handle, CmsEventHandler func, void
 }
 #endif /* DMP_PERIODICSTATSBASE_1 */
 
-#if defined(AEI_VDSL_CUSTOMER_QWEST)  || defined(AEI_VDSL_CUSTOMER_TELUS) || defined (AEI_VDSL_CUSTOMER_CENTURYLINK) //hk_ctl//hk_telus //hk_q2000
+#if defined(CUSTOMER_NOT_USED_X)  || defined(SUPPORT_GPL) || defined (CUSTOMER_NOT_USED_X) //hk_ctl//hk_telus //hk_q2000
 UBOOL8 cmsTmr_isWlanBatchEventPresent(const void *handle, CmsEventHandler func)
 {
    const CmsTimerHandle *tmrHandle = (const CmsTimerHandle *) handle;

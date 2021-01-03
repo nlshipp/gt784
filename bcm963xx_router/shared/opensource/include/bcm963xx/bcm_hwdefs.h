@@ -163,7 +163,7 @@ typedef struct
     unsigned long ulPsiSize;
     unsigned long ulNumMacAddrs;
     unsigned char ucaBaseMacAddr[NVRAM_MAC_ADDRESS_LEN];
-#ifdef AEI_VDSL_CUSTOMER_QWEST_Q1000
+#ifdef CUSTOMER_NOT_USED_X
     char ulSerialNumber[32];
     char chFactoryFWVersion[48];
     char wpsPin[32];
@@ -181,9 +181,9 @@ typedef struct
     unsigned long ulNandPartSizeKb[NP_TOTAL];
     char szVoiceBoardId[NVRAM_BOARD_ID_STRING_LEN];
     unsigned long afeId[2];
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
     /* add new parameters below dslDatapump parameter and substract size, don't move parameters */
-#ifndef AEI_VDSL_CUSTOMER_QWEST_Q1000    
+#ifndef CUSTOMER_NOT_USED_X    
     char ulSerialNumber[32];
     char chFactoryFWVersion[48];
     char wpsPin[32];
@@ -220,8 +220,8 @@ typedef struct
     unsigned long ulCheckSum;
 } NVRAM_DATA, *PNVRAM_DATA;
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
-#ifndef AEI_VDSL_CUSTOMER_QWEST_Q1000
+#if defined(SUPPORT_GPL)
+#ifndef CUSTOMER_NOT_USED_X
 typedef struct
 {
     unsigned long ulVersion;
@@ -258,7 +258,7 @@ typedef struct
 /*****************************************************************************/
 #define CFE_VERSION_OFFSET           0x0570
 #define CFE_VERSION_MARK_SIZE        5
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 #define CFE_VERSION_SIZE             6
 #else
 #define CFE_VERSION_SIZE             5

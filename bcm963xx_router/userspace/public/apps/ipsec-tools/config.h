@@ -193,6 +193,10 @@
 /* Use advanced IPv6 API */
 #define INET6_ADVAPI 
 
+/* Define to the sub-directory in which libtool stores uninstalled libraries.
+   */
+/* #undef LT_OBJDIR */
+
 /* Name of package */
 #define PACKAGE "ipsec-tools"
 
@@ -208,6 +212,9 @@
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "ipsec-tools"
 
+/* Define to the home page for this package. */
+/* #undef PACKAGE_URL */
+
 /* Define to the version of this package. */
 #define PACKAGE_VERSION "0.5.1"
 
@@ -222,9 +229,6 @@
 
 /* Define to 1 if your <sys/time.h> declares `struct tm'. */
 /* #undef TM_IN_SYS_TIME */
-
-/* A 'va_copy' style function */
-#define VA_COPY va_copy
 
 /* Version number of package */
 #define VERSION "0.5.1"
@@ -242,5 +246,5 @@
 /* Define to `int' if <sys/types.h> does not define. */
 /* #undef pid_t */
 
-/* Define to `unsigned' if <sys/types.h> does not define. */
+/* Define to `unsigned int' if <sys/types.h> does not define. */
 /* #undef size_t */

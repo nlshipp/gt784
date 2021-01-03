@@ -61,7 +61,7 @@ void oal_free(void *buf);
 /* in oal_timestamp.c */
 void oalTms_get(CmsTimestamp *tms);
 CmsRet oalTms_getXSIDateTime(UINT32 t, char *buf, UINT32 bufLen);
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 CmsRet oalTms_getGUIDateTime(char *buf, UINT32 bufLen);
 #endif
 

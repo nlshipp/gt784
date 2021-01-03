@@ -158,7 +158,7 @@ void sendTraceRouteEventMessage(TraceRouteDataMsgBody *pTraceRouteInfo, TraceRou
 		traceRouteMsg->routeHops[i].hopRTTimes[strLength-1]='\0';
 	}
 
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
 	if (result != Complete && result != Error_MaxHopCountExceeded)
 #else
 	if (result != Complete)
@@ -424,10 +424,10 @@ traceroute_main(int argc, char *argv[])
 	int options = 0;                /* socket options */
 	char *source = 0;
 	int nprobes = 3;
-#if defined(AEI_VDSL_CUSTOMER_QWEST_Q2000)
+#if defined(CUSTOMER_NOT_USED_X)
 	int ttl_set_flag = 0;
 #endif
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 	int failcount = 0;
 #endif
 #if defined(DMP_TRACEROUTE_1)
@@ -450,7 +450,7 @@ traceroute_main(int argc, char *argv[])
 			break;
 		case 'm':
 			max_ttl = atoi(optarg);
-#if defined(AEI_VDSL_CUSTOMER_QWEST_Q2000)
+#if defined(CUSTOMER_NOT_USED_X)
 			ttl_set_flag = 1;
 #endif
 			if (max_ttl <= 1)
@@ -674,12 +674,12 @@ traceroute_main(int argc, char *argv[])
 			}
 			if (cc == 0)
 			{
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 				failcount++;
 #endif
 				printf(" *");
 			}
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
             		else
 				failcount=0;
 #endif
@@ -700,8 +700,8 @@ traceroute_main(int argc, char *argv[])
 #endif
 			return 0;
 		}
-#if defined(AEI_VDSL_CUSTOMER_NCS)
-#if defined(AEI_VDSL_CUSTOMER_QWEST_Q2000)
+#if defined(SUPPORT_GPL)
+#if defined(CUSTOMER_NOT_USED_X)
 		if (failcount >= nprobes*2&&ttl_set_flag==0)
 #else
 		if (failcount >= nprobes*2)

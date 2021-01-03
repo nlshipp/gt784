@@ -753,7 +753,7 @@ static CmsEntityInfo entityInfoArray[] = {
     FALSE,            /* isFeatureCompiledIn */
 #endif
     0, 0, 0},
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
    {EID_MYNETWORK,
     0,
     "mynetwork",
@@ -927,7 +927,7 @@ static CmsEntityInfo entityInfoArray[] = {
 #endif
 
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 #ifdef SUPPORT_HTTPD_SSL
    {EID_HTTPSD,
     NDA_ACCESS_HTTPD,
@@ -1006,7 +1006,7 @@ static CmsEntityInfo entityInfoArray[] = {
     
 #endif
 
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
    {EID_TSTATS,
     0,
     "tstats",

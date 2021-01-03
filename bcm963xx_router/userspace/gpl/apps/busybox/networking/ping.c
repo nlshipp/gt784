@@ -437,7 +437,7 @@ static void unpack(char *buf, int sz, struct sockaddr_in *from)
 	iphdr = (struct iphdr *) buf;
 	hlen = iphdr->ihl << 2;
 	/* discard if too short */
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 	if (sz < 28) // ip head (20) + icmp payload (8)
 		return; 
 #else

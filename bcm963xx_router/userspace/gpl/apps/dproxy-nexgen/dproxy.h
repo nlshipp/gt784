@@ -16,7 +16,7 @@ typedef u_int32_t uint32;
 #include "dns.h"
 
 #ifndef DNS_TIMEOUT 
-#ifdef AEI_VDSL_CUSTOMER_TELUS
+#ifdef SUPPORT_GPL
 #define DNS_TIMEOUT 7
 #else
 #define DNS_TIMEOUT 240

@@ -160,8 +160,8 @@ CFLAGS += $(BRCM_WERROR_CFLAGS)
 
 all dynamic install: 
 	$(MAKE) $(AM_MAKEFLAGS) -C lib
-#	$(MAKE) $(AM_MAKEFLAGS) -C zebra install
-#	$(MAKE) $(AM_MAKEFLAGS) -C ripd install
+	$(MAKE) $(AM_MAKEFLAGS) -C zebra install
+	$(MAKE) $(AM_MAKEFLAGS) -C ripd install
 
 clean:
 	$(MAKE) -C lib clean

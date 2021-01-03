@@ -124,7 +124,7 @@ readnext:
         if (i >= buf->size )
           i = 0;
       }
-#ifndef AEI_VDSL_TR098_QWEST
+#ifndef CUSTOMER_NOT_USED_X
     /* work around for syslogd.c bug which generate first log without timestamp */
     if (strlen(buffer) < 16 || buffer[3] != ' ' || buffer[6] != ' ' ||
       buffer[9] != ':' || buffer[12] != ':' || buffer[15] != ' ') {

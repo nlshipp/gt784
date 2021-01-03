@@ -6,26 +6,26 @@
 #include "filter.h"
 
 #if defined (DMP_CAPTIVEPORTAL_1)
-#if defined(AEI_VDSL_CUSTOMER_QWEST) || defined(AEI_VDSL_CUSTOMER_TELUS)
+#if defined(CUSTOMER_NOT_USED_X) || defined(SUPPORT_GPL)
 #include "cms.h"
 #include "cms_util.h"
 #include "cms_msg.h"
 #endif
 #endif
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 #include <signal.h>
 #endif
 
 
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
 char allLanIpList[1024] = {0};
 #endif
 unsigned char listtype[8]={0};
 PURL purl = NULL;
 unsigned int list_count = 0;
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 char RedirectBlockUrl[128] = "\0";
 #endif
 
@@ -41,7 +41,7 @@ char captiveAllowList[1024] = {0};
 #define webActiveLogFile  "/var/webActiveLogFile"
 #endif
 
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
 int flagOneTimeRedirect = 0;
 char oneTimeRedirectURL[256] = {0};
 char oneTimeRedirectIPAdress[32];
@@ -91,7 +91,7 @@ void getCaptiveURLandIPAddr(char *fileName, char *url, char *ipAddr, int *flag)
 	
 	if ((fp=fopen(fileName, "r")) != NULL)
 	{
-#if defined(AEI_VDSL_CUSTOMER_SASKTEL)
+#if defined(CUSTOMER_NOT_USED_X)
 		fgets(buf,sizeof(buf),fp);
 #else
 		fscanf(fp, "%s", buf);
@@ -99,7 +99,7 @@ void getCaptiveURLandIPAddr(char *fileName, char *url, char *ipAddr, int *flag)
 		printf("fileName %s buf %s\n", fileName, buf);
 		if (strcmp(buf, "None") != 0)
 		{
-#if !defined(AEI_VDSL_CUSTOMER_SASKTEL)		
+#if !defined(CUSTOMER_NOT_USED_X)		
 			pTemp = strchr(buf, '_');
 			*pTemp = ' ';
 #endif			
@@ -126,7 +126,7 @@ struct nfq_handle *h;
 struct nfq_q_handle *qh;
 
 
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
 void add_entry(char *website, 
                char *folder,
                char *lanIP
@@ -142,7 +142,7 @@ void add_entry(char *website, char *folder)
    strcpy(new_entry->website, website);
    strcpy(new_entry->folder, folder);
 
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
    strncpy(new_entry->lanIP, lanIP, 15);
 #endif
 
@@ -177,7 +177,7 @@ void get_url_info()
 
    while (fgets(temp,96, f) != '\0')
    {
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
       char lanIP[16] = {0};
       char *pos = NULL;
 	char *pe = NULL;
@@ -226,7 +226,7 @@ void get_url_info()
       {
          strcpy(folder, ++temp1);		
       }
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
       add_entry(web, 
               folder,
               lanIP
@@ -242,7 +242,7 @@ void get_url_info()
    return;
 }
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 time_t before;
 int log_count = 0;
 int url_count = -1;
@@ -426,7 +426,7 @@ int main(int argc, char **argv)
 #endif
 
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 	/*ignore SIGINT*/
 	signal(SIGINT, SIG_IGN);
 
@@ -444,12 +444,12 @@ int main(int argc, char **argv)
 	cmsLog_init(EID_URLFILTERD);
 
 	getCaptiveURLandIPAddr(capURLFile, captiveURL, captiveIPAddr, &flagCaptiveURL);
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
 	getCaptiveURLandIPAddr(oneTimeCapURLFile, oneTimeRedirectURL, oneTimeRedirectIPAdress, &flagOneTimeRedirect);
 #endif        
         get_lan_ip(lan_ip);
         memset(RedirectBlockUrl, 0, sizeof(RedirectBlockUrl));
-#if defined(AEI_VDSL_CUSTOMER_SASKTEL)
+#if defined(CUSTOMER_NOT_USED_X)
         sprintf(RedirectBlockUrl, "%s", lan_ip);
 #else
         sprintf(RedirectBlockUrl, "%s/captiveportal_pageblocked.html", lan_ip);

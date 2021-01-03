@@ -30,6 +30,9 @@ if [ "$INSTALL_DIR" == "" ]; then
     INSTALL_DIR=./$PROFILE/fs.install
 fi
 
+cd /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/lib
+cp  libcms_msg.so libcms_util.so libcms_boardctl.so  $TOP_DIR/$PROFILE/fs.install/lib
+cd $TOP_DIR
 ROOTFS=$PROFILE/fs
 
 # Create file system dir
@@ -261,7 +264,7 @@ test -e $TOP_DIR/$ROOTFS/lib/public/libcms_util.so && ln -s /lib/public/libcms_u
 #############################################
 # ACTIONTEC DO MERGE
 #############################################
-if [ "$AEI_VDSL_CUSTOMER_NCS" != "" ]; then
+if [ "$SUPPORT_GPL" != "" ]; then
 echo "########################"
 echo "Do actiontec merge..."
 echo "########################"

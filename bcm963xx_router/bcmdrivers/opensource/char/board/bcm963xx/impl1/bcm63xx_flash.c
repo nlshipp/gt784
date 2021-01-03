@@ -52,7 +52,7 @@
 
 #include <bcm_map_part.h>
 #include <board.h>
-#ifndef AEI_VDSL_CUSTOMER_QWEST_Q1000
+#ifndef CUSTOMER_NOT_USED_X
 #define BCMTAG_EXE_USE
 #endif
 #include <bcmTag.h>
@@ -252,7 +252,7 @@ void kerSysEarlyFlashInit( void )
             (unsigned char *)&bootNvramData, sizeof (NVRAM_DATA)) ;
     }
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
     /* Enable Backup PSI by default */
     bootNvramData.backupPsi = 0x01;
 #endif
@@ -430,7 +430,7 @@ unsigned long kerSysReadFromFlash( void *toaddr, unsigned long fromaddr,
     return(memcpy((unsigned char *) toaddr, (unsigned char *) fromaddr, len));
 }
 #endif  // CONFIG_BRCM_IKOS
-#ifndef AEI_VDSL_CUSTOMER_QWEST_Q1000
+#ifndef CUSTOMER_NOT_USED_X
 static UINT32 getCrc32(byte *pdata, UINT32 size, UINT32 crc)
 {
     while (size-- > 0)
@@ -467,7 +467,7 @@ void kerSysFlashInit( void )
 {
     sema_init(&semflash, 1);
     flash_init_info(&bootNvramData, &fInfo);
-#ifndef AEI_VDSL_CUSTOMER_QWEST_Q1000    
+#ifndef CUSTOMER_NOT_USED_X    
     kerSysUpdateNvramData();
 #endif
 }
@@ -713,7 +713,7 @@ int kerSysBackupPsiSet(char *string, int strLen, int offset)
        usedBlkSize += flash_get_sector_size((unsigned short) i);
     }
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
     if (strLen + offset > usedBlkSize)
         return -1;
 #endif
@@ -1370,7 +1370,7 @@ static int nandImageSet( int flash_start_addr, char *string, int img_size )
     return sts;
 }
 
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
 static void reportUpgradePercent(int percent)
 {
         struct file     *f;
@@ -1410,7 +1410,7 @@ int kerSysBcmImageSet( int flash_start_addr, char *string, int size)
     int savedSize = size;
     int whole_image = 0;
     WFI_TAG wt = {0};
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
     int whole_size = size;
 #endif
 
@@ -1465,7 +1465,7 @@ int kerSysBcmImageSet( int flash_start_addr, char *string, int size)
     udelay(20);
 #endif
 
-#if defined(AEI_VDSL_CUSTOMER_QWEST) || defined(AEI_VDSL_CUSTOMER_TELUS)
+#if defined(CUSTOMER_NOT_USED_X) || defined(SUPPORT_GPL)
     down_interruptible(&semflash);
 #else
     local_bh_disable();
@@ -1489,7 +1489,7 @@ int kerSysBcmImageSet( int flash_start_addr, char *string, int size)
             break;
         }
 
-#ifdef AEI_VDSL_CUSTOMER_QWEST 
+#ifdef CUSTOMER_NOT_USED_X 
         reportUpgradePercent(100-size*100/whole_size);
 #endif
         printk(".");
@@ -1517,7 +1517,7 @@ int kerSysBcmImageSet( int flash_start_addr, char *string, int size)
     else  
         sts = blk_start;    // failed to flash this sector
 
-#if defined(AEI_VDSL_CUSTOMER_QWEST) || defined(AEI_VDSL_CUSTOMER_TELUS)
+#if defined(CUSTOMER_NOT_USED_X) || defined(SUPPORT_GPL)
     up(&semflash);
 #else
     local_bh_enable();
@@ -1931,7 +1931,7 @@ int kerSysScratchPadSet(char *tokenId, char *tokBuf, int bufLen)
 
     
 }
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 
 int kerClearScratchPad(int blk_size)
 {
@@ -1945,7 +1945,7 @@ int kerClearScratchPad(int blk_size)
 	    kerSysBackupPsiSet( buf, 256, 0 );	
     	    kerSysScratchPadClearAll();
 #if !defined (CONFIG_BCM96328)
-#if defined(AEI_VDSL_CUSTOMER_Q2000H) || defined(AEI_VDSL_DEFAULT_NO_BONDING)			
+#if defined(CUSTOMER_NOT_USED_X) || defined(AEI_VDSL_DEFAULT_NO_BONDING)			
 	   restoreDatapump(2);		
 #else
 	   restoreDatapump(0);		

@@ -5,25 +5,24 @@
  *
 # 
 # 
-# Unless you and Broadcom execute a separate written software license 
-# agreement governing use of this software, this software is licensed 
-# to you under the terms of the GNU General Public License version 2 
-# (the "GPL"), available at http://www.broadcom.com/licenses/GPLv2.php, 
-# with the following added to such license:
+# This program is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License, version 2, as published by  
+# the Free Software Foundation (the "GPL"). 
 # 
-#    As a special exception, the copyright holders of this software give 
-#    you permission to link this software with independent modules, and 
-#    to copy and distribute the resulting executable under terms of your 
-#    choice, provided that you also meet, for each linked independent 
-#    module, the terms and conditions of the license of that module. 
-#    An independent module is a module which is not derived from this
-#    software.  The special exception does not apply to any modifications 
-#    of the software.  
+#
 # 
-# Not withstanding the above, under no circumstances may you combine 
-# this software in any way with any other Broadcom software provided 
-# under a license other than the GPL, without Broadcom's express prior 
-# written consent. 
+# This program is distributed in the hope that it will be useful,  
+# but WITHOUT ANY WARRANTY; without even the implied warranty of  
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the  
+# GNU General Public License for more details. 
+#  
+# 
+#  
+#   
+# 
+# A copy of the GPL is available at http://www.broadcom.com/licenses/GPLv2.php, or by 
+# writing to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
+# Boston, MA 02111-1307, USA. 
 #
  *
  ************************************************************************/
@@ -119,7 +118,7 @@ typedef enum
    CMSRET_INVALID_CONFIG_FILE = 9852,  /**< invalid config file was detected */
    CMSRET_CONFIG_PSI = 9853,         /**< old PSI/3.x config file was detected */
    CMSRET_IMAGE_FLASH_FAILED = 9854, /**< could not write the image to flash */
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
    CMSRET_OLD_IMAGE = 9855, /**< old image was given for download */
    CMSRET_CURRENT_IMAGE = 9856, /**< current image was given for download */
    CMSRET_ERASED_CONFIG_FILE = 9857,  /**< the config file was erased */
@@ -231,7 +230,7 @@ typedef enum
 #define PROTO_IPOWAN       6  //!< ip over wan protocol
 #define PROTO_NONE         10 //!< invalid protocol
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 #define IFC_WAN_CONN_MAX   8  //!< Max WAN Interfaces allowed per WAN Connection in the system.
 #endif
 #define IFC_WAN_MAX        8  //!< Max WAN Connection in the system.
@@ -297,7 +296,7 @@ typedef enum
 #define PPPOA_PROTO_STR       "PPPoA"
 #define IPOW_PROTO_STR        "IPoW"
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 #define EWAN_IFC_STR           "ewan"
 #endif
 #define ETH_IFC_STR           "eth"

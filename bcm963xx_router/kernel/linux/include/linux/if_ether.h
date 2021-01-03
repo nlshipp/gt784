@@ -112,7 +112,7 @@
 #define ETH_P_TRAILER	0x001C		/* Trailer switch tagging	*/
 #define ETH_P_PHONET	0x00F5		/* Nokia Phonet frames          */
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 #define ETH_P_MIRROR      0x0100
 #define ETH_P_MIRROR_WLAN 0x0101
 #endif

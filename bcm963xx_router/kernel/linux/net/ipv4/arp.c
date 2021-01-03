@@ -579,7 +579,7 @@ struct sk_buff *arp_create(int type, int ptype, __be32 dest_ip,
 	skb->dev = dev;
 	skb->protocol = htons(ETH_P_ARP);
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 	/* fix Telus management queue issue by making arp highest priority */
 	skb->mark = 0x7;
 #endif

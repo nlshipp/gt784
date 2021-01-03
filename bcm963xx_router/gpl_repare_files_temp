@@ -1,0 +1,54 @@
+#!/bin/bash
+
+cross_compile_name=$(ls /opt/toolchains| grep uclib)
+if [ "$cross_compile_name" == "" ]; then
+    echo "SDK: do not have cross compiler in /opt/"
+    exit
+fi
+
+
+echo "repair the file"
+
+sed -i "s/..\/..\/..\/..\/cfe\/cfe\/board\/bcm63xx_ram\/include\/jffs2.h/jffs2.h/g" userspace/public/libs/cms_util/image.c
+sed -i "s/\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/shared\/broadcom\/include\/bcm963xx\/63268_map.h/63268_map.h/g" bcmdrivers/opensource/char/board/bcm963xx/impl1/aei_bcm63xx_flash.c
+sed -i "s/\.\.\/\.\.\/\.\.\/private\/apps\/ctl_layer\/include\/ctl_objectid.h/ctl_objectid.h/g" userspace/public/apps/dhcpv6-aei/dhcp6c.c
+sed -i "s/\.\.\/\.\.\/\.\.\/private\/apps\/ctl_layer\/include\/ctl_validstrings.h/ctl_validstrings.h/g" userspace/public/apps/dhcpv6-aei/dhcp6c.c
+sed -i "s/\.\.\/\.\.\/\.\.\/private\/apps\/ctl_layer\/tr69fw\/framework\/tr69_lib\/libtr69_client.o/\.\.\/\.\.\/include\/libtr69_client.o/g" userspace/public/apps/dhcpv6-aei/Makefile
+sed -i "s/\.\.\/\.\.\/\.\.\/private\/apps\/ctl_layer\/tr69fw\/framework\/tr69_lib\/tsl_socket.o/\.\.\/\.\.\/include\/tsl_socket.o/g" userspace/public/apps/dhcpv6-aei/Makefile
+sed -i "s/ vodsl / /g" Makefile
+
+echo "end repair file"
+
+cp ../bcm462/shared/broadcom/include/bcm963xx/63268_common.h userspace/public/include
+cp ../bcm462/shared/broadcom/include/bcm963xx/xtmprocregs_impl2.h userspace/public/include
+cp ../bcm462/shared/broadcom/include/bcm963xx/63268_map.h userspace/public/include
+cp ../bcm462/cfe/cfe/arch/mips/board/bcm63xx_ram/include/jffs2.h userspace/public/include
+cp ../bcm462/userspace/private/apps/ctl_layer/dbus-1.0.3/test/dbussend_msg.h userspace/public/include
+cp ../bcm462/userspace/private/apps/ctl_layer/dbus-1.0.3/test/dbus_define.h userspace/public/include
+cp -a ../bcm462/hostTools/AEINandImageBuilder hostTools/AEINandImageBuilder
+cp -a ../bcm462/userspace/private/apps/ctl_layer/include/dbus userspace/public/include
+cp ../bcm462/version2.make ./
+cp -a ../bcm462/shared/broadcom/include/bcm963xx/63268_map.h shared/opensource/include/bcm963xx
+cp ../bcm462/shared/broadcom/include/bcm963xx/63268_common.h shared/opensource/include/bcm963xx
+cp -a ../bcm462/shared/broadcom/include/bcm963xx/xtmprocregs_impl2.h shared/opensource/include/bcm963xx
+cp -a ../bcm462/userspace/private/apps/ctl_layer/lib/libdbussend_msg.a /opt/toolchains/$cross_compile_name/lib
+cp -a ../bcm462/userspace/private/apps/ctl_layer/dbus-1.4.0/dbus/libdbus.so /opt/toolchains/$cross_compile_name/lib
+cp -a userspace/public/libs/cms_msg/libcms_msg.so /opt/toolchains/$cross_compile_name/lib
+cp -a userspace/public/libs/cms_util/libcms_util.so /opt/toolchains/$cross_compile_name/lib
+cp -a userspace/public/libs/cms_boardctl/libcms_boardctl.so /opt/toolchains/$cross_compile_name/lib
+cp ../bcm462/userspace/private/apps/ctl_layer/include/ctl_msg.h userspace/public/include/
+cp ../bcm462/userspace/private/apps/ctl_layer/include/ctl.h userspace/public/include/
+cp ../bcm462/userspace/private/apps/ctl_layer/tr69fw/include/tsl_common.h userspace/public/include/
+cp ../bcm462/userspace/private/apps/ctl_layer/include/ctl_objectid.h userspace/public/include/
+cp ../bcm462/userspace/private/apps/ctl_layer/include/ctl_validstrings.h userspace/public/include/
+cp ../bcm462/userspace/private/apps/ctl_layer/tr69fw/include/libtr69_client.h userspace/public/include/
+cp ../bcm462/userspace/private/libs/cms_core/libtr69_client.o userspace/public/include/
+cp ../bcm462/userspace/private/libs/cms_core/tsl_socket.o userspace/public/include/
+
+find . -name ".git*" | xargs rm -rf
+find . -name ".cvs**" | xargs rm -rf
+find . -name ".gitignore*" | xargs rm -rf
+find . -name "CVS*" | xargs rm -rf
+echo "action sdk --copy include and repair file ok----"
+
+

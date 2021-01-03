@@ -179,7 +179,7 @@ CmsRet flashImage(char *imagePtr, UINT32 imageLen, CmsImageFormat format)
        return CMSRET_INVALID_IMAGE;
     }
 
-#ifdef AEI_VDSL_CUSTOMER_TELUS
+#ifdef SUPPORT_GPL
     devCtl_boardIoctl(BOARD_IOCTL_LED_CTRL, 0, NULL, kLedPower, kLedStateSlowBlinkContinues, NULL);
 #endif
 

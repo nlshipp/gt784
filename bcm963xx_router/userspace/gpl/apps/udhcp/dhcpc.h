@@ -11,9 +11,21 @@
 #define INIT_REBOOT	5
 #define RENEW_REQUESTED 6
 #define RELEASED	7
-
+#ifdef AEI_SUPPORT_6RD
+#define DHCP_6RD	212
+#endif
 
 /* Paramaters the client should request from the server */
+#ifdef AEI_SUPPORT_6RD
+#define PARM_REQUESTS \
+	DHCP_SUBNET, \
+	DHCP_ROUTER, \
+	DHCP_DNS_SERVER, \
+	DHCP_HOST_NAME, \
+	DHCP_DOMAIN_NAME, \
+	DHCP_BROADCAST, \
+	DHCP_6RD
+#else
 #define PARM_REQUESTS \
 	DHCP_SUBNET, \
 	DHCP_ROUTER, \
@@ -21,6 +33,7 @@
 	DHCP_HOST_NAME, \
 	DHCP_DOMAIN_NAME, \
 	DHCP_BROADCAST
+#endif
 
 
 struct client_config_t {
@@ -35,6 +48,16 @@ struct client_config_t {
 	int ifindex;			/* Index number of the interface to use */
 	unsigned char arp[6];		/* Our arp address */
 };
+
+#if defined(SUPPORT_GPL)
+typedef struct route_info{
+	struct route_info_t *next;
+	char desIP[16];
+	char netmask[16];
+	char gateway[16];
+}route_info_t;
+#endif
+
 
 extern struct client_config_t client_config;
 

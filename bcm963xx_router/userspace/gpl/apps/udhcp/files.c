@@ -191,6 +191,64 @@ static int read_yn(char *line, void *arg)
 	return 1;
 }
 
+#ifdef CUSTOMER_NOT_USED_X
+static int read_dns_opt(char *line, struct ip_list **dns_list)
+{
+        int i;
+        char text[256];
+        char *opt, *val;
+        struct ip_list *p;
+        struct dhcp_option *option = NULL;
+
+        if (line == 0 || dns_list == 0)
+                return 0;
+
+        /* do not modify the original string */
+        strncpy(text, line, sizeof(text));
+
+        if (!(opt = strtok(text, " \t="))) return 0;
+
+        for (i = 0; options[i].code; i++)
+        {
+                if (!strcmp(options[i].name, opt))
+                {
+                        option = &(options[i]);
+                        if (option->code != DHCP_DNS_SERVER)
+                                return 0;
+                        else
+                                break;
+                }
+        }
+
+        if (!option) return 0;
+
+        do
+        {
+                val = strtok(NULL, ", \t");
+                if (val)
+                {
+                        struct ip_list *new = calloc(1, sizeof(struct ip_list));
+                        if (*dns_list == NULL)
+                        {
+                                *dns_list = new;
+                                p = new;
+                        }
+                        else
+                        {
+                                for (p = *dns_list; p->next; p = p->next);
+
+                                p->next = new;
+                                p = new;
+                        }
+
+                        read_ip(val, &p->ip);
+                }
+                else
+                        break;
+        }
+        while (option->flags & OPTION_LIST);
+}
+#endif
 
 /* read a dhcp option and add it to opt_list */
 static int read_opt(char *line, void *arg)
@@ -305,8 +363,75 @@ static int read_staticlease(const char *const_line, void *arg)
 
 }
 
+#if defined(SUPPORT_GPL) //add william 2012-1-11
+static int read_vlanoption60(const char *const_line, struct iface_config_t *iface)
+{
+	int i = 0;
+	char *line, *token;
+
+	line = (char *) const_line;
+	#if 0
+	LOG(LOG_ERR, "william->read_vendorClassId() line=\"%s\"\n", line);
+	#endif
+
+        token = strtok(line, "|");
+        if (token) {
+            if (strlen(token)) {
+                if (iface->vlanOption60list==NULL) {
+                    iface->vlanOption60list =  malloc(sizeof(struct vlanOption60));
+                    if (iface->vlanOption60list) {
+                        iface->vlanOption60list->next=NULL;
+
+                        //blank the list because uninit things might not be NULL                        
+                        for (i = 0; i < VENDOR_CLASS_ID_TAB_SIZE; i++)
+                            iface->vlanOption60list->vendorClassId[i]=NULL;
+
+                        i = 0;
+                        iface->vlanOption60list->vlanID = strdup(token);
+	                token = strtok(NULL, VENDOR_CLASS_ID_TOKEN);
+                        //then init the list
+	                while (token && i < VENDOR_CLASS_ID_TAB_SIZE) {
+		            iface->vlanOption60list->vendorClassId[i] = strdup(token);
+		            token = strtok(NULL, VENDOR_CLASS_ID_TOKEN);
+		            i++;
+	                }
+                    }    
+                }
+                else {
+                   struct vlanOption60 * prev = iface->vlanOption60list;
+                   struct vlanOption60 * curr = iface->vlanOption60list;
+                   do {
+                       prev = curr;
+                       curr = curr->next; 
+                   }
+                   while (curr);
+
+                   curr = prev->next = malloc(sizeof(struct vlanOption60));
+                   if (curr) {
+                        curr->next=NULL;
+                        //blank the list                        
+                        for (i = 0; i < VENDOR_CLASS_ID_TAB_SIZE; i++)
+                            curr->vendorClassId[i]=NULL;
+                        i = 0;
+                        curr->vlanID = strdup(token);
+	                token = strtok(NULL, VENDOR_CLASS_ID_TOKEN);
+	                while (token && i < VENDOR_CLASS_ID_TAB_SIZE) {
+		            curr->vendorClassId[i] = strdup(token);
+		            token = strtok(NULL, VENDOR_CLASS_ID_TOKEN);
+		            i++;
+	                }
+                    }    
+                }
+            }
+        }
+
+	return 1;
+}
+#endif
+
 static void release_iface_config(struct iface_config_t * iface)
 {
+	int i;
 	struct option_set *cur, *next;
 	struct static_lease *sl_cur, *sl_next;
 	vendor_id_t *vid_cur, *vid_next;
@@ -315,6 +440,78 @@ static void release_iface_config(struct iface_config_t * iface)
 		close(iface->skt);
 		iface->skt = -1;
 	}
+
+#if defined(SUPPORT_GPL)
+    struct vlanOption60 * curr = iface->vlanOption60list;
+    struct vlanOption60 * prev = NULL;
+	iface->vendorClassIdMinAddress = 0;
+	iface->vendorClassIdMaxAddress = 0;
+    for (i = 0; i < VENDOR_CLASS_ID_TAB_SIZE; i++) {
+    	if (iface->vendorClassId[i]) {
+        	free(iface->vendorClassId[i]);
+            iface->vendorClassId[i] = NULL;
+        }
+    }
+        
+    while (curr) {
+    	prev = curr;
+        curr = curr->next;
+        for (i = 0; i < VENDOR_CLASS_ID_TAB_SIZE; i++) {
+        	if (prev->vendorClassId[i]) {
+            	free(prev->vendorClassId[i]);
+                prev->vendorClassId[i] = NULL;
+            }
+        }
+        if (prev->vlanID) {
+            free(prev->vlanID);
+            prev->vlanID=NULL;
+        }
+        prev->next=NULL;
+        free(prev);
+        prev = NULL;
+    } 
+#endif
+
+#ifdef SUPPORT_GPL
+	for (i = 0; i < VENDOR_CLASS_ID_TAB_SIZE; i++)
+	{
+		if (iface->opt67WarrantVids[i])
+			free(iface->opt67WarrantVids[i]);
+	}
+#endif
+
+#ifdef SUPPORT_GPL
+	for (i = 0; i < VENDOR_CLASS_ID_TAB_SIZE; i++)
+	{
+		if (iface->stbVids[i])
+			free(iface->stbVids[i]);
+	}
+
+	struct ip_list *p, *n;
+
+	for (p = iface->stb_ip_list; p != NULL; p = n)
+	{
+		n = p->next;
+		free(p);
+		p = NULL;
+	}
+#endif
+
+#ifdef CUSTOMER_NOT_USED_X
+	struct ip_list *p, *n;
+
+	for (p = iface->dns_srv_ips; p != NULL; p = n)
+	{
+		n = p->next;
+		free(p);
+		p = NULL;
+	}
+
+	if (iface->dns_passthru_chaddr)
+		free(iface->dns_passthru_chaddr);
+#endif
+
+
 	cur = iface->options;
 	while(cur) {
 		next = cur->next;
@@ -352,7 +549,12 @@ static void release_iface_config(struct iface_config_t * iface)
 
 static void set_server_config_defaults(void)
 {
-	server_config.remaining = 1;
+#ifdef SUPPORT_GPL
+		server_config.remaining = 0;
+#else
+		server_config.remaining = 1;
+#endif
+
 	server_config.auto_time = 7200;
 	server_config.decline_time = 3600;
 	server_config.conflict_time = 3600;
@@ -416,12 +618,25 @@ static int set_iface_config_defaults(void)
 				ifr.ifr_name, inet_ntoa(sin->sin_addr));
 				break;
 			}
+#if defined(CUSTOMER_NOT_USED_X) || defined(CUSTOMER_NOT_USED_X) //hk_qwest//hk_ctl
+			sleep((retry_count+1)*(1+retry_count));
+#else
 			sleep(BRCM_RETRY_INTERVAL);
+#endif
 		}
 		if (local_rc < 0) {
 			LOG(LOG_ERR, "SIOCGIFADDR failed on %s!",
 				ifr.ifr_name);
+#if !defined(CUSTOMER_NOT_USED_X) && !defined(CUSTOMER_NOT_USED_X) //hk_qwest //hk_ctl			
 			return 0;
+#else
+			if (strcmp(ifr.ifr_name, "br0") == 0) {
+				return 0;
+			}
+			else {
+				return 1;
+			}
+#endif
 		}
 
 		/* Set default start and end if missing */
@@ -593,6 +808,27 @@ void set_relays(void)
 }
 #endif
 
+#ifdef SUPPORT_GPL
+static void read_vids(const char *line, char **vids, int size)
+{
+	int i;
+	char *token, *str;
+
+	if (line == NULL || vids == NULL || size <= 0)
+		return;
+
+	for (i = 0, str = line; i < size; i++, str = NULL)
+	{
+		token = strtok(str, ",");
+		if (token == NULL)
+			break;
+
+		vids[i] = strdup(token);
+	}
+}
+#endif 
+
+
 int read_config(char *file)
 {
 	FILE *in;
@@ -672,9 +908,39 @@ int read_config(char *file)
 			read_ip(line, &cur_iface->start);
 		else if (strcasecmp(token, "end") == 0)
 			read_ip(line, &cur_iface->end);
+#ifdef SUPPORT_GPL
+		else if (strcasecmp(token, "opt67_warrant_vid") == 0)
+			read_vids(line, cur_iface->opt67WarrantVids, VENDOR_CLASS_ID_TAB_SIZE);
+#endif
+#if defined(SUPPORT_GPL)
+        else if (strcasecmp(token, "vendorClassIdMinAddress") == 0)
+            read_ip(line, &cur_iface->vendorClassIdMinAddress);
+        else if (strcasecmp(token, "vendorClassIdMaxAddress") == 0)
+            read_ip(line, &cur_iface->vendorClassIdMaxAddress);
+		else if (strcasecmp(token, "vlanoption60") == 0) //add william 2012-1-10
+			read_vlanoption60(line, cur_iface);	
+#endif
+
+#ifdef SUPPORT_GPL
+		else if (strcasecmp(token, "stb_vid") == 0)
+			read_vids(line, cur_iface->stbVids, VENDOR_CLASS_ID_TAB_SIZE);
+#endif
+#ifdef CUSTOMER_NOT_USED_X
+		else if (strcasecmp(token, "dns_proxy") == 0)
+			read_ip(line, &cur_iface->dns_proxy_ip);
+		else if (strcasecmp(token, "dns_passthrough") == 0)
+			read_str(line, &cur_iface->dns_passthru_chaddr);
+#endif
 		else if (strcasecmp(token, "option") == 0 ||
 			strcasecmp(token, "opt") == 0)
+		{
+#ifdef CUSTOMER_NOT_USED_X
+			if (strstr(line, "dns"))
+				read_dns_opt(line, &cur_iface->dns_srv_ips);
+#endif
+
 			read_opt(line, &cur_iface->options);
+		}
 		else if (strcasecmp(token, "max_leases") == 0)
 			read_u32(line, &cur_iface->max_leases);
 		else if (strcasecmp(token, "remaining") == 0)
@@ -770,7 +1036,13 @@ void write_leases(int dummy __attribute__((unused)))
 	unsigned long lease_time;
 	struct iface_config_t * iface;
 	
-	dummy = 0;
+#if defined (SUPPORT_GPL)
+    static int iSyncFlag = 0;
+    int iHaveLeases = 0;
+#else
+    dummy = 0;
+#endif
+
 	
 	if (!(fp = fopen(server_config.lease_file, "w"))) {
 		LOG(LOG_ERR, "Unable to open %s for writing", server_config.lease_file);
@@ -780,6 +1052,11 @@ void write_leases(int dummy __attribute__((unused)))
 	for (iface = iface_config; iface; iface = iface->next) {
 		for (i = 0; i < iface->max_leases; i++) {
 			if (iface->leases[i].yiaddr != 0) {
+#if defined (SUPPORT_GPL)
+                iHaveLeases = 1;
+                //if(dummy != 0) iface->leases[i].expires += dummy;
+                if((iSyncFlag == 0) && (dummy != 0)) iface->leases[i].expires +=  dummy;
+#endif
 				if (server_config.remaining) {
 					if (lease_expired(&(iface->leases[i])))
 						lease_time = 0;
@@ -797,9 +1074,22 @@ void write_leases(int dummy __attribute__((unused)))
 				fwrite(iface->leases[i].hostname,
 				       sizeof(iface->leases[i].hostname),
 				       1, fp);
+
+#ifdef SUPPORT_GPL
+				fwrite(&(iface->leases[i].is_stb), 4, 1, fp);
+#endif
+#if defined(AEI_VDSL_WP) && defined(AEI_VDSL_DHCP_LEASE)
+                                fwrite(&(iface->leases[i].isWP), 4, 1, fp);
+#endif
+
 			}
 		}
 	}
+
+#if defined (SUPPORT_GPL)
+    if(iHaveLeases && (dummy != 0)) iSyncFlag = 1;
+#endif
+
 	fclose(fp);
 	
 	if (server_config.notify_file) {
@@ -813,6 +1103,13 @@ struct saved_lease {
 	u_int32_t yiaddr;	/* network order */
 	u_int32_t expires;	/* host order */
 	char hostname[64];
+#ifdef SUPPORT_GPL
+		u_int32_t is_stb;
+#endif
+#if defined(AEI_VDSL_WP) && defined(AEI_VDSL_DHCP_LEASE)
+        u_int32_t isWP;
+#endif
+
 };
 
 
@@ -834,6 +1131,16 @@ void read_leases(char *file)
 			if (lease.yiaddr >= iface->start &&
 				lease.yiaddr <= iface->end &&
 				iface->cnt_leases < iface->max_leases) {
+
+
+#ifdef SUPPORT_GPL
+				if (iface == cur_iface)
+				{
+					add_stb_list(lease.yiaddr);
+					iface->leases[cur_iface->cnt_leases].is_stb = lease.is_stb;
+				}
+#endif
+
 				iface->leases[cur_iface->cnt_leases].yiaddr =
 					lease.yiaddr;
 				iface->leases[cur_iface->cnt_leases].expires =
@@ -860,7 +1167,6 @@ void read_leases(char *file)
 }
 		
 // BRCM_begin
-
 void send_lease_info(UBOOL8 isDelete, const struct dhcpOfferedAddr *lease)
 {
    char buf[sizeof(CmsMsgHeader) + sizeof(DhcpdHostInfoMsgBody)] = {0};
@@ -871,6 +1177,11 @@ void send_lease_info(UBOOL8 isDelete, const struct dhcpOfferedAddr *lease)
    UINT32 remaining, now;
 
    inaddr.s_addr = lease->yiaddr;
+
+#if defined(SUPPORT_GPL)
+   write_leases(0);
+#endif
+
    if (lease->expires == 0xffffffff)  /* check if expires == -1 */
    {
       remaining = lease->expires;
@@ -911,10 +1222,33 @@ void send_lease_info(UBOOL8 isDelete, const struct dhcpOfferedAddr *lease)
 
    snprintf(body->ifName, sizeof(body->ifName), cur_iface->interface);
    snprintf(body->ipAddr, sizeof(body->ipAddr), inet_ntoa(inaddr));
-   snprintf(body->hostName, sizeof(body->hostName), lease->hostname);
+   strncpy(body->hostName, lease->hostname, sizeof(body->hostName)-1);
    cmsUtl_macNumToStr(lease->chaddr, body->macAddr);
+#if defined(SUPPORT_GPL)
+    body->icon = lease->icon;
+    //printf("msg icon:%d\n", lease->icon);
+#endif
+#if defined(SUPPORT_GPL) || defined(CUSTOMER_NOT_USED_X)
+	  snprintf(body->venderClassID, sizeof(body->venderClassID), lease->vendorid);
+#if defined(SUPPORT_GPL)      
+	  snprintf(body->clientID, sizeof(body->clientID), lease->clientid);
+#endif      
+	  snprintf(body->userClassID, sizeof(body->userClassID), lease->classid);
+#endif
 
-   
+#ifdef SUPPORT_GPL
+    body->isStb = is_stb(lease->vendorid);
+#endif
+#if defined(AEI_VDSL_WP) && defined(AEI_VDSL_DHCP_LEASE)
+    body->isWP = lease->isWP;
+    if (lease->isWP)
+    {
+        strlcpy(body->WPProductType,lease->WPProductType,sizeof(body->WPProductType));
+        strlcpy(body->WPFirmwareVersion,lease->WPFirmwareVersion,sizeof(body->WPFirmwareVersion));
+        strlcpy(body->WPProtocolVersion,lease->WPProtocolVersion,sizeof(body->WPProtocolVersion));
+    }
+#endif
+ 
    /* does DHCP include the statically assigned addresses?  Or should that be STATIC? */
    snprintf(body->addressSource, sizeof(body->addressSource), MDMVS_DHCP);
 
@@ -936,6 +1270,18 @@ void send_lease_info(UBOOL8 isDelete, const struct dhcpOfferedAddr *lease)
    {
       DEBUG(LOG_INFO, "lease info update sent!");
    }
+#ifdef AEI_VDSL_CUSTOMER_VIDEO_GUARANTEE
+   // also send this msg to CPU-monitor (/bin/statd)
+   hdr->dst = EID_CPU_MONITOR;
+   if ((ret = cmsMsg_send(msgHandle, hdr)) != CMSRET_SUCCESS)
+   {
+      LOG(LOG_WARNING, "could not send lease info update");
+   }
+   else
+   {
+      DEBUG(LOG_INFO, "lease info update sent to statd!");
+   }
+#endif
 }
 
 

@@ -559,7 +559,7 @@ s,@INSTALL_DATA@,|#_!!_#|${INSTALL} -m 644,g
 s,@CYGPATH_W@,|#_!!_#|echo,g
 s,@PACKAGE@,|#_!!_#|ntfs-3g,g
 s,@VERSION@,|#_!!_#|2009.4.4,g
-s,@ACLOCAL@,|#_!!_#|${SHELL} $(BUILD_DIR)/userspace/gpl/apps/ntfs-3g/missing --run aclocal-1.9,g
+s,@ACLOCAL@,|#_!!_#|${SHELL} $(BUILD_DIR)/userspace/gpl/apps/ntfs-3g/missing --run aclocal-1.11,g
 s,@AUTOCONF@,|#_!!_#|${SHELL} $(BUILD_DIR)/userspace/gpl/apps/ntfs-3g/missing --run autoconf,g
 s,@AUTOMAKE@,|#_!!_#|${SHELL} $(BUILD_DIR)/userspace/gpl/apps/ntfs-3g/missing --run automake-1.9,g
 s,@AUTOHEADER@,|#_!!_#|${SHELL} $(BUILD_DIR)/userspace/gpl/apps/ntfs-3g/missing --run autoheader,g

@@ -499,7 +499,7 @@ s,@INSTALL_DATA@,${INSTALL} -m 644,;t t
 s,@CYGPATH_W@,echo,;t t
 s,@PACKAGE@,ipsec-tools,;t t
 s,@VERSION@,0.5.1,;t t
-s,@ACLOCAL@,${SHELL} /home/jefchiao/myviews/jefchiao_linux26_dev_sview/CommEngine/userapps/opensource/ipsec-tools/missing --run aclocal-1.9,;t t
+s,@ACLOCAL@,${SHELL} /home/jefchiao/myviews/jefchiao_linux26_dev_sview/CommEngine/userapps/opensource/ipsec-tools/missing --run aclocal-1.11,;t t
 s,@AUTOCONF@,${SHELL} /home/jefchiao/myviews/jefchiao_linux26_dev_sview/CommEngine/userapps/opensource/ipsec-tools/missing --run autoconf,;t t
 s,@AUTOMAKE@,${SHELL} /home/jefchiao/myviews/jefchiao_linux26_dev_sview/CommEngine/userapps/opensource/ipsec-tools/missing --run automake-1.9,;t t
 s,@AUTOHEADER@,${SHELL} /home/jefchiao/myviews/jefchiao_linux26_dev_sview/CommEngine/userapps/opensource/ipsec-tools/missing --run autoheader,;t t

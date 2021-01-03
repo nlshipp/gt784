@@ -418,7 +418,7 @@ CmsRet cmsUtl_parseDNS(const char *inDsnServers, char *outDnsPrimary, char *outD
    char *separator;
    UINT32 len;
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
    if (IS_EMPTY_STRING(inDsnServers))
 #else
    if (inDsnServers == NULL)
@@ -684,7 +684,7 @@ char * cmsUtl_numToSyslogLevelString(SINT32 level)
    return levelString;
 }
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 SINT32 cmsUtl_syslogSizeToNum(const char *sizeStr)
 {
     SINT32 size=1;

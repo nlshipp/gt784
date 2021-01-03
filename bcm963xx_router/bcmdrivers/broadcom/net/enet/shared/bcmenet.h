@@ -135,9 +135,10 @@ typedef struct {
 } __attribute__((packed)) BcmVlan_ethhdr2;
 #endif
 
-#define BRCM_TYPE2          0x888A
-#define BRCM_TAG_TYPE2_LEN  4
-#define BRCM_TAG2_EGRESS    0x2000
+#define BRCM_TYPE2               0x888A
+#define BRCM_TAG_TYPE2_LEN       4
+#define BRCM_TAG2_EGRESS         0x2000
+#define BRCM_TAG2_EGRESS_TC_MASK 0x1c00
 
 #define MAX_NUM_OF_VPORTS   8
 #define MAX_SWITCH_PORTS    8
@@ -186,6 +187,13 @@ typedef struct BcmEnet_RxDma {
 
 } BcmEnet_RxDma;
 
+#ifdef CUSTOMER_NOT_USED_X
+struct enet_multicast_stats {
+    unsigned long rx_multicast_bytes;
+    unsigned long tx_multicast_bytes; 
+};
+#endif
+
 typedef struct BcmEnet_devctrl {
     struct net_device *dev;             /* ptr to net_device */
     struct net_device *next_dev;        /* next device */
@@ -229,6 +237,14 @@ typedef struct BcmEnet_devctrl {
     int use_default_txq;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
     struct napi_struct napi;
+#endif
+
+#ifdef SUPPORT_GPL
+    UINT16 usMirrorInFlags;
+    UINT16 usMirrorOutFlags;
+#endif
+#ifdef CUSTOMER_NOT_USED_X
+    struct enet_multicast_stats multi_stats;
 #endif
 } BcmEnet_devctrl;
 

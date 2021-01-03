@@ -66,7 +66,7 @@ typedef struct boardparameters
     unsigned short usGpioLedMoCA;           /* GPIO pin or not defined */
     unsigned short usGpioLedMoCAFail;       /* GPIO pin or not defined */
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 #if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
     unsigned short usGpioLedUsb;            /* GPIO pin or not defined */
 #endif
@@ -346,7 +346,7 @@ static BOARD_PARAMETERS g_bcm96368vvw =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 //#ifndef CONFIG_BCM96328
 #if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
     BP_NOT_DEFINED,                         /* usGpioLedUsb */
@@ -421,7 +421,7 @@ static BOARD_PARAMETERS g_bcm96368vvwb =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 //#ifndef CONFIG_BCM96328
 #if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
     BP_NOT_DEFINED,                         /* usGpioLedUsb */
@@ -461,7 +461,7 @@ static BOARD_PARAMETERS g_bcm96368vvwb =
     BP_NOT_DEFINED                          /* usGpioExtAFELDMode */
 };
 
-#ifndef AEI_VDSL_CUSTOMER_NCS
+#ifndef SUPPORT_GPL
 static BOARD_PARAMETERS g_bcm96368ntr =
 {
     "96368NTR",                             /* szBoardId */
@@ -568,7 +568,7 @@ static BOARD_PARAMETERS g_bcm96368sv2 =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 //#ifndef CONFIG_BCM96328
 #if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
     BP_NOT_DEFINED,                         /* usGpioLedUsb */
@@ -644,7 +644,7 @@ static BOARD_PARAMETERS g_bcm96368mvwg =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 //#ifndef CONFIG_BCM96328
 #if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
     BP_NOT_DEFINED,                         /* usGpioLedUsb */
@@ -720,7 +720,7 @@ static BOARD_PARAMETERS g_bcm96368mvwgb =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 //#ifndef CONFIG_BCM96328
 #if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
     BP_NOT_DEFINED,                         /* usGpioLedUsb */
@@ -759,7 +759,7 @@ static BOARD_PARAMETERS g_bcm96368mvwgb =
     BP_NOT_DEFINED,                         /* usGpioExtAFELDPwr */
     BP_NOT_DEFINED                          /* usGpioExtAFELDMode */
 };
-#ifndef AEI_VDSL_CUSTOMER_NCS
+#ifndef SUPPORT_GPL
 static BOARD_PARAMETERS g_bcm96368mvwgj =
 {
     "96368MVWGJ",                           /* szBoardId */
@@ -796,7 +796,7 @@ static BOARD_PARAMETERS g_bcm96368mvwgj =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 //#ifndef CONFIG_BCM96328
 #if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
     BP_NOT_DEFINED,                         /* usGpioLedUsb */
@@ -872,7 +872,7 @@ static BOARD_PARAMETERS g_bcm96368mbg =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 //#ifndef CONFIG_BCM96328
 #if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
     BP_NOT_DEFINED,                         /* usGpioLedUsb */
@@ -911,7 +911,7 @@ static BOARD_PARAMETERS g_bcm96368mbg =
     BP_NOT_DEFINED,                         /* usGpioExtAFELDPwr */
     BP_NOT_DEFINED                          /* usGpioExtAFELDMode */
 };
-#ifndef AEI_VDSL_CUSTOMER_NCS
+#ifndef SUPPORT_GPL
 static BOARD_PARAMETERS g_bcm96368mbg6b =
 {
     "96368MBG6b",                           /* szBoardId */
@@ -1018,7 +1018,7 @@ static BOARD_PARAMETERS g_bcm96368mbg6302 =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 //#ifndef CONFIG_BCM96328
 #if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
     BP_NOT_DEFINED,                         /* usGpioLedUsb */
@@ -1057,7 +1057,7 @@ static BOARD_PARAMETERS g_bcm96368mbg6302 =
     BP_GPIO_37_AH,                          /* usGpioExtAFELDPwr */
     BP_GPIO_36_AH                           /* usGpioExtAFELDMode */
 };
-#ifndef AEI_VDSL_CUSTOMER_NCS
+#ifndef SUPPORT_GPL
 static BOARD_PARAMETERS g_bcm96368mng =
 {
     "96368MNG",                             /* szBoardId */
@@ -1093,7 +1093,7 @@ static BOARD_PARAMETERS g_bcm96368mng =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 //#ifndef CONFIG_BCM96328
 #if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
     BP_NOT_DEFINED,                         /* usGpioLedUsb */
@@ -1244,7 +1244,7 @@ static BOARD_PARAMETERS g_bcm96368mvngr =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 //#ifndef CONFIG_BCM96328
 #if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
     BP_NOT_DEFINED,                         /* usGpioLedUsb */
@@ -1320,7 +1320,7 @@ static BOARD_PARAMETERS g_bcm96368mvngrP2 =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 //#ifndef CONFIG_BCM96328
 #if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
     BP_NOT_DEFINED,                         /* usGpioLedUsb */
@@ -1359,8 +1359,8 @@ static BOARD_PARAMETERS g_bcm96368mvngrP2 =
     BP_NOT_DEFINED,                         /* usGpioExtAFELDPwr */
     BP_NOT_DEFINED                          /* usGpioExtAFELDMode */
 };
-#define AEI_VDSL_CUSTOMER_NCS 1
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#define SUPPORT_GPL 1
+#ifdef SUPPORT_GPL
 static BOARD_PARAMETERS g_vb784wg =
 {
     "VB784WG",                                /* szBoardId */
@@ -1506,7 +1506,7 @@ static BOARD_PARAMETERS g_R1000H =
 };
 #endif
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 static BOARD_PARAMETERS g_V1000H =
 {
     "V1000H",                                /* szBoardId */
@@ -1612,7 +1612,7 @@ static BOARD_PARAMETERS g_V1000F =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
     BP_NOT_DEFINED,                         /* usGpioLedUsb */
 #endif
 
@@ -1797,23 +1797,23 @@ static BOARD_PARAMETERS g_Q2000 =
 
 static PBOARD_PARAMETERS g_BoardParms[] =
 {&g_bcm96368vvw, &g_bcm96368mvwg, &g_bcm96368sv2, &g_bcm96368mbg,
-#ifndef AEI_VDSL_CUSTOMER_NCS
+#ifndef SUPPORT_GPL
 &g_bcm96368ntr, 
 #endif
-#ifndef AEI_VDSL_CUSTOMER_NCS
+#ifndef SUPPORT_GPL
 &g_bcm96368mbg6b,
 #endif
 &g_bcm96368vvwb, &g_bcm96368mvwgb,
-#ifndef AEI_VDSL_CUSTOMER_NCS
+#ifndef SUPPORT_GPL
 &g_bcm96368mng, 
 #endif
 &g_bcm96368mbg6302, 
-#ifndef AEI_VDSL_CUSTOMER_NCS
+#ifndef SUPPORT_GPL
 &g_bcm96368mvwgj, 
 &g_bcm96367avng,
 #endif
 &g_bcm96368mvngr, &g_bcm96368mvngrP2, 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 &g_vb784wg,&g_R1000H,
 &g_V1000H, &g_V1000F, &g_V2000H,
 &g_Q2000,
@@ -2196,7 +2196,7 @@ static BOARD_PARAMETERS g_bcm96328avng =
     BP_GPIO_1_AL,                           /* usGpioLedWanData */ 
     BP_GPIO_7_AL,                           /* usGpioLedWanError */
     BP_GPIO_0_AL,                           /* usGpioLedBlPowerOn */
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
     /* turn off red on gpio 18 by default to stop amber when kernel boots */ 
     BP_GPIO_18_AL,                           /* usGpioLedBlStop */
 #else
@@ -3081,8 +3081,8 @@ int BpGetWirelessSesLedGpio( unsigned short *pusValue )
 
 } /* BpGetWirelessSesLedGpio */
 
-#if defined(AEI_VDSL_CUSTOMER_NCS) && defined(CONFIG_BCM96328)
-//#if defined(AEI_ADSL_CUSTOMER_QWEST_L5000)
+#if defined(SUPPORT_GPL) && defined(CONFIG_BCM96328)
+//#if defined(CUSTOMER_NOT_USED_X)
 int BpGetWirelessSesLedGpiofail( unsigned short *pusValue )
 {
     int nRet;
@@ -4065,7 +4065,7 @@ int BpGetMoCAFailLedGpio( unsigned short *pusValue )
     return( nRet );
 } /* BpGetMoCAFailLedGpio */
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 /**************************************************************************
 * Name       : BpGetUsbLedGpio
 *

@@ -5,25 +5,24 @@
  *
 # 
 # 
-# Unless you and Broadcom execute a separate written software license 
-# agreement governing use of this software, this software is licensed 
-# to you under the terms of the GNU General Public License version 2 
-# (the "GPL"), available at http://www.broadcom.com/licenses/GPLv2.php, 
-# with the following added to such license:
+# This program is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License, version 2, as published by  
+# the Free Software Foundation (the "GPL"). 
 # 
-#    As a special exception, the copyright holders of this software give 
-#    you permission to link this software with independent modules, and 
-#    to copy and distribute the resulting executable under terms of your 
-#    choice, provided that you also meet, for each linked independent 
-#    module, the terms and conditions of the license of that module. 
-#    An independent module is a module which is not derived from this
-#    software.  The special exception does not apply to any modifications 
-#    of the software.  
+#
 # 
-# Not withstanding the above, under no circumstances may you combine 
-# this software in any way with any other Broadcom software provided 
-# under a license other than the GPL, without Broadcom's express prior 
-# written consent. 
+# This program is distributed in the hope that it will be useful,  
+# but WITHOUT ANY WARRANTY; without even the implied warranty of  
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the  
+# GNU General Public License for more details. 
+#  
+# 
+#  
+#   
+# 
+# A copy of the GPL is available at http://www.broadcom.com/licenses/GPLv2.php, or by 
+# writing to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
+# Boston, MA 02111-1307, USA. 
 #
  *
  ************************************************************************/
@@ -105,7 +104,7 @@ typedef enum
    CMS_MSG_DHCP6C_STATE_CHANGED      = 0x10000266, /**< Sent from dhcpv6 client when state changes, see also Dhcp6cStateChangeMsgBody */
    CMS_MSG_PING_STATE_CHANGED        = 0x10000267, /**< Ping state changed (completed, or stopped) */
    CMS_MSG_DHCPD_RELOAD		     = 0x10000268, /**< Sent to dhcpd to force it reload config file without restart */
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
    CMS_MSG_DHCPD_RESERV              = 0x1000026E, /**< Sent to dhcpd to tell it the delete information of DHCP Reservation */
    CMS_MSG_DHCPD_RESERV_STATUS       = 0x10000260, /**< Sent to dhcpd to tell it the value information of DHCP Reservation */
 #endif
@@ -236,25 +235,25 @@ CMS_MSG_DHCPD_MACS_TO_CMS = 0x1000026D,
 
    CMS_MSG_CMF_SEND_REQUEST = 0x10002301, /**< CMF File Send message request */
    CMS_MSG_CMF_SEND_RESPONSE = 0x10002302, /**< CMF File Send message response */
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 	CMS_MSG_SET_PortMapping_LeaseDuration = 0x10002309,
 	CMS_MSG_GET_PortMapping_Remaining_Time = 0x10002310,
 #endif
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 	CMS_MSG_WLAN_RESTORE_DEFAULT = 0x10002312,  /**< wlmngr Restore Default*/
 	CMS_MSG_SET_FIRSTUSEDATE = 0x10002313, /* ask ssk to write the FirstUseDate to mdm*/
 	CMS_MSG_SET_STATUS = 0x10002314,
 #endif
 
 #if defined (DMP_CAPTIVEPORTAL_1)
-#if defined (AEI_VDSL_CUSTOMER_QWEST)
+#if defined (CUSTOMER_NOT_USED_X)
    CMS_MSG_SET_ONE_TIME_REDIRECT_URL_FLAG = 0x10002308,
 #endif
 #endif
 
 //add by vincent 2010-12-22
-#if defined (AEI_VDSL_TR098_QWEST) || defined(AEI_VDSL_TR098_TELUS)
+#if defined (CUSTOMER_NOT_USED_X) || defined(SUPPORT_GPL)
    CMS_MSG_USER_INFCFG_CHANGED = 0x10002506,
 #endif
 
@@ -275,7 +274,7 @@ CMS_MSG_DHCPD_MACS_TO_CMS = 0x1000026D,
 #ifdef DMP_PERIODICSTATSBASE_1
    CMS_MSG_PERIODIC_STATISTICS_TIMER = 0x10002404,
 #endif
-#if defined (AEI_VDSL_CUSTOMER_BELLALIANT) || defined(AEI_VDSL_CUSTOMER_BELLCANADA)
+#if defined (CUSTOMER_NOT_USED_X) || defined(CUSTOMER_NOT_USED_X)
    CMS_MSG_TR69C_ENABLE_CWMP_FLAG = 0x10002405,
 #endif
 #if defined(DMP_TRACEROUTE_1)
@@ -286,7 +285,7 @@ CMS_MSG_DHCPD_MACS_TO_CMS = 0x1000026D,
    CMS_MSG_TR69_FIREWALL_LEVEL_CHANGED = 0x10002407,
 #endif
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
    CMS_MSG_GET_LANHOSTS_RENEW = 0x10002408,  /**< ask mynetwork to renew the lanhost table */
       CMS_MSG_SET_LEASE_TO_SCRATCHPAD = 0x100008D0,  /**< ask mynetwork to write the LANhosts info into the flash*/
    CMS_MSG_GET_LEASE_TO_SCRATCHPAD = 0x100008D1,  /**< ask XXX to read the LANhosts info from the flash*/ 
@@ -304,14 +303,14 @@ CMS_MSG_DHCPD_MACS_TO_CMS = 0x1000026D,
    CMS_MSG_HPNA_NODE_SAMPLE_COMPLETED = 0x10002410,
    CMS_MSG_HPNA_NODE_MANUAL_SAMPLE = 0x10002411,
 #endif
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 	CMS_MSG_REMOTE_TIMEOUT_CHANGED = 0x10002412,
 #endif
 #if defined (AEI_VDSL_SMARTLED)
 	CMS_MSG_NSLOOKUP_TXT_RDATA  = 0x10002503,	
 #endif
-#ifdef AEI_VDSL_CUSTOMER_NCS
-#if defined (AEI_VDSL_TR098_QWEST)
+#ifdef SUPPORT_GPL
+#if defined (CUSTOMER_NOT_USED_X)
    CMS_MSG_SNTP_DAY_LIGHT_TIMER = 0x10002504,
 #endif
    CMS_MSG_USER_AUTH_CHANGED = 0x10002505,
@@ -320,17 +319,17 @@ CMS_MSG_DHCPD_MACS_TO_CMS = 0x1000026D,
 	CMS_MSG_ARPING_DECT_EVENT  = 0x10002508,
 	CMS_MSG_ARPING_RETURN_DATA  = 0x10002509,	
 #endif
-#if defined(AEI_VDSL_TR098_TELUS)  
+#if defined(SUPPORT_GPL)  
 	CMS_MSG_LHCM_IPINTERFACE_CHANGE  = 0x10002510,/*LANHostConfigManagement IP gateway change*/
 #endif
-#ifdef AEI_VDSL_CUSTOMER_TELUS
+#ifdef SUPPORT_GPL
    CMS_MSG_DHCP_LEASES_UPDATED = 0x10002511,
    CMS_MSG_DHCPD_RELOAD_LEASE_FILE = 0x10002512,
 #endif
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
    CMS_MSG_DHCP_TIME_UPDATED       = 0x10002659,
 #endif
-#ifdef AEI_VDSL_CUSTOMER_TELUS
+#ifdef SUPPORT_GPL
 	CMS_MSG_TR69_ALG_ENABLE = 0x10002513,
 	CMS_MSG_TR69_ALG_DISABLE = 0x10002514,
 #endif
@@ -343,7 +342,7 @@ CMS_MSG_DHCPD_MACS_TO_CMS = 0x1000026D,
 	CMS_MSG_TR69_PORTBRIDGING_ENABLE = 0x10002516,
 	CMS_MSG_TR69_PORTBRIDGING_DISABLE = 0x10002517,
 #endif
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
    CMS_MSG_TSTATS_RESULT = 0x10002518,
    CMS_MSG_TSTATS_REQUEST = 0x10002519,
 #endif
@@ -436,7 +435,7 @@ typedef struct
    char mask[BUFLEN_32]; /**< New netmask, if addressAssigned==TRUE */
    char gateway[BUFLEN_32];    /**< New gateway, if addressAssigned==TRUE */
    char nameserver[BUFLEN_64]; /**< New nameserver, if addressAssigned==TRUE */
-#if defined(AEI_VDSL_CUSTOMER_TELUS)
+#if defined(SUPPORT_GPL)
    unsigned int lease_time;
 #endif
 } DhcpcStateChangedMsgBody;
@@ -525,7 +524,7 @@ typedef enum {
    NETWORK_ACCESS_CONSOLE    = 3   /**< access from serial console */
 } NetworkAccessMode;
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 typedef enum {
    DHCP_EVENT_NO_ACTION = 0,
    DHCP_EVENT_ADD,
@@ -548,7 +547,7 @@ typedef struct
                                      * LANDevice.{i}.Hosts.Host.{i}.addressSource */
    char interfaceType[BUFLEN_32];  /** type of interface used by LAN host, same values as 
                                      * LANDevice.{i}.Hosts.Host.{i}.InterfaceType */
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
    UBOOL8 active;                  /** the host is active or not , same value as */
    int icon;                       /** Device Identifer according to DHCP option 12/60 */
    char reservstatus[2];           /** DHCP Reservation Status */
@@ -563,12 +562,12 @@ typedef struct
    char macs[BUFLEN_128];
    char option60String[BUFLEN_16]; 
 #endif
-#if defined (AEI_VDSL_TR098_TELUS) || defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined (SUPPORT_GPL) || defined(CUSTOMER_NOT_USED_X)
    char userClassID[BUFLEN_256];
    char venderClassID[BUFLEN_256];
    char clientID[BUFLEN_256];
 #endif 
-#if defined(AEI_VDSL_CUSTOMER_TELUS)
+#if defined(SUPPORT_GPL)
    UBOOL8 isStb;                  /** The lan host pc is stb or not */
 #endif
 #if defined(AEI_VDSL_WP) && defined(AEI_VDSL_DHCP_LEASE)
@@ -695,7 +694,7 @@ typedef struct
    UINT32 totalBytesReceived;
    char tcpOpenRequestTime[BUFLEN_32];
    char tcpOpenResponseTime[BUFLEN_32];
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
    UINT32 X_ACTIONTEC_COM_PeriodOfFullLoading;
    UINT32 X_ACTIONTEC_COM_TotalBytesReceivedUnderFullLoading;
    UINT32 X_ACTIONTEC_COM_Throughput;
@@ -727,7 +726,7 @@ typedef struct
    UINT32 totalBytesSent;
    char tcpOpenRequestTime[BUFLEN_32];
    char tcpOpenResponseTime[BUFLEN_32];
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
    UINT32 X_ACTIONTEC_COM_PeriodOfFullLoading;
    UINT32 X_ACTIONTEC_COM_TotalBytesSentUnderFullLoading;
    UINT32 X_ACTIONTEC_COM_Throughput;
@@ -853,7 +852,7 @@ typedef struct
 #endif /* AEI_VDSL_WT107 */
 #endif /* AEI_VDSL_HPNA */
 
-#ifdef AEI_VDSL_CUSTOMER_TELUS
+#ifdef SUPPORT_GPL
 /** Data body for the CMS_MSG_DHCP_LEASES_UPDATED message type.
  *
  */
@@ -874,7 +873,7 @@ typedef struct
 } DhcpLeasesUpdatedMsgBody;
 #endif
 
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
 /** Data body for the CMS_MSG_TSTATS_RESULT message type.
  *
  */
@@ -958,7 +957,7 @@ typedef struct
    char description[BUFLEN_256];      /**< description of config file */
 } vendorConfigUpdateMsgBody;
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 typedef enum
 {
   USER_ENABLE_CHANGED = 0,
@@ -1022,7 +1021,7 @@ typedef struct
 #endif
 
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 /** Data body for the CMS_MSG_REMOTE_TIMEOUT_CHANGED message type.
  *
  */
@@ -1033,7 +1032,7 @@ typedef struct
 } RemoteTimeoutMsgBody;
 #endif
 
-#if defined(AEI_VDSL_TR098_QWEST) //hk_tr098_q2000
+#if defined(CUSTOMER_NOT_USED_X) //hk_tr098_q2000
 typedef enum
 {
 	INET_LED_OFF = 0,

@@ -73,8 +73,8 @@ static BP_LED_INFO bpLedInfo[] =
     {kLedHpna, BpGetHpnaLedGpio, NULL},
     {kLedWanData, BpGetWanDataLedGpio, BpGetWanErrorLedGpio},
 
-#if defined(AEI_VDSL_CUSTOMER_NCS) && defined(CONFIG_BCM96328)
-//#if defined(AEI_ADSL_CUSTOMER_QWEST_L5000)
+#if defined(SUPPORT_GPL) && defined(CONFIG_BCM96328)
+//#if defined(CUSTOMER_NOT_USED_X)
     {kLedSes, BpGetWirelessSesLedGpio, BpGetWirelessSesLedGpiofail},
 #else
     {kLedSes, BpGetWirelessSesLedGpio, BpGetWirelessFailSesLedGpio},
@@ -86,7 +86,7 @@ static BP_LED_INFO bpLedInfo[] =
     {kLedDect, BpGetDectLedGpio, NULL},
     {kLedGpon, BpGetGponLedGpio, BpGetGponFailLedGpio},
     {kLedMoCA, BpGetMoCALedGpio, BpGetMoCAFailLedGpio},
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
     {kLedUsb, BpGetUsbLedGpio, NULL},
     {kLedPower, BpGetBootloaderPowerOnLedGpio, BpGetBootloaderStopLedGpio},
 #endif
@@ -142,8 +142,8 @@ static void setLed (PLED_CTRL pLed, unsigned short led_state, unsigned short led
 #endif
 
 #if defined(CONFIG_BCM96328) || defined(CONFIG_BCM96362)
-#if defined(AEI_VDSL_CUSTOMER_NCS) && defined(CONFIG_BCM96328)
-//#if defined(AEI_ADSL_CUSTOMER_QWEST_L5000)
+#if defined(SUPPORT_GPL) && defined(CONFIG_BCM96328)
+//#if defined(CUSTOMER_NOT_USED_X)
 	if((led_gpio & 0xff) <= 23){ /*0~23 normal LED,it's controlled by ledMode*/
 		LED->ledMode &= ~(LED_MODE_MASK << GPIO_NUM_TO_LED_MODE_SHIFT(led_gpio));
 		if( gpio_state )
@@ -198,8 +198,8 @@ static void ledToggle(PLED_CTRL pLed)
         return;
 
 #if defined(CONFIG_BCM96328) || defined(CONFIG_BCM96362)
-#if defined(AEI_VDSL_CUSTOMER_NCS) && defined(CONFIG_BCM96328)
-//#if defined(AEI_ADSL_CUSTOMER_QWEST_L5000)
+#if defined(SUPPORT_GPL) && defined(CONFIG_BCM96328)
+//#if defined(CUSTOMER_NOT_USED_X)
 	if(led_gpio <= 23){ /*0~23 normal LED,it's controlled by ledMode*/
     	LED->ledMode ^= (LED_MODE_MASK << GPIO_NUM_TO_LED_MODE_SHIFT(led_gpio));
 	}
@@ -226,7 +226,7 @@ static void ledToggle(PLED_CTRL pLed)
 #endif
 }
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 static void ledToggleRed(PLED_CTRL pLed)
 {
     short led_gpio;
@@ -298,7 +298,7 @@ static void ledTimerExpire(void)
             pCurLed->blinkCountDown--;
 
             if (pCurLed->blinkCountDown == 0) {
-#ifndef AEI_VDSL_CUSTOMER_QWEST
+#ifndef CUSTOMER_NOT_USED_X
                 setLed (pCurLed, kLedOff, kLedRed);
 #endif
                 spin_unlock_irqrestore(&brcm_ledlock, flags);
@@ -319,7 +319,7 @@ static void ledTimerExpire(void)
             ledTimerStart();
             break;
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
         case kLedStateRedSlowBlinkContinues:
             if (pCurLed->blinkCountDown-- == 0)
             {
@@ -426,7 +426,7 @@ void __init boardLedInit(void)
             gLedCtrl[pInfo->ledName].ledRedGpio = gpio;
         }
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
         if (pInfo->ledName == kLedPower)
             continue;        
 #endif
@@ -520,7 +520,7 @@ void boardLedCtrl(BOARD_LED_NAME ledName, BOARD_LED_STATE ledState)
             ledTimerStart();
             break;
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
         case kLedStateRedSlowBlinkContinues:
             pLed->blinkCountDown = kSlowBlinkCount;
             ledTimerStart();

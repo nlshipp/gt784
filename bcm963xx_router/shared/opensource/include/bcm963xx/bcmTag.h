@@ -34,7 +34,7 @@
 #ifndef _BCMTAG_H_
 #define _BCMTAG_H_
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 #define BCM_SIG_1   "Actiontec"
 #else
 #define BCM_SIG_1   "Broadcom Corporation"
@@ -46,7 +46,7 @@
 // file tag (head) structure all is in clear text except validationTokens (crc, md5, sha1, etc). Total: 128 unsigned chars
 #define TAG_LEN         256
 #define TAG_VER_LEN     4
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 #define SIG_LEN         10
 #define SIG_LEN_2       24
 #else

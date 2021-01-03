@@ -26,7 +26,7 @@
 #include <asm/uaccess.h>
 #include <asm/byteorder.h>
 
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
 #include <board.h>
 #endif
 
@@ -1419,7 +1419,7 @@ void usb_disconnect(struct usb_device **pdev)
 		return;
 	}
 
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
 	kerSysLedCtrl(kLedUsb, kLedStateOff);
 #endif
 
@@ -2667,7 +2667,7 @@ hub_port_init (struct usb_hub *hub, struct usb_device *udev, int port1,
 
 	retval = 0;
 
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
 	kerSysLedCtrl(kLedUsb, kLedStateOn);
 #endif
 

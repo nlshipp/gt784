@@ -32,9 +32,9 @@
 # last section of this Makefile
 #
 ifneq ($(strip $(AEI_CONTROL_LAYER)),)
-APP_DIRS = dhcpv6-aei sshd ipsec-tools ledctl dhrystone factoryctl
+APP_DIRS = dhcpv6-aei ppp sshd ipsec-tools ledctl dhrystone factoryctl
 else
-APP_DIRS = dhcpv6 sshd ipsec-tools ledctl dhrystone factoryctl
+APP_DIRS = dhcpv6 ppp sshd ipsec-tools ledctl dhrystone factoryctl
 endif
 #
 # We need to declare these directory names as phony targets,
@@ -48,7 +48,7 @@ endif
 # Some apps have names that are different from their directory
 # name, so need to list them explictly here.
 ifneq ($(strip $(AEI_CONTROL_LAYER)),)
-all : $(APP_DIRS)
+all : $(APP_DIRS) pppd dhcpv6
 else
 all : $(APP_DIRS) pppd
 endif

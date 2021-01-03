@@ -4,7 +4,7 @@
 #include <syslog.h>
 #include "filter.h"
 #include <libnetfilter_queue/libnetfilter_queue.h>
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
@@ -15,7 +15,7 @@ extern int url_count;
 extern char circularLog[URL_COUNT][ENTRY_SIZE];
 extern time_t  before;
 extern int logNeedChange;
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
 extern char allLanIpList[1024];
 #endif
 extern unsigned char listtype[8];
@@ -28,7 +28,7 @@ extern unsigned int list_count;
 char brname[16]={0};
 #endif
 
-#if defined (DMP_CAPTIVEPORTAL_1) || defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined (DMP_CAPTIVEPORTAL_1) || defined(SUPPORT_GPL)
 static unsigned short
 in_cksum (unsigned short *ptr, int nbytes)
 {
@@ -65,7 +65,7 @@ in_cksum (unsigned short *ptr, int nbytes)
 
 #endif
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 
 #define NIPQUID(addr)            \
     ((unsigned char *)&addr)[0], \
@@ -96,7 +96,7 @@ void get_lan_ip(char *addr)
 
 #endif
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 extern char RedirectBlockUrl[128];
 #endif
 
@@ -106,7 +106,7 @@ extern char captiveURL[256];
 extern char captiveIPAddr[32];
 extern int flagCaptiveURL;
 extern char captiveAllowList[1024];
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
 extern int flagOneTimeRedirect;
 extern char oneTimeRedirectIPAdress[32];
 extern char oneTimeRedirectURL[256];
@@ -226,7 +226,7 @@ static int send_redirect (struct nfq_q_handle *qh, int id, struct nfq_data * pay
         struct nfqnl_msg_packet_hw *hw = NULL;
         unsigned int dmac[6] = {0};
         int i = 0;
-#if defined(AEI_VDSL_CUSTOMER_QWEST)||defined(AEI_VDSL_CUSTOMER_SASKTEL)
+#if defined(CUSTOMER_NOT_USED_X)||defined(CUSTOMER_NOT_USED_X)
 	char loc[20]= {0};
 #endif
         memset (buf_redirect, 0, sizeof (buf_redirect));
@@ -252,7 +252,7 @@ static int send_redirect (struct nfq_q_handle *qh, int id, struct nfq_data * pay
         //if (!schedule_access(hw_addr))
         {
 
-#if defined(AEI_VDSL_CUSTOMER_QWEST)||defined(AEI_VDSL_CUSTOMER_SASKTEL)
+#if defined(CUSTOMER_NOT_USED_X)||defined(CUSTOMER_NOT_USED_X)
 		if(strstr(capurl,"http://") || strstr(capurl,"https://"))
 			memcpy(loc,"Location: ", sizeof("Location: "));
 		else
@@ -263,7 +263,7 @@ static int send_redirect (struct nfq_q_handle *qh, int id, struct nfq_data * pay
                          "Content-Length: 0",
                          "Pragma: no-cache",
                          "Cache-Control: private, max-age=0, no-cache",
-#if defined(AEI_VDSL_CUSTOMER_QWEST)|| defined(AEI_VDSL_CUSTOMER_SASKTEL)
+#if defined(CUSTOMER_NOT_USED_X)|| defined(CUSTOMER_NOT_USED_X)
                          loc,
 #else
 			 "Location: http://",
@@ -432,7 +432,7 @@ int pkt_decision(struct nfq_q_handle *qh, int id, struct nfq_data * payload)
 
 
 #if defined (DMP_CAPTIVEPORTAL_1)
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
 	if ((flagOneTimeRedirect == 1) && (tcp->dest == htons (WEB_PORT)))
         {
                 if(strstr(match, "GET / HTTP/") || strstr(match, "get HTTP/")) 
@@ -496,7 +496,7 @@ int pkt_decision(struct nfq_q_handle *qh, int id, struct nfq_data * payload)
 #endif
 
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 		time_t now;
 		struct tm *tmp;
 		char currTime[64];
@@ -563,7 +563,7 @@ int pkt_decision(struct nfq_q_handle *qh, int id, struct nfq_data * payload)
 			{             
 				if ( (folder != NULL) || (current->folder[0] == '\0') )
                                 {               
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
                                         if (strstr(current->lanIP, "all") != NULL){ //block all PCs
                                                 //printf("All####This page is blocked by Exclude list!, into send_redirect\n");
                                                 return send_redirect(qh, id, payload, RedirectBlockUrl);
@@ -576,7 +576,7 @@ int pkt_decision(struct nfq_q_handle *qh, int id, struct nfq_data * payload)
                                                 }
                                         }
                                         //printf("All####This page is blocked by Exclude list!, into DROPPP\n");
-#elif defined(AEI_VDSL_CUSTOMER_SASKTEL)
+#elif defined(CUSTOMER_NOT_USED_X)
                                         return send_redirect(qh, id, payload, RedirectBlockUrl);
 #else
                                         return nfq_set_verdict(qh, id, NF_DROP, 0, NULL);

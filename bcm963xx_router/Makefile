@@ -27,7 +27,7 @@ all: make_version_check all_postcheck1
 
 all_postcheck1: profile_saved_check sanity_check \
      create_install kernelbuild modbuild kernelbuildlite fapbuild\
-     userspace  gdbserver vodsl hosttools buildimage
+     userspace  gdbserver hosttools buildimage
 
 ############################################################################
 #
@@ -147,10 +147,10 @@ menuconfig:
 	$(MAKE) -C $(HOSTTOOLS_DIR)/scripts/lxdialog HOSTCC=gcc
 	$(CONFIG_SHELL) $(HOSTTOOLS_DIR)/scripts/Menuconfig $(TARGETS_DIR)/config.in
 
-ifneq ($(strip $(AEI_VDSL_CUSTOMER_NCS)),)
+ifneq ($(strip $(SUPPORT_GPL)),)
 memleak: make_version_check sanity_check \
      create_install kernelbuild modbuild kernelbuildlite \
-     userspace vodsl hosttools buildimage
+     userspace hosttools buildimage
 endif
 
 #
@@ -163,7 +163,6 @@ create_install:
 		mkdir -p $(INSTALL_DIR)/bin
 		mkdir -p $(INSTALL_DIR)/lib
 
-#############################################
 
 $(KERNEL_DIR)/vmlinux:
 	$(GENDEFCONFIG_CMD) $(PROFILE_PATH) ${MAKEFLAGS}
@@ -469,15 +468,15 @@ ilmi:
 endif
 
 
-# vodsl (voice daemon)
-# mwang: for now, I still need to leave vodsl at this top level because
+# (voice daemon)
+# mwang: for now, I still need to leave at this top level because
 # it depends on so many of the voice defines in this top level Makefile.
 ifneq ($(strip $(BUILD_VODSL)),)
 vodsl: sanity_check
 	$(MAKE) -C $(BUILD_DIR)/userspace/private/apps/vodsl $(BUILD_VODSL)
 else
 vodsl: sanity_check
-	@echo "skipping vodsl (not configured)"
+	@echo "skipping (not configured)"
 endif
 
 
@@ -744,7 +743,7 @@ endif
 #	$(MAKE) -C $(patsubst _dir_%, %, $@) $(TGT)
 
 clean: target_clean bcmdrivers_clean data-model_clean userspace_clean kernel_clean \
-       hosttools_clean voice_clean xchange_clean wlan_clean  memleak_clean
+       hosttools_clean voice_clean xchange_clean wlan_clean 
 	rm -f $(HOSTTOOLS_DIR)/scripts/lxdialog/*.o
 	rm -f .tmpconfig*
 	rm -f $(LAST_PROFILE_COOKIE)
@@ -789,15 +788,6 @@ unittests_clean:
 	$(MAKE) -C unittests clean
 
 target_clean: sanity_check
-ifeq ($(strip $(BRCM_6368)),y)
-	if test -d $(BRCMDRIVERS_DIR)/broadcom/char/adsl/impl1/adslcore6368_orig; then \
-		echo "####################################"; \
-		echo "Restoring old adslcore6368 directory"; \
-		echo "####################################"; \
-		rm -rf $(BRCMDRIVERS_DIR)/broadcom/char/adsl/impl1/adslcore6368; \
-		mv $(BRCMDRIVERS_DIR)/broadcom/char/adsl/impl1/adslcore6368_orig $(BRCMDRIVERS_DIR)/broadcom/char/adsl/impl1/adslcore6368; \
-	fi
-endif
 	rm -f $(PROFILE_DIR)/rootfs*.img
 	rm -f $(PROFILE_DIR)/vmlinux
 	rm -f $(PROFILE_DIR)/vmlinux.bin
@@ -836,7 +826,7 @@ xchange_clean:
 	rm -rf $(XCHANGE_DIR)/dslx/lib/LinuxUser
 	rm -rf $(XCHANGE_DIR)/dslx/obj/LinuxUser	
 
-# In the data release tarball, vodsl is not present,
+# In the data release tarball, is not present,
 # so don't go in there unconditionally.
 vodsl_clean: sanity_check
 ifneq ($(strip $(BUILD_VODSL)),)
@@ -886,7 +876,7 @@ wlan_clean:
 		rm -rf $$x;\
 	done
 
-ifneq ($(strip $(AEI_VDSL_CUSTOMER_NCS)),)
+ifneq ($(strip $(SUPPORT_GPL)),)
 memleak_clean:
 #	cd $(HOSTTOOLS_DIR)/memleak/; \
 #	sh bcm_del.sh $(USERSPACE_PUBLIC_LIBS_DIR)/cms_util/

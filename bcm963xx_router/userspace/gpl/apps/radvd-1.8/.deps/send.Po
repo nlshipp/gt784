@@ -1,331 +1,318 @@
-send.o: send.c config.h includes.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/string.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/bin/../lib/gcc/mips-linux-uclibc/4.4.2/include-fixed/features.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/uClibc_config.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/uClibc_arch_features.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/cdefs.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/bin/../lib/gcc/mips-linux-uclibc/4.4.2/include/stddef.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/stdio.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/types.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/wordsize.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/kernel_types.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/typesizes.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/pthreadtypes.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/sched.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/uClibc_stdio.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/wchar.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/wchar.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/uClibc_mutex.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/pthread.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sched.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/time.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/time.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/uClibc_clk_tck.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/signal.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/sigset.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/initspin.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/sigthread.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/uClibc_pthread.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/bin/../lib/gcc/mips-linux-uclibc/4.4.2/include/stdarg.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/stdio_lim.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/stdlib.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/waitflags.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/waitstatus.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/endian.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/endian.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/types.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/select.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/select.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/sysmacros.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/alloca.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/syslog.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/syslog.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/unistd.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/posix_opt.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/environments.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/confname.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/getopt.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/errno.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/errno.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/errno_values.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/signum.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/siginfo.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/sigaction.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/sigcontext.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sgidefs.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/sigstack.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/ucontext.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/ucontext.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/netdb.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/netinet/in.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/stdint.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/socket.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/uio.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/uio.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/socket.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/bin/../lib/gcc/mips-linux-uclibc/4.4.2/include-fixed/limits.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/bin/../lib/gcc/mips-linux-uclibc/4.4.2/include-fixed/syslimits.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/limits.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/posix1_lim.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/local_lim.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/linux/limits.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/uClibc_local_lim.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/posix2_lim.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/xopen_lim.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/sockaddr.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/asm/socket.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/asm/sockios.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/asm/ioctl.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/in.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/byteswap.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/rpc/netdb.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/netdb.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/pwd.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/grp.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/inttypes.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/param.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/linux/param.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/asm/param.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/time.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/ioctl.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/ioctls.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/asm/ioctls.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/ioctl-types.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/ttydefaults.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/stat.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/stat.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/fcntl.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/fcntl.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/netinet/ip6.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/netinet/icmp6.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/arpa/inet.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/sysctl.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/linux/sysctl.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/linux/kernel.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/linux/types.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/net/if.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/net/if_arp.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/getopt.h \
- radvd.h defaults.h log.h \
- /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/linux/version.h
+send.o: send.c config.h includes.h /usr/include/string.h \
+ /usr/include/features.h /usr/include/sys/cdefs.h \
+ /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h \
+ /usr/include/gnu/stubs-32.h \
+ /usr/lib/gcc/i686-redhat-linux/4.7.0/include/stddef.h \
+ /usr/include/xlocale.h /usr/include/bits/string.h \
+ /usr/include/bits/string2.h /usr/include/endian.h \
+ /usr/include/bits/endian.h /usr/include/bits/byteswap.h \
+ /usr/include/bits/types.h /usr/include/bits/typesizes.h \
+ /usr/include/stdlib.h /usr/include/stdio.h /usr/include/libio.h \
+ /usr/include/_G_config.h /usr/include/wchar.h \
+ /usr/lib/gcc/i686-redhat-linux/4.7.0/include/stdarg.h \
+ /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h \
+ /usr/include/bits/stdio.h /usr/include/bits/waitflags.h \
+ /usr/include/bits/waitstatus.h /usr/include/sys/types.h \
+ /usr/include/time.h /usr/include/sys/select.h /usr/include/bits/select.h \
+ /usr/include/bits/sigset.h /usr/include/bits/time.h \
+ /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h \
+ /usr/include/alloca.h /usr/include/bits/timex.h /usr/include/syslog.h \
+ /usr/include/sys/syslog.h /usr/include/bits/syslog-path.h \
+ /usr/include/unistd.h /usr/include/bits/posix_opt.h \
+ /usr/include/bits/environments.h /usr/include/bits/confname.h \
+ /usr/include/getopt.h /usr/include/errno.h /usr/include/bits/errno.h \
+ /usr/include/linux/errno.h /usr/include/asm/errno.h \
+ /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
+ /usr/include/signal.h /usr/include/bits/signum.h \
+ /usr/include/bits/siginfo.h /usr/include/bits/sigaction.h \
+ /usr/include/bits/sigcontext.h /usr/include/asm/sigcontext.h \
+ /usr/include/linux/types.h /usr/include/asm/types.h \
+ /usr/include/asm-generic/types.h /usr/include/asm-generic/int-ll64.h \
+ /usr/include/asm/bitsperlong.h /usr/include/asm-generic/bitsperlong.h \
+ /usr/include/linux/posix_types.h /usr/include/linux/stddef.h \
+ /usr/include/asm/posix_types.h /usr/include/asm/posix_types_32.h \
+ /usr/include/bits/sigstack.h /usr/include/sys/ucontext.h \
+ /usr/include/bits/sigthread.h /usr/include/netdb.h \
+ /usr/include/netinet/in.h \
+ /usr/lib/gcc/i686-redhat-linux/4.7.0/include/stdint.h \
+ /usr/include/stdint.h /usr/include/bits/wchar.h \
+ /usr/include/sys/socket.h /usr/include/sys/uio.h /usr/include/bits/uio.h \
+ /usr/include/bits/socket.h /usr/include/bits/sockaddr.h \
+ /usr/include/asm/socket.h /usr/include/asm-generic/socket.h \
+ /usr/include/asm/sockios.h /usr/include/asm-generic/sockios.h \
+ /usr/include/bits/in.h /usr/include/rpc/netdb.h \
+ /usr/include/bits/netdb.h /usr/include/pwd.h /usr/include/grp.h \
+ /usr/include/inttypes.h /usr/include/sys/param.h \
+ /usr/lib/gcc/i686-redhat-linux/4.7.0/include/limits.h \
+ /usr/lib/gcc/i686-redhat-linux/4.7.0/include/syslimits.h \
+ /usr/include/limits.h /usr/include/bits/posix1_lim.h \
+ /usr/include/bits/local_lim.h /usr/include/linux/limits.h \
+ /usr/include/bits/posix2_lim.h /usr/include/bits/xopen_lim.h \
+ /usr/include/linux/param.h /usr/include/asm/param.h \
+ /usr/include/asm-generic/param.h /usr/include/sys/time.h \
+ /usr/include/sys/ioctl.h /usr/include/bits/ioctls.h \
+ /usr/include/asm/ioctls.h /usr/include/asm-generic/ioctls.h \
+ /usr/include/linux/ioctl.h /usr/include/asm/ioctl.h \
+ /usr/include/asm-generic/ioctl.h /usr/include/bits/ioctl-types.h \
+ /usr/include/sys/ttydefaults.h /usr/include/sys/stat.h \
+ /usr/include/bits/stat.h /usr/include/fcntl.h /usr/include/bits/fcntl.h \
+ /usr/include/netinet/ip6.h /usr/include/netinet/icmp6.h \
+ /usr/include/arpa/inet.h /usr/include/sys/sysctl.h \
+ /usr/include/linux/sysctl.h /usr/include/linux/kernel.h \
+ /usr/include/net/if.h /usr/include/net/if_arp.h /usr/include/ifaddrs.h \
+ radvd.h defaults.h log.h /usr/include/linux/version.h
 
 config.h:
 
 includes.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/string.h:
+/usr/include/string.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/bin/../lib/gcc/mips-linux-uclibc/4.4.2/include-fixed/features.h:
+/usr/include/features.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/uClibc_config.h:
+/usr/include/sys/cdefs.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/uClibc_arch_features.h:
+/usr/include/bits/wordsize.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/cdefs.h:
+/usr/include/gnu/stubs.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/bin/../lib/gcc/mips-linux-uclibc/4.4.2/include/stddef.h:
+/usr/include/gnu/stubs-32.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/stdio.h:
+/usr/lib/gcc/i686-redhat-linux/4.7.0/include/stddef.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/types.h:
+/usr/include/xlocale.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/wordsize.h:
+/usr/include/bits/string.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/kernel_types.h:
+/usr/include/bits/string2.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/typesizes.h:
+/usr/include/endian.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/pthreadtypes.h:
+/usr/include/bits/endian.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/sched.h:
+/usr/include/bits/byteswap.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/uClibc_stdio.h:
+/usr/include/bits/types.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/wchar.h:
+/usr/include/bits/typesizes.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/wchar.h:
+/usr/include/stdlib.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/uClibc_mutex.h:
+/usr/include/stdio.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/pthread.h:
+/usr/include/libio.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sched.h:
+/usr/include/_G_config.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/time.h:
+/usr/include/wchar.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/time.h:
+/usr/lib/gcc/i686-redhat-linux/4.7.0/include/stdarg.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/uClibc_clk_tck.h:
+/usr/include/bits/stdio_lim.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/signal.h:
+/usr/include/bits/sys_errlist.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/sigset.h:
+/usr/include/bits/stdio.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/initspin.h:
+/usr/include/bits/waitflags.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/sigthread.h:
+/usr/include/bits/waitstatus.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/uClibc_pthread.h:
+/usr/include/sys/types.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/bin/../lib/gcc/mips-linux-uclibc/4.4.2/include/stdarg.h:
+/usr/include/time.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/stdio_lim.h:
+/usr/include/sys/select.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/stdlib.h:
+/usr/include/bits/select.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/waitflags.h:
+/usr/include/bits/sigset.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/waitstatus.h:
+/usr/include/bits/time.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/endian.h:
+/usr/include/sys/sysmacros.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/endian.h:
+/usr/include/bits/pthreadtypes.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/types.h:
+/usr/include/alloca.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/select.h:
+/usr/include/bits/timex.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/select.h:
+/usr/include/syslog.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/sysmacros.h:
+/usr/include/sys/syslog.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/alloca.h:
+/usr/include/bits/syslog-path.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/syslog.h:
+/usr/include/unistd.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/syslog.h:
+/usr/include/bits/posix_opt.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/unistd.h:
+/usr/include/bits/environments.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/posix_opt.h:
+/usr/include/bits/confname.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/environments.h:
+/usr/include/getopt.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/confname.h:
+/usr/include/errno.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/getopt.h:
+/usr/include/bits/errno.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/errno.h:
+/usr/include/linux/errno.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/errno.h:
+/usr/include/asm/errno.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/errno_values.h:
+/usr/include/asm-generic/errno.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/signum.h:
+/usr/include/asm-generic/errno-base.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/siginfo.h:
+/usr/include/signal.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/sigaction.h:
+/usr/include/bits/signum.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/sigcontext.h:
+/usr/include/bits/siginfo.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sgidefs.h:
+/usr/include/bits/sigaction.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/sigstack.h:
+/usr/include/bits/sigcontext.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/ucontext.h:
+/usr/include/asm/sigcontext.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/ucontext.h:
+/usr/include/linux/types.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/netdb.h:
+/usr/include/asm/types.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/netinet/in.h:
+/usr/include/asm-generic/types.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/stdint.h:
+/usr/include/asm-generic/int-ll64.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/socket.h:
+/usr/include/asm/bitsperlong.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/uio.h:
+/usr/include/asm-generic/bitsperlong.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/uio.h:
+/usr/include/linux/posix_types.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/socket.h:
+/usr/include/linux/stddef.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/bin/../lib/gcc/mips-linux-uclibc/4.4.2/include-fixed/limits.h:
+/usr/include/asm/posix_types.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/bin/../lib/gcc/mips-linux-uclibc/4.4.2/include-fixed/syslimits.h:
+/usr/include/asm/posix_types_32.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/limits.h:
+/usr/include/bits/sigstack.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/posix1_lim.h:
+/usr/include/sys/ucontext.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/local_lim.h:
+/usr/include/bits/sigthread.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/linux/limits.h:
+/usr/include/netdb.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/uClibc_local_lim.h:
+/usr/include/netinet/in.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/posix2_lim.h:
+/usr/lib/gcc/i686-redhat-linux/4.7.0/include/stdint.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/xopen_lim.h:
+/usr/include/stdint.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/sockaddr.h:
+/usr/include/bits/wchar.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/asm/socket.h:
+/usr/include/sys/socket.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/asm/sockios.h:
+/usr/include/sys/uio.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/asm/ioctl.h:
+/usr/include/bits/uio.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/in.h:
+/usr/include/bits/socket.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/byteswap.h:
+/usr/include/bits/sockaddr.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/rpc/netdb.h:
+/usr/include/asm/socket.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/netdb.h:
+/usr/include/asm-generic/socket.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/pwd.h:
+/usr/include/asm/sockios.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/grp.h:
+/usr/include/asm-generic/sockios.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/inttypes.h:
+/usr/include/bits/in.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/param.h:
+/usr/include/rpc/netdb.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/linux/param.h:
+/usr/include/bits/netdb.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/asm/param.h:
+/usr/include/pwd.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/time.h:
+/usr/include/grp.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/ioctl.h:
+/usr/include/inttypes.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/ioctls.h:
+/usr/include/sys/param.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/asm/ioctls.h:
+/usr/lib/gcc/i686-redhat-linux/4.7.0/include/limits.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/ioctl-types.h:
+/usr/lib/gcc/i686-redhat-linux/4.7.0/include/syslimits.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/ttydefaults.h:
+/usr/include/limits.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/stat.h:
+/usr/include/bits/posix1_lim.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/stat.h:
+/usr/include/bits/local_lim.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/fcntl.h:
+/usr/include/linux/limits.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/fcntl.h:
+/usr/include/bits/posix2_lim.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/netinet/ip6.h:
+/usr/include/bits/xopen_lim.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/netinet/icmp6.h:
+/usr/include/linux/param.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/arpa/inet.h:
+/usr/include/asm/param.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/sysctl.h:
+/usr/include/asm-generic/param.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/linux/sysctl.h:
+/usr/include/sys/time.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/linux/kernel.h:
+/usr/include/sys/ioctl.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/linux/types.h:
+/usr/include/bits/ioctls.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/net/if.h:
+/usr/include/asm/ioctls.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/net/if_arp.h:
+/usr/include/asm-generic/ioctls.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/getopt.h:
+/usr/include/linux/ioctl.h:
+
+/usr/include/asm/ioctl.h:
+
+/usr/include/asm-generic/ioctl.h:
+
+/usr/include/bits/ioctl-types.h:
+
+/usr/include/sys/ttydefaults.h:
+
+/usr/include/sys/stat.h:
+
+/usr/include/bits/stat.h:
+
+/usr/include/fcntl.h:
+
+/usr/include/bits/fcntl.h:
+
+/usr/include/netinet/ip6.h:
+
+/usr/include/netinet/icmp6.h:
+
+/usr/include/arpa/inet.h:
+
+/usr/include/sys/sysctl.h:
+
+/usr/include/linux/sysctl.h:
+
+/usr/include/linux/kernel.h:
+
+/usr/include/net/if.h:
+
+/usr/include/net/if_arp.h:
+
+/usr/include/ifaddrs.h:
 
 radvd.h:
 
@@ -333,4 +320,4 @@ defaults.h:
 
 log.h:
 
-/opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/linux/version.h:
+/usr/include/linux/version.h:

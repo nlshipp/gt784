@@ -1826,7 +1826,7 @@ endswitch:
     return (rc);			/* Return final code */
 }
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 #define LCP_STATUS_INFO_PATH  "var/ppp/lcp_status"
 
 /*
@@ -1895,7 +1895,7 @@ lcp_up(f)
      * the interface MTU is set to the lower of that and the
      * MTU we want to use.
      */
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 	mtu= MIN(ho->neg_mru?ho->mru:PPP_MRU,ao->mru);	
 #ifdef HAVE_MULTILINK
     if (!(multilink && go->neg_mrru && ho->neg_mrru))
@@ -1929,7 +1929,7 @@ lcp_up(f)
     if (!auth_failed)
         create_msg(BCM_PPPOE_SERVICE_AVAILABLE, MDMVS_ERROR_NONE);
     syslog(LOG_CRIT,"PPP LCP UP.\n");
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
     save_status_to_file(LCP_STATUS_INFO_PATH , 1);
 #endif
 }
@@ -1955,7 +1955,7 @@ lcp_down(f)
 		    (go->neg_asyncmap? go->asyncmap: 0xffffffff),
 		    go->neg_pcompression, go->neg_accompression);
     peer_mru[f->unit] = PPP_MRU;
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
     save_status_to_file(LCP_STATUS_INFO_PATH , 0);
 #endif
 }
@@ -2338,7 +2338,7 @@ LcpSendEchoRequest (f)
         fsm_sdata(f, ECHOREQ, lcp_echo_number++ & 0xFF, pkt, pktp - pkt);
 	++lcp_echos_pending;
     }
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 	save_lcpecho_to_file("/var/ppp/lcp_echo_retry", &lcp_echo_number);
 #endif
 }
@@ -2361,7 +2361,7 @@ lcp_echo_lowerup (unit)
     /* If a timeout interval is specified then start the timer */
     if (lcp_echo_interval != 0)
         LcpEchoCheck (f);
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 	save_lcpecho_to_file("/var/ppp/lcp_echo_period", &lcp_echo_interval);
 #endif
 }

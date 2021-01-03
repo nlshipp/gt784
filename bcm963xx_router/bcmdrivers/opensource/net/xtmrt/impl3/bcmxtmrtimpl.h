@@ -249,7 +249,7 @@ typedef struct dev_params
 #define PTM_FLOW_PRI_LOW     0
 #define PTM_FLOW_PRI_HIGH    1
 
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
 struct xtm_multicast_stats {
     unsigned long rx_multicast_bytes;
     unsigned long tx_multicast_bytes;
@@ -291,7 +291,7 @@ typedef struct bcmxtmrt_dev_context
     DEV_PARAMS devParams;
 #endif
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
     UINT16 usMirrorInFlags;
     UINT16 usMirrorOutFlags;
 #else
@@ -307,7 +307,7 @@ typedef struct bcmxtmrt_dev_context
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
     struct napi_struct napi;
 #endif
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
     struct xtm_multicast_stats multi_stats;
 #endif
 } BCMXTMRT_DEV_CONTEXT, *PBCMXTMRT_DEV_CONTEXT;

@@ -1,1 +1,0 @@
-java -jar DataModelDesigner.jar -quiet -brcm_dev -buildroot %cd%\..\..\

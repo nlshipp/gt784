@@ -237,7 +237,7 @@ void dns_handle_new_query(dns_request_t *m)
         dns_write_packet( dns_querysock, in, PORT, m ); // send dns packet only wan up
      }else{
 
-#ifdef AEI_VDSL_CUSTOMER_TELUS
+#ifdef SUPPORT_GPL
             //
             // do nothing here if wan is not up for Telus V2000H
             //

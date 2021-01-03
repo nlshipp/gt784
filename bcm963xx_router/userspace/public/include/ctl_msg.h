@@ -183,12 +183,12 @@ typedef enum
    CTL_MSG_CMF_SEND_REQUEST = 0x10002301, /**< CMF File Send message request */
    CTL_MSG_CMF_SEND_RESPONSE = 0x10002302, /**< CMF File Send message response */
 #endif
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 //	CTL_MSG_SET_PortMapping_LeaseDuration = 0x10002309,
 //	CTL_MSG_GET_PortMapping_Remaining_Time = 0x10002310,
 #endif
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 //	CTL_MSG_WLAN_RESTORE_DEFAULT = 0x10002312,  /**< wlmngr Restore Default*/
 #endif
 
@@ -211,7 +211,7 @@ typedef enum
 #endif
 #endif
 
-#if defined (AEI_VDSL_CUSTOMER_BELLALIANT) || defined(AEI_VDSL_CUSTOMER_BELLCANADA)
+#if defined (CUSTOMER_NOT_USED_X) || defined(CUSTOMER_NOT_USED_X)
 //   CTL_MSG_TR69C_ENABLE_CWMP_FLAG = 0x10002405,
 #endif
 #if defined(DMP_TRACEROUTE_1)
@@ -227,7 +227,7 @@ typedef enum
 #endif
 
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
    CTL_MSG_GET_LANHOSTS_RENEW = 0x10002407  /**< ask mynetwork to renew the lanhost table */
 #endif
 

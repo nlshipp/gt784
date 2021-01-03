@@ -42,6 +42,9 @@ struct dhcp_option options[] = {
 	{"serverid",	OPTION_IP,			0x36},
 	{"tftp",	OPTION_STRING,			0x42},
 	{"bootfile",	OPTION_STRING,			0x43},
+#ifdef AEI_SUPPORT_6RD
+	{"6rd",		OPTION_STRING,			0xd4},
+#endif
 	{"",		0x00,				0x00}
 };
 
@@ -118,6 +121,179 @@ unsigned char *get_option(struct dhcpMessage *packet, int code)
 	return NULL;
 }
 
+#if defined(AEI_VDSL_WP) && defined(AEI_VDSL_DHCP_LEASE)
+/* return pointer to packet for specific option given subtypeStr to match */
+unsigned char *get_subOption(struct dhcpMessage *packet, int code, const char * subtypeStr)
+{
+    int i, length;
+    static char err[] = "bogus packet, option fields too long.";        /* save a few bytes */
+    unsigned char *optionptr;
+    int over = 0, done = 0, curr = OPTION_FIELD;
+    int subtypeLen = subtypeStr ? strlen(subtypeStr) : 0;
+    optionptr = packet->options;
+    i = 0;
+    length = 308;
+    while (!done) {
+        if (i >= length) {
+            LOG(LOG_WARNING, err);
+            return NULL;
+        }
+
+        if (optionptr[i + OPT_CODE] == code) {
+            if (i + 1 + optionptr[i + OPT_LEN] >= length) {
+                LOG(LOG_WARNING, err);
+                return NULL;
+            }
+            else if (code == DHCP_VENDOR){
+                /* if option 60 length is greater than subtype string len, then go ahead and eval */
+                if (optionptr[i + 1]>=subtypeLen) { 
+                   if (strncasecmp(optionptr + i + 2,subtypeStr,subtypeLen)==0) {
+                           return optionptr + i + 2;
+                   }
+                }
+            }
+            else
+                return optionptr + i + 2;
+           
+        }
+        switch (optionptr[i + OPT_CODE]) {
+        case DHCP_PADDING:
+            i++;
+            break;
+        case DHCP_OPTION_OVER:
+            if (i + 1 + optionptr[i + OPT_LEN] >= length) {
+                LOG(LOG_WARNING, err);
+                return NULL;
+            }
+            over = optionptr[i + 3];
+            i += optionptr[OPT_LEN] + 2;
+            break;
+        case DHCP_END:
+            if (curr == OPTION_FIELD && over & FILE_FIELD) {
+                optionptr = packet->file;
+                i = 0;
+                length = 128;
+                curr = FILE_FIELD;
+            } else if (curr == FILE_FIELD && over & SNAME_FIELD) {
+                optionptr = packet->sname;
+                i = 0;
+                length = 64;
+                curr = SNAME_FIELD;
+            } else
+                done = 1;
+            break;
+        default:
+            i += optionptr[OPT_LEN + i] + 2;
+        }
+    }
+    return NULL;
+}
+
+/* Parse packet and initialize WP related paramters in lease
+ */
+unsigned char AEI_InitLeaseWP(struct dhcpMessage *packet , struct dhcpOfferedAddr *lease)
+{
+    char *opt60_vendorID = NULL;
+    char *startLocation = NULL; 
+    int len = 0;
+    
+    if (lease==NULL)
+        return FALSE;
+
+    opt60_vendorID = (char *)get_subOption(packet, DHCP_VENDOR, AEI_OPT60_VENDOR_ID); 
+    if (opt60_vendorID)
+    {     
+        char vendorID[AEI_WP_VENDOR_ID_LEN]={0};
+ 
+        /* split this into a separate function later */
+        len = opt60_vendorID[-1] ;
+        startLocation =  opt60_vendorID;
+        opt60_vendorID = strchr(opt60_vendorID,' ');
+        if (opt60_vendorID) {
+            opt60_vendorID += 1;
+            len = len - (opt60_vendorID - startLocation); 
+        }
+        else
+            opt60_vendorID = startLocation;
+
+        if (len >= (int)sizeof(vendorID))
+            len = sizeof(vendorID) - 1;
+        snprintf(vendorID, len + 1, "%s",opt60_vendorID);
+
+        if (is_WP(vendorID))
+        {
+            char *opt60_productType, *opt60_softwareVer, *opt60_protocolVer = NULL;
+            lease->isWP = TRUE;
+            opt60_productType = (char *)get_subOption(packet, DHCP_VENDOR, AEI_OPT60_PRODUCT_TYPE); 
+
+            if (opt60_productType)
+            {
+                len = opt60_productType[-1] ;
+                startLocation =  opt60_productType;
+                opt60_productType = strchr(opt60_productType,' ');
+                if (opt60_productType)
+                {
+                    opt60_productType += 1;
+                    len = len - (opt60_productType - startLocation); 
+                }
+                else
+                    opt60_productType = startLocation;
+ 
+
+                if (len >= (int)sizeof(lease->WPProductType))
+                     len = sizeof(lease->WPProductType) - 1;
+                snprintf(lease->WPProductType, len + 1, "%s",opt60_productType);
+            }
+
+            opt60_softwareVer = (char *)get_subOption(packet, DHCP_VENDOR, AEI_OPT60_SOFTWARE_VER);
+            if (opt60_softwareVer)
+            {
+                len = opt60_softwareVer[-1] ;
+                startLocation =  opt60_softwareVer;
+                opt60_softwareVer = strchr(opt60_softwareVer,' ');
+                if (opt60_softwareVer)
+                {
+                    opt60_softwareVer += 1;
+                    len = len - (opt60_softwareVer - startLocation); 
+                }
+                else
+                    opt60_softwareVer = startLocation;
+
+                if (len >= (int)sizeof(lease->WPFirmwareVersion))
+                    len = sizeof(lease->WPFirmwareVersion) - 1;
+                snprintf(lease->WPFirmwareVersion, len + 1, "%s",opt60_softwareVer);
+            }
+
+            opt60_protocolVer = (char *)get_subOption(packet, DHCP_VENDOR, AEI_OPT60_PROTOCOL_VER);
+            if (opt60_protocolVer)
+            {
+                len = opt60_protocolVer[-1] ;
+                startLocation =  opt60_protocolVer;
+                opt60_protocolVer = strchr(opt60_protocolVer,' ');
+                if (opt60_protocolVer)
+                {
+                   opt60_protocolVer += 1;
+                   len = len - (opt60_protocolVer - startLocation); 
+                }
+                else
+                   opt60_protocolVer = startLocation;
+
+                if (len >= (int)sizeof(lease->WPProtocolVersion))
+                   len = sizeof(lease->WPProtocolVersion) - 1;
+                snprintf(lease->WPProtocolVersion, len + 1, "%s",opt60_protocolVer);
+            }
+        }
+        else
+            lease->isWP = FALSE;
+    }
+    else
+    {
+        lease->isWP = FALSE;
+    }
+
+    return lease->isWP;
+}
+#endif
 
 /* return the position of the 'end' option (no bounds checking) */
 int end_option(unsigned char *optionptr) 
@@ -679,3 +855,28 @@ int saveVIoption(char *option, struct dhcpOfferedAddr *lease)
   return ret;
 }
 //brcm end
+
+#if defined(SUPPORT_GPL)
+void getClientIDOption(struct dhcpMessage *packet, struct dhcpOfferedAddr *lease)
+{
+	char *clientid = NULL;
+	char strClientId[256] = {0};
+	int clientidLen = 0;
+	int i;
+	char chTemp[4] = {0};
+	if ((clientid = get_option(packet, DHCP_CLIENT_ID)) != NULL)
+	{
+		clientidLen = clientid[-1];
+		if (clientidLen >= (int) sizeof(lease->clientid))
+		clientidLen = sizeof(lease->clientid) - 1;
+		memcpy(strClientId, clientid, clientidLen);
+		for (i=0; i<clientidLen; i++)
+		{
+			sprintf(chTemp, "%02x", (unsigned char)strClientId[i]);
+			strcat(lease->clientid, chTemp);
+			memset(chTemp, 0, 4);
+		}
+	}
+}
+#endif
+

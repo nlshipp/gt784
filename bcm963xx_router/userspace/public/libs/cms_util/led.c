@@ -27,7 +27,7 @@
  *
  ************************************************************************/
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 #include "fcntl.h"
 #endif
 
@@ -59,7 +59,7 @@ void cmsLed_setWanFailed(void)
    devCtl_boardIoctl(BOARD_IOCTL_LED_CTRL, 0, NULL, kLedWanData, kLedStateFail, NULL);
 }
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 static int boardIoctl(int boardFd, int board_ioctl, BOARD_IOCTL_ACTION action,
                       char *string, int strLen, int offset)
 {
@@ -120,7 +120,7 @@ void cmsLed_setEthWanDisconnected(void)
    devCtl_boardIoctl(BOARD_IOCTL_LED_CTRL, 0, NULL, kLedSecAdsl, kLedStateOff, NULL);
 }
 
-#if defined(SUPPORT_DSL_BONDING) && defined(AEI_VDSL_CUSTOMER_QWEST_Q2000)
+#if defined(SUPPORT_DSL_BONDING) && defined(CUSTOMER_NOT_USED_X)
 void cmsLed_setWanLineStatus(int state)
 {
     int boardFd;

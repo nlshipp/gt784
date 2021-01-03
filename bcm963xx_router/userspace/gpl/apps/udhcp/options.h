@@ -23,7 +23,7 @@ enum {
 struct dhcp_option {
 	char name[10];
 	char flags;
-	char code;
+	unsigned char code;	// to support 6rd option (212), 'char' => 'unsigned char'
 };
 
 extern struct dhcp_option options[];
@@ -44,6 +44,11 @@ int createVIoption(int type, char *VIinfo);
 int CreateOption125(int type, char *oui, char *sn, char *prod, char *VIinfo);
 int CreateClntId(char *iaid, char *duid, char *out_op);
 int saveVIoption(char *option, struct dhcpOfferedAddr *lease);
+
+#if defined(AEI_VDSL_WP) && defined(AEI_VDSL_DHCP_LEASE)
+unsigned char *get_subOption(struct dhcpMessage *packet, int code, const char * subtypeStr);
+unsigned char AEI_InitLeaseWP(struct dhcpMessage *packet , struct dhcpOfferedAddr *lease);
+#endif
 
 #define _PATH_RESOLV	 "/var/fyi/sys/dns"
 #define _PATH_GW	 "/var/fyi/sys/gateway"

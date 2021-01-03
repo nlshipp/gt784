@@ -402,8 +402,8 @@ int BpGetSecAdslLedGpio( unsigned short *pusValue );
 int BpGetSecAdslFailLedGpio( unsigned short *pusValue );
 int BpGetWirelessSesLedGpio( unsigned short *pusValue );
 int BpGetWirelessFailSesLedGpio( unsigned short *pusValue );
-#if defined(AEI_VDSL_CUSTOMER_NCS) && defined(CONFIG_BCM96328)
-//#if defined(AEI_ADSL_CUSTOMER_QWEST_L5000)
+#if defined(SUPPORT_GPL) && defined(CONFIG_BCM96328)
+//#if defined(CUSTOMER_NOT_USED_X)
 int BpGetWirelessSesLedGpiofail( unsigned short *pusValue );
 #endif
 int BpGetHpnaLedGpio( unsigned short *pusValue );
@@ -416,7 +416,7 @@ int BpGetGponLedGpio( unsigned short *pusValue );
 int BpGetGponFailLedGpio( unsigned short *pusValue );
 int BpGetMoCALedGpio( unsigned short *pusValue );
 int BpGetMoCAFailLedGpio( unsigned short *pusValue );
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 int BpGetUsbLedGpio( unsigned short *pusValue );
 #endif
 

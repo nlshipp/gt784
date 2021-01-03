@@ -16,7 +16,7 @@
 
 
 #
-#   $Id: Makefile,v 1.1 2011/07/26 00:34:23 jzhang Exp $
+#   $Id: Makefile.am,v 1.22 2011/05/09 11:04:12 psavola Exp $
 #
 #   Authors:
 #    Lars Fenneberg		<lf@elemental.net>	 
@@ -47,8 +47,8 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = i686-pc-linux-gnu
-host_triplet = mips-unknown-linux-gnu
-target_triplet = mips-unknown-linux-gnu
+host_triplet = i686-pc-linux-gnu
+target_triplet = i686-pc-linux-gnu
 sbin_PROGRAMS = radvd$(EXEEXT) radvdump$(EXEEXT)
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
@@ -148,19 +148,18 @@ DIST_ARCHIVES = $(distdir).tar.gz
 GZIP_ENV = --best
 distuninstallcheck_listfiles = find . -type f -print
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} /home/jzhang/project/q2000_mk/bcm462/userspace/gpl/apps/radvd/missing --run aclocal-1.11
-AMTAR = ${SHELL} /home/jzhang/project/q2000_mk/bcm462/userspace/gpl/apps/radvd/missing --run tar
+ACLOCAL = ${SHELL} /new_Project/TDS_GT784/bcmcpe_release/userspace/gpl/apps/radvd-1.8/missing --run aclocal-1.11
+AMTAR = ${SHELL} /new_Project/TDS_GT784/bcmcpe_release/userspace/gpl/apps/radvd-1.8/missing --run tar
 AM_DEFAULT_VERBOSITY = 0
-AUTOCONF = ${SHELL} /home/jzhang/project/q2000_mk/bcm462/userspace/gpl/apps/radvd/missing --run autoconf
-AUTOHEADER = ${SHELL} /home/jzhang/project/q2000_mk/bcm462/userspace/gpl/apps/radvd/missing --run autoheader
-AUTOMAKE = ${SHELL} /home/jzhang/project/q2000_mk/bcm462/userspace/gpl/apps/radvd/missing --run automake-1.11
+AUTOCONF = ${SHELL} /new_Project/TDS_GT784/bcmcpe_release/userspace/gpl/apps/radvd-1.8/missing --run autoconf
+AUTOHEADER = ${SHELL} /new_Project/TDS_GT784/bcmcpe_release/userspace/gpl/apps/radvd-1.8/missing --run autoheader
+AUTOMAKE = ${SHELL} /new_Project/TDS_GT784/bcmcpe_release/userspace/gpl/apps/radvd-1.8/missing --run automake-1.11
 AWK = gawk
-###CC = /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/bin/mips-linux-gcc
+CC = gcc
 CCDEPMODE = depmode=gcc3
-###CFLAGS = -g -O2
-CFLAGS = -Os -fomit-frame-pointer
+CFLAGS = -g -O2
 CONDITIONAL_SOURCES = device-linux.o privsep-linux.o netlink.o
-CPP = /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/bin/mips-linux-gcc -E
+CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
 DEFS = \
@@ -175,10 +174,10 @@ DEPDIR = .deps
 ECHO_C = 
 ECHO_N = -n
 ECHO_T = 
-EGREP = /bin/grep -E
+EGREP = /usr/bin/grep -E
 EXEEXT = 
-GREP = /bin/grep
-GZIP = /bin/gzip
+GREP = /usr/bin/grep
+GZIP = /usr/bin/gzip
 INSTALL = /usr/bin/install -c
 INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
@@ -189,12 +188,12 @@ LEX = flex
 LEXLIB = 
 LEX_OUTPUT_ROOT = lex.yy
 LIBOBJS = 
-LIBS = -lc -lgcc_s
-LN = /bin/ln
+LIBS = -lc 
+LN = /usr/bin/ln
 LOG_FACILITY = LOG_DAEMON
 LTLIBOBJS = 
-MAKEINFO = ${SHELL} /home/jzhang/project/q2000_mk/bcm462/userspace/gpl/apps/radvd/missing --run makeinfo
-MKDIR_P = /bin/mkdir -p
+MAKEINFO = ${SHELL} /new_Project/TDS_GT784/bcmcpe_release/userspace/gpl/apps/radvd-1.8/missing --run makeinfo
+MKDIR_P = /usr/bin/mkdir -p
 OBJEXT = o
 PACKAGE = radvd
 PACKAGE_BUGREPORT = 
@@ -207,20 +206,20 @@ PATH_RADVD_CONF = /etc/radvd.conf
 PATH_RADVD_LOG = /var/log/radvd.log
 PATH_RADVD_PID = /var/run/radvd.pid
 PATH_SEPARATOR = :
-RM = /bin/rm
-SED = /bin/sed
+RM = /usr/bin/rm
+SED = /usr/bin/sed
 SET_MAKE = 
 SHELL = /bin/sh
-###STRIP = strip
-TAR = /bin/tar
+STRIP = 
+TAR = /usr/bin/tar
 VERSION = 1.8
 YACC = bison -y
 YFLAGS = 
-abs_builddir = /home/jzhang/project/q2000_mk/bcm462/userspace/gpl/apps/radvd
-abs_srcdir = /home/jzhang/project/q2000_mk/bcm462/userspace/gpl/apps/radvd
-abs_top_builddir = /home/jzhang/project/q2000_mk/bcm462/userspace/gpl/apps/radvd
-abs_top_srcdir = /home/jzhang/project/q2000_mk/bcm462/userspace/gpl/apps/radvd
-ac_ct_CC = 
+abs_builddir = /new_Project/TDS_GT784/bcmcpe_release/userspace/gpl/apps/radvd-1.8
+abs_srcdir = /new_Project/TDS_GT784/bcmcpe_release/userspace/gpl/apps/radvd-1.8
+abs_top_builddir = /new_Project/TDS_GT784/bcmcpe_release/userspace/gpl/apps/radvd-1.8
+abs_top_srcdir = /new_Project/TDS_GT784/bcmcpe_release/userspace/gpl/apps/radvd-1.8
+ac_ct_CC = gcc
 am__include = include
 am__leading_dot = .
 am__quote = 
@@ -238,35 +237,35 @@ datarootdir = ${prefix}/share
 docdir = ${datarootdir}/doc/${PACKAGE}
 dvidir = ${docdir}
 exec_prefix = ${prefix}
-host = mips-unknown-linux-gnu
-host_alias = mips-linux
-host_cpu = mips
+host = i686-pc-linux-gnu
+host_alias = 
+host_cpu = i686
 host_os = linux-gnu
-host_vendor = unknown
+host_vendor = pc
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/jzhang/project/q2000_mk/bcm462/userspace/gpl/apps/radvd/install-sh
+install_sh = ${SHELL} /new_Project/TDS_GT784/bcmcpe_release/userspace/gpl/apps/radvd-1.8/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
 localstatedir = ${prefix}/var
 mandir = ${datarootdir}/man
-mkdir_p = /bin/mkdir -p
+mkdir_p = /usr/bin/mkdir -p
 oldincludedir = /usr/include
 pdfdir = ${docdir}
-###prefix = /usr/local
+prefix = /usr/local
 program_transform_name = s,x,x,
 psdir = ${docdir}
 sbindir = ${exec_prefix}/sbin
 sharedstatedir = ${prefix}/com
 srcdir = .
 sysconfdir = ${prefix}/etc
-target = mips-unknown-linux-gnu
+target = i686-pc-linux-gnu
 target_alias = 
-target_cpu = mips
+target_cpu = i686
 target_os = linux-gnu
-target_vendor = unknown
+target_vendor = pc
 top_build_prefix = 
 top_builddir = .
 top_srcdir = .
@@ -378,15 +377,15 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	$(am__cd) $(top_srcdir) && \
 	  $(AUTOMAKE) --foreign Makefile
 .PRECIOUS: Makefile
-#Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
-#	@case '$?' in \
-#	  *config.status*) \
-#	    echo ' $(SHELL) ./config.status'; \
-#	    $(SHELL) ./config.status;; \
-#	  *) \
-#	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $@ $(am__depfiles_maybe)'; \
-#	    cd $(top_builddir) && $(SHELL) ./config.status $@ $(am__depfiles_maybe);; \
-#	esac;
+Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
+	@case '$?' in \
+	  *config.status*) \
+	    echo ' $(SHELL) ./config.status'; \
+	    $(SHELL) ./config.status;; \
+	  *) \
+	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $@ $(am__depfiles_maybe)'; \
+	    cd $(top_builddir) && $(SHELL) ./config.status $@ $(am__depfiles_maybe);; \
+	esac;
 
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	$(SHELL) ./config.status --recheck
@@ -457,10 +456,7 @@ gram.h: gram.c
 	else :; fi
 radvd$(EXEEXT): $(radvd_OBJECTS) $(radvd_DEPENDENCIES) 
 	@rm -f radvd$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(radvd_OBJECTS) ./$(radvd_LDADD) $(LIBS)
-	install -m 755 radvd $(INSTALL_DIR)/bin	
-	$(STRIP) $(INSTALL_DIR)/bin/radvd
-	
+	$(AM_V_CCLD)$(LINK) $(radvd_OBJECTS) $(radvd_LDADD) $(LIBS)
 radvdump$(EXEEXT): $(radvdump_OBJECTS) $(radvdump_DEPENDENCIES) 
 	@rm -f radvdump$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(radvdump_OBJECTS) $(radvdump_LDADD) $(LIBS)

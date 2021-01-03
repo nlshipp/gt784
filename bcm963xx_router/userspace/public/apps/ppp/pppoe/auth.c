@@ -642,7 +642,7 @@ auth_peer_success(unit, protocol, name, namelen)
         network_phase(unit);
 }
 
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
 #define  PPP_Auth_FAIL   	"var/ppp/ppp_auth_fail"
 #endif
 /*
@@ -667,7 +667,7 @@ auth_withpeer_fail(unit, protocol)
     printf("PPP: Authentication failed.\n");
     create_msg(BCM_PPPOE_AUTH_FAILED, MDMVS_ERROR_AUTHENTICATION_FAILURE); 
     syslog(LOG_ERR,"User name and password authentication failed.\n");
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
 	FILE *f;
     int  ppp_AuthFail = 1 ;
     char line[BUFLEN_64] = {0} ;
@@ -691,10 +691,10 @@ auth_withpeer_fail(unit, protocol)
 
 
     }
-#ifndef AEI_VDSL_CUSTOMER_NCS	
+#ifndef SUPPORT_GPL	
     persist=0;
 #endif
-#ifdef AEI_VDSL_CUSTOMER_NCS	
+#ifdef SUPPORT_GPL	
 	holdoff=20;
 #endif
 
@@ -729,7 +729,7 @@ auth_withpeer_success(unit, protocol)
      */
     if ((auth_pending[unit] &= ~bit) == 0)
 	network_phase(unit);
-#ifdef AEI_VDSL_CUSTOMER_NCS	
+#ifdef SUPPORT_GPL	
 	holdoff=3;
 #endif	
 }

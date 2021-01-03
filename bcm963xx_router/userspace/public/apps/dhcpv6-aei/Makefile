@@ -40,21 +40,21 @@ group= bin
 #wide-dhcpv6-20080615 default CFLAGS after ./configure
 #CFLAGS= -fomit-frame-pointer -Os -I$(srcdir)  -I./missing -I../../../private/apps/ctl_layer/tr69fw/include -I../../../private/apps/ctl_layer/include -I../../include -I../../include/linux -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DYYTEXT_POINTER=1 -DHAVE_GETADDRINFO=1 -DHAVE_GETNAMEINFO=1 -DHAVE_GETIFADDRS=1 -DHAVE_IF_NAMETOINDEX=1 -DHAVE_DAEMON=1 -DHAVE_WARNX=1 -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_FCNTL_H=1 -DHAVE_SYS_IOCTL_H=1 -DHAVE_SYS_TIME_H=1 -DHAVE_SYSLOG_H=1 -DHAVE_UNISTD_H=1 -DHAVE_IFADDRS_H=1 -DTIME_WITH_SYS_TIME=1 -DHAVE_STRUCT_TM_TM_ZONE=1 -DHAVE_TM_ZONE=1 -DHAVE_SIG_ATOMIC_T=1 -DGETPGRP_VOID=1 -DSETPGRP_VOID=1 -DRETSIGTYPE=void -DHAVE_MKTIME=1 -DHAVE_SELECT=1 -DHAVE_SOCKET=1 -DHAVE_ANSI_FUNC=1 -DHAVE_TAILQ_FOREACH_REVERSE_OLD=1 -DHAVE_STDARG_H=1 -DSYSCONFDIR=\"${sysconfdir}\" \
 #follow CFLAGS copy from brcm old dhcpv6
-CFLAGS=	-fomit-frame-pointer -Os -I$(srcdir) -I../../include -I../../include/linux -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DHAVE_GETADDRINFO=1 -DHAVE_GETNAMEINFO=1 -DHAVE_IF_NAMETOINDEX=1 -DHAVE_STRLCPY=1 -DHAVE_STRLCAT=1 -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_FCNTL_H=1 -DHAVE_SYS_IOCTL_H=1 -DHAVE_SYS_TIME_H=1 -DHAVE_SYSLOG_H=1 -DHAVE_UNISTD_H=1 -DTIME_WITH_SYS_TIME=1 -DHAVE_STRUCT_TM_TM_ZONE=1 -DHAVE_TM_ZONE=1 -DRETSIGTYPE=void -DHAVE_MKTIME=1 -DHAVE_SELECT=1 -DHAVE_SOCKET=1 -DHAVE_CLOCK_GETTIME=1 -DHAVE_ANSI_FUNC=1 -DHAVE_STDARG_H=1  -DSYSCONFDIR=\"${sysconfdir}\" \
+CFLAGS=	-fomit-frame-pointer -Os -I$(srcdir) -I../../../private/apps/ctl_layer/tr69fw/include -I../../../private/apps/ctl_layer/include -I../../include -I../../include/linux -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DHAVE_GETADDRINFO=1 -DHAVE_GETNAMEINFO=1 -DHAVE_IF_NAMETOINDEX=1 -DHAVE_STRLCPY=1 -DHAVE_STRLCAT=1 -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_FCNTL_H=1 -DHAVE_SYS_IOCTL_H=1 -DHAVE_SYS_TIME_H=1 -DHAVE_SYSLOG_H=1 -DHAVE_UNISTD_H=1 -DTIME_WITH_SYS_TIME=1 -DHAVE_STRUCT_TM_TM_ZONE=1 -DHAVE_TM_ZONE=1 -DRETSIGTYPE=void -DHAVE_MKTIME=1 -DHAVE_SELECT=1 -DHAVE_SOCKET=1 -DHAVE_CLOCK_GETTIME=1 -DHAVE_ANSI_FUNC=1 -DHAVE_STDARG_H=1  -DSYSCONFDIR=\"${sysconfdir}\" \
 	-DLOCALDBDIR=\"${localdbdir}\"
 CFLAGS += -DAEI_CONTROL_LAYER
 CFLAGS += -DACTION_TEC_IPV6_CODE_FOR_IOT
 CFLAGS += -DCDROUTER_TEST_DHCP6C
-CFLAGS += -I../../../public/include
+CFLAGS += -I../../../private/apps/ctl_layer/tr69fw/framework/tr69_lib
 CFLAGS += -I../../../../kernel/linux/include
 LDFLAGS=
 LDFLAGS += -lm
 LIBOBJS= strlcpy$U.o strlcat$U.o arc4random$U.o
-LIBOBJS+= ../../../public/include/libtr69_client.o
-LIBOBJS+= ../../../public/include/tsl_socket.o
+LIBOBJS+= ../../include/libtr69_client.o
+LIBOBJS+= ../../include/tsl_socket.o
 ##LIBS=	 -lfl
 ifneq ($(strip $(AEI_CONTROL_LAYER)),)
-LIBS=-Wl,-rpath,/lib:/lib/public -L../../../public/include -L$(INSTALL_DIR)/lib -L$(INSTALL_DIR)/lib/public -ldbus -ldbussend_msg -lcms_util -lcms_msg -lcms_boardctl
+LIBS=-Wl,-rpath,/lib:/lib/public -L../../../private/apps/ctl_layer/lib -L$(INSTALL_DIR)/lib -L$(INSTALL_DIR)/lib/public -ldbus -ldbussend_msg -lcms_util -lcms_msg -lcms_boardctl
 else
 LIBS=-Wl,-rpath,/lib:/lib/public -L$(INSTALL_DIR)/lib -L$(INSTALL_DIR)/lib/public -lcms_util -lcms_msg -lcms_boardctl
 endif

@@ -141,6 +141,14 @@ int raw_packet(struct dhcpMessage *payload, u_int32_t source_ip, int source_port
 	packet.udp.len = htons(sizeof(packet.udp) + payload_length);
 	memcpy(&(packet.data), payload, payload_length);
 	packet.udp.check = checksum(&packet, sizeof(packet.ip) + sizeof(packet.udp) + payload_length);
+
+#if defined(CUSTOMER_NOT_USED_X) || defined(SUPPORT_GPL) || defined(CUSTOMER_NOT_USED_X)
+	if ( dest_port == SERVER_PORT )  //only client packet need mark
+		packet.ip.tos = 0x48;  //DSCP AF21
+#elif defined(SUPPORT_GPL)
+	if ( dest_port == SERVER_PORT )  //only client packet need mark
+		packet.ip.tos = 0x40;  //DSCP CS2
+#endif
 	
 	packet.ip.tot_len = htons(sizeof(packet.ip) + sizeof(packet.udp) + payload_length);
 	packet.ip.ihl = sizeof(packet.ip) >> 2;

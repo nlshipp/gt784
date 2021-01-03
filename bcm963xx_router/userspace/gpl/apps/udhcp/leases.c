@@ -19,6 +19,7 @@
 //For static IP lease
 #include "static_leases.h"
 
+
 /* clear every lease out that chaddr OR yiaddr matches and is nonzero */
 void clear_lease(u_int8_t *chaddr, u_int32_t yiaddr)
 {
@@ -159,6 +160,232 @@ u_int32_t find_address(int check_expired)
 	return 0;
 }
 
+#if defined(SUPPORT_GPL) //add william 2012-1-11
+
+static int issue_ebtable(struct dhcpMessage *oldpacket)
+{
+        int ret;
+        char ebtable_cmd[256] = { 0 };
+
+
+        ret = snprintf(ebtable_cmd, sizeof(ebtable_cmd), "/bin/ebtables -D STBCHAIN -s %02X:%02X:%02X:%02X:%02X:%02X -j ACCEPT > /dev/null",
+                                    oldpacket->chaddr[0],
+                                    oldpacket->chaddr[1],
+                                    oldpacket->chaddr[2],
+                                    oldpacket->chaddr[3],
+                                    oldpacket->chaddr[4],
+                                    oldpacket->chaddr[5]);
+
+        ret = system(ebtable_cmd);
+
+
+        /* for debug use only
+         * LOG(LOG_ERR, "(Debug only) \"%s\"", ebtable_cmd);
+         */
+
+        ret = snprintf(ebtable_cmd, sizeof(ebtable_cmd),"/bin/ebtables -A STBCHAIN -s %02X:%02X:%02X:%02X:%02X:%02X -j ACCEPT > /dev/null",
+                                    oldpacket->chaddr[0],
+                                    oldpacket->chaddr[1],
+                                    oldpacket->chaddr[2],
+                                    oldpacket->chaddr[3],
+                                    oldpacket->chaddr[4],
+                                    oldpacket->chaddr[5]);
+   
+        ret = system(ebtable_cmd);
+        
+
+        return 0;
+}
+
+static int issue_ebtableVlan(struct dhcpMessage *oldpacket, char* vlanID)
+{
+        int ret;
+        char ebtable_cmd[256] = { 0 };
+
+
+        ret = snprintf(ebtable_cmd, sizeof(ebtable_cmd), "/bin/ebtables -D STBCHAIN%s -s %02X:%02X:%02X:%02X:%02X:%02X -j ACCEPT > /dev/null",
+                                    vlanID,
+                                    oldpacket->chaddr[0],
+                                    oldpacket->chaddr[1],
+                                    oldpacket->chaddr[2],
+                                    oldpacket->chaddr[3],
+                                    oldpacket->chaddr[4],
+                                    oldpacket->chaddr[5]);
+        ret = system(ebtable_cmd);
+
+
+        ret = snprintf(ebtable_cmd, sizeof(ebtable_cmd), "/bin/ebtables -A STBCHAIN%s -s %02X:%02X:%02X:%02X:%02X:%02X -j ACCEPT > /dev/null",
+                                    vlanID,
+                                    oldpacket->chaddr[0],
+                                    oldpacket->chaddr[1],
+                                    oldpacket->chaddr[2],
+                                    oldpacket->chaddr[3],
+                                    oldpacket->chaddr[4],
+                                    oldpacket->chaddr[5]);
+        ret = system(ebtable_cmd);
+
+        /* Add a rule to block ARP respond to the STB */
+        ret = snprintf(ebtable_cmd, sizeof(ebtable_cmd), "/bin/ebtables -D STBARPCHAIN%s -s %02X:%02X:%02X:%02X:%02X:%02X -j DROP > /dev/null",
+                                    vlanID,
+                                    oldpacket->chaddr[0],
+                                    oldpacket->chaddr[1],
+                                    oldpacket->chaddr[2],
+                                    oldpacket->chaddr[3],
+                                    oldpacket->chaddr[4],
+                                    oldpacket->chaddr[5]);
+        ret = system(ebtable_cmd);
+
+
+        ret = snprintf(ebtable_cmd, sizeof(ebtable_cmd), "/bin/ebtables -A STBARPCHAIN%s -s %02X:%02X:%02X:%02X:%02X:%02X -j DROP > /dev/null",
+                                    vlanID,
+                                    oldpacket->chaddr[0],
+                                    oldpacket->chaddr[1],
+                                    oldpacket->chaddr[2],
+                                    oldpacket->chaddr[3],
+                                    oldpacket->chaddr[4],
+                                    oldpacket->chaddr[5]);
+        ret = system(ebtable_cmd);
+
+        //sendSaveOpt60MacMessage(oldpacket,vlanID);
+        /* for debug use only
+         * LOG(LOG_ERR, "(Debug only) \"%s\"", ebtable_cmd);
+         */
+        return 0;
+}
+
+
+int is_vlan_vendor_equipped(struct dhcpMessage *oldpacket, char* buf)
+{
+	int i = 0;
+	int vendorid_len = 0;
+	int need_free = 0;
+	char *p;
+    int ret=2;
+    struct vlanOption60 * curr = cur_iface->vlanOption60list;
+	if (!buf) 
+	{
+	    buf = malloc(VENDOR_CLASS_ID_STR_SIZE + 1);
+	    if (!buf) 
+		{
+	        LOG(LOG_ERR, "malloc() error");
+	        return 0;
+        }
+        buf[0] = '\0';
+	    need_free = 1;
+	}
+	p = get_option(oldpacket, DHCP_VENDOR);
+	if (p) 
+	{
+	    vendorid_len = (*(p - 1) & 0xff);
+
+	    while ((i < vendorid_len) && (i < VENDOR_CLASS_ID_STR_SIZE)) 
+		{
+	        buf[i] = p[i];
+	        i++;
+	    }
+	    buf[i] = '\0';
+
+		//LOG(LOG_ERR, "william->is_vlan_vendor_equipped() buf he (%s)\n",buf);
+
+            //if same stb vendor id is added into different vlan, then need to return multiple things???
+            //so just do the filtering here when look through all vlans 
+        while (curr) 
+		{
+            for (i = 0; i < VENDOR_CLASS_ID_TAB_SIZE; i++) 
+			{
+	            if (curr->vendorClassId[i]) 
+				{
+					//LOG(LOG_ERR, "william->is_vlan_vendor_equipped() vendorClassId (%s)\n",curr->vendorClassId[i]);
+                    if (!wstrcmp(curr->vendorClassId[i], buf)) 
+					{ 
+                    //issue STBCHAIN COMMAND with curr->vlanID
+                        issue_ebtableVlan(oldpacket,curr->vlanID); 
+                        ret = 1;
+	                }
+	            }
+	        }
+            curr = curr->next;
+
+		}
+
+        if (ret!=1)
+        ret=0;    
+	}
+        if (need_free)
+	    free(buf);
+	return ret;
+}
+
+/*
+ * Check the DHCP_VENDOR option
+ *
+ * Return 1 if the vendor class id is equipped in the server
+ * return 2 if the client packet (e.g. discover) no DHCP_VENDOR includes (no option-60)
+ * return 0 The pcket includes DHCP_VENDOR, but not equipped in
+ *          the server, this packet should be ignored.
+ *
+ * RFC 2132 Servers not equipped to interpret the class-specific information
+ * sent by a client MUST ignore it (althought it may be reported)
+ */
+
+int is_vendor_equipped(struct dhcpMessage *oldpacket, char* buf)
+{
+	int i = 0;
+	int vendorid_len = 0;
+	int need_free = 0;
+	char *p;
+
+    if (cur_iface->vlanOption60list)
+        return is_vlan_vendor_equipped(oldpacket,buf);
+
+	if (!buf)
+	{
+	    buf = malloc(VENDOR_CLASS_ID_STR_SIZE + 1);
+	    if (!buf) 
+		{
+	        LOG(LOG_ERR, "malloc() error");
+	        return 0;
+		}
+        buf[0] = '\0';
+	    need_free = 1;
+	}
+
+	p = get_option(oldpacket, DHCP_VENDOR);
+	if (p) 
+	{
+	    vendorid_len = (*(p - 1) & 0xff);
+
+	    while ((i < vendorid_len) && (i < VENDOR_CLASS_ID_STR_SIZE)) 
+		{
+	        buf[i] = p[i];
+	        i++;
+	    }
+	    buf[i] = '\0';
+
+	    for (i = 0; i < VENDOR_CLASS_ID_TAB_SIZE; i++) 
+		{
+	        if (cur_iface->vendorClassId[i]) 
+			{
+                if (!wstrcmp(cur_iface->vendorClassId[i], buf)) 
+				{ 
+	                if (need_free)
+	                    free(buf);
+                        issue_ebtable(oldpacket);
+	                return 1;
+	            }
+	        }
+	    }
+	    if (need_free)
+	        free(buf);
+	    return 0;
+	}
+        if (need_free)
+	    free(buf);
+	return 2;
+}
+
+
+#endif
 
 /* return a pointer to the iface struct that has the specified interface name, e.g. br0 */
 struct iface_config_t *find_iface_by_ifname(const char *name)

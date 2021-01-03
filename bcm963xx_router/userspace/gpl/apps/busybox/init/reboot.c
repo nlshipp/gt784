@@ -36,7 +36,7 @@ extern int reboot_main(int argc, char **argv)
 	if(bb_getopt_ulflags(argc, argv, "d:", &delay)) {
 		sleep(atoi(delay));
 	}
-#ifdef AEI_VDSL_CUSTOMER_NCS	
+#ifdef SUPPORT_GPL	
                 struct stat sbuf;
                 {
                     int i=0;

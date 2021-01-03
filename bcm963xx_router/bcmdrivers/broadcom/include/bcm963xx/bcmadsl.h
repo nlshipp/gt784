@@ -116,7 +116,7 @@ typedef struct AdslConnectionInfo
 	UINT32 ulFastDnStreamRate;
 	UINT32 ulInterleavedUpStreamRate;
 	UINT32 ulInterleavedDnStreamRate;
-#if defined (AEI_VDSL_CUSTOMER_QWEST_Q1000)
+#if defined (CUSTOMER_NOT_USED_X)
 	UINT32 demodCapabilities;
 	UINT32 demodCapabilities2;
 #endif

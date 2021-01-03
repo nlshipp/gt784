@@ -134,7 +134,7 @@ static int bcmxtmrt_poll(struct net_device *dev, int *budget);
 #endif
 static UINT32 bcmxtmrt_rxtask( UINT32 ulBudget, UINT32 *pulMoreToDo );
 static void ProcessRxCell(PBCMXTMRT_GLOBAL_INFO pGi, BcmXtm_RxDma *rxdma, UINT8 *pucData);
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 static void UpdateMirrorFlag(UINT16 *mirFlags, char *intfName, UINT8 enable);
 static void MultiMirrorPacket( struct sk_buff *skb, UINT16 mirFlags );
 static void MirrorPacket( struct sk_buff *skb, char *intfName );
@@ -525,7 +525,7 @@ static int bcmxtmrt_ioctl(struct net_device *dev, struct ifreq *Req, int nCmd)
             nRet=-EFAULT;
         else
         {
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
             if( mirrorCfg.nDirection == MIRROR_DIR_IN )
             {
                 UpdateMirrorFlag(&(pDevCtx->usMirrorInFlags),
@@ -562,7 +562,7 @@ static int bcmxtmrt_ioctl(struct net_device *dev, struct ifreq *Req, int nCmd)
         break;
 #endif
 
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
         case SIOCGETMULTICASTSTATS:
         {
             if (copy_to_user((void *)data, (void *)&pDevCtx->multi_stats,
@@ -999,7 +999,7 @@ static int bcmxtmrt_xmit( pNBuff_t pNBuff, struct net_device *dev )
     PBCMXTMRT_DEV_CONTEXT pDevCtx = dev->priv;
 #endif
     DmaDesc  dmaDesc;
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
     int is_multicast = 0;
 #endif
 
@@ -1042,7 +1042,7 @@ static int bcmxtmrt_xmit( pNBuff_t pNBuff, struct net_device *dev )
             goto unlock_done_xmit;
         }
 
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
         /* multicast packets (including broadcast packets) */
         if (pData && (*pData & 1))
         {
@@ -1172,7 +1172,7 @@ static int bcmxtmrt_xmit( pNBuff_t pNBuff, struct net_device *dev )
 #endif
                 spin_lock_bh(&pGi->xtmlock_tx);
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
                 if( pDevCtx->usMirrorOutFlags != 0 &&
                     pNBuffSkb && !isAtmCell &&
                     (ulHdrType ==  HT_PTM ||
@@ -1356,7 +1356,7 @@ tx_continue:
                 if (!isAtmCell) pDevCtx->DevStats.tx_bytes += ETH_CRC_LEN;
                 pDevCtx->pDev->trans_start = jiffies;
 
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
                 if (is_multicast)
                 {
                     pDevCtx->multi_stats.tx_multicast_bytes += len + ETH_CRC_LEN;
@@ -1890,7 +1890,7 @@ UINT32 bcmxtmrt_process_rx_pkt ( PBCMXTMRT_DEV_CONTEXT pDevCtx, BcmXtm_RxDma *rx
                     ((pucData[0] & 0x01) == 0x01) )
                 {
                     pDevCtx->DevStats.multicast++;
-#ifdef AEI_VDSL_CUSTOMER_QWEST
+#ifdef CUSTOMER_NOT_USED_X
                     pDevCtx->multi_stats.rx_multicast_bytes += pFkb->len;
 #endif
                 }
@@ -1901,7 +1901,7 @@ UINT32 bcmxtmrt_process_rx_pkt ( PBCMXTMRT_DEV_CONTEXT pDevCtx, BcmXtm_RxDma *rx
          ulRfc2684_type = HT_TYPE(ulHdrType); /* blog.h: Rfc2684_t */
    }
 
-#ifndef AEI_VDSL_CUSTOMER_NCS
+#ifndef SUPPORT_GPL
    if( pDevCtx->szMirrorIntfIn[0] != '\0' &&
          (ulHdrType ==  HT_PTM ||
           ulHdrType ==  HT_LLC_SNAP_ETHERNET ||
@@ -1973,7 +1973,7 @@ UINT32 bcmxtmrt_process_rx_pkt ( PBCMXTMRT_DEV_CONTEXT pDevCtx, BcmXtm_RxDma *rx
         __skb_trim(skb, pFkb->len);
         skb->dev = pDevCtx->pDev ;
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
         if( pDevCtx->usMirrorInFlags != 0 &&
             (ulHdrType ==  HT_PTM ||
              ulHdrType ==  HT_LLC_SNAP_ETHERNET ||
@@ -2120,7 +2120,7 @@ static void ProcessRxCell(PBCMXTMRT_GLOBAL_INFO pGi, BcmXtm_RxDma *rxdma,
 
 } /* ProcessRxCell */
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 static char * pMirrorIntfNames[] =
 {
     "eth0",
@@ -2812,7 +2812,7 @@ static int DoCreateDeviceReq( PXTMRT_CREATE_NETWORK_DEVICE pCnd )
         /* set unit number to bit 20-27 */
         macId |= ((unit & 0xff) << 20);
 
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
         if(strstr(dev->name,"atm0")!=NULL || strstr(dev->name,"ptm0")!=NULL) 
         kerSysGetMacAddress( dev->dev_addr,  0x12ffffff);
         else

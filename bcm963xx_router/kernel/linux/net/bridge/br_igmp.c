@@ -376,7 +376,7 @@ int br_igmp_mc_forward(struct net_bridge *br,
 	  }
 	}
 	rcu_read_unlock();
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 	/* fix some multicast joins are not forwarded and video does not come in */
 	if((!forward) && (status))
 #else

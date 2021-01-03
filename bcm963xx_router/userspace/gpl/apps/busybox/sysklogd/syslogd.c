@@ -389,7 +389,7 @@ static void message(char *fmt, ...)
 	}
 }
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 #define TZ2SYSLOG
 #ifdef TZ2SYSLOG
 char *weekday_abbr[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
@@ -408,7 +408,7 @@ static void logMessage(int pri, char *msg)
 	int localLog=1;
 	int remoteLog=1;
 	int len;
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 #ifdef TZ2SYSLOG
 	FILE *fp;
 	char timezone[128]="(GMT)";
@@ -469,7 +469,7 @@ static void logMessage(int pri, char *msg)
 		msg += 16;
 	}
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 #ifdef TZ2SYSLOG
 	   fp = fopen("/var/timezone", "r");
 	   if(fp != NULL) {
@@ -770,7 +770,7 @@ extern int syslogd_main(int argc, char **argv)
 
 	char *p;
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 	signed sessionPid;
 #endif
 	/* do normal option parsing */
@@ -864,7 +864,7 @@ extern int syslogd_main(int argc, char **argv)
 #endif /* __uClinux__ */
 	}
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
     /*
     * detach from the terminal so we don't catch the user typing control-c
     */

@@ -5,25 +5,24 @@
  *
 # 
 # 
-# Unless you and Broadcom execute a separate written software license 
-# agreement governing use of this software, this software is licensed 
-# to you under the terms of the GNU General Public License version 2 
-# (the "GPL"), available at http://www.broadcom.com/licenses/GPLv2.php, 
-# with the following added to such license:
+# This program is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License, version 2, as published by  
+# the Free Software Foundation (the "GPL"). 
 # 
-#    As a special exception, the copyright holders of this software give 
-#    you permission to link this software with independent modules, and 
-#    to copy and distribute the resulting executable under terms of your 
-#    choice, provided that you also meet, for each linked independent 
-#    module, the terms and conditions of the license of that module. 
-#    An independent module is a module which is not derived from this
-#    software.  The special exception does not apply to any modifications 
-#    of the software.  
+#
 # 
-# Not withstanding the above, under no circumstances may you combine 
-# this software in any way with any other Broadcom software provided 
-# under a license other than the GPL, without Broadcom's express prior 
-# written consent. 
+# This program is distributed in the hope that it will be useful,  
+# but WITHOUT ANY WARRANTY; without even the implied warranty of  
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the  
+# GNU General Public License for more details. 
+#  
+# 
+#  
+#   
+# 
+# A copy of the GPL is available at http://www.broadcom.com/licenses/GPLv2.php, or by 
+# writing to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
+# Boston, MA 02111-1307, USA. 
 #
  *
  ************************************************************************/
@@ -124,11 +123,11 @@
  */
 #define CMS_DYNAMIC_LAUNCH_SERVER_FD  3
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 /*for httpd only*/
 #define CMS_DYNAMIC_LAUNCH_SERVER_FD2  4
 
-#ifdef AEI_VDSL_CUSTOMER_SASKTEL
+#ifdef CUSTOMER_NOT_USED_X
 #define CMS_DYNAMIC_LAUNCH_SERVER_FD3  5
 #endif
 #endif
@@ -212,7 +211,7 @@
 #ifdef SUPPORT_HTTPD_SSL
 #define HTTPD_PORT      80
 #define HTTPDS_PORT      443
-#ifdef AEI_VDSL_CUSTOMER_SASKTEL
+#ifdef CUSTOMER_NOT_USED_X
 #define DEF_HTTPS_PORT_TECH_USER 51080
 #endif
 #else
@@ -259,20 +258,20 @@
 /** This is the port tr69c listens on for connection requests from the ACS.
  * 
  */
-#if defined(AEI_VDSL_CUSTOMER_NCS)
-#if defined(AEI_VDSL_CUSTOMER_TELUS) 
+#if defined(SUPPORT_GPL)
+#if defined(SUPPORT_GPL) 
 #define     BYPASS_STR          "RMAT"
 #define TR69C_CONN_REQ_PORT      7547
 #else
 #define TR69C_CONN_REQ_PORT      4567
 #endif
 #define TR64C_HTTP_CONN_SECPORT     53
-#elif defined(AEI_VDSL_CUSTOMER_TELUS)
+#elif defined(SUPPORT_GPL)
 #define TR69C_CONN_REQ_PORT      7547
 #else
 #define TR69C_CONN_REQ_PORT      30005
 #endif
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 #define BRIDGE_2IP_INF_STR          "br0:private"
 #endif
 /** This is the path part of the URL for tr69c connection requests from the ACS.
@@ -290,7 +289,7 @@
  * is very important, and you do not want the tr69c client to exit, then you
  * can set this to a very large value (e.g. 2160356, which is one year).
  */
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 /* we do not want tr69c client to exit, because each time tr69c startup
  * it will reset some configuration and save it to flash, this time consuming
  */
@@ -326,7 +325,7 @@
 #define DNS_PROBE_INTERVAL 30
 #define DNS_PROBE_TIMEOUT 3 
 #define DNS_PROBE_MAX_TRY 3
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 #define BYPASS_STR                  "RMAT"
 #define BRIDGE_2IP_INF_STR          "br0:private"
 #endif

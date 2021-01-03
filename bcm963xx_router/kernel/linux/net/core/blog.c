@@ -62,7 +62,7 @@
 /*--- globals ---*/
 
 /* RFC4008 */
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 uint32_t blog_nat_tcp_def_idle_timeout = 21600 *HZ;  
 #else
 uint32_t blog_nat_tcp_def_idle_timeout = 86400 *HZ;  /* 5 DAYS */

@@ -87,7 +87,7 @@
 #define WLAN_ON   1
 #define WLAN_OFF  0
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 
 #define WSC_PROC_IDLE         0
 #define WSC_PROC_WAITING      1
@@ -110,16 +110,16 @@
 #define WSC_EVENTS_PROC_MSG_DONE           (WSC_PROC_MSG_DONE + WSC_EVENTS_PROC_START)
 #define WSC_EVENTS_PROC_PBC_OVERLAP        (WSC_PROC_PBC_OVERLAP + WSC_EVENTS_PROC_START)
 
-#endif //AEI_VDSL_CUSTOMER_NCS
+#endif //SUPPORT_GPL
 
 #endif //WIRELESS
 
-#if defined(AEI_VDSL_CUSTOMER_QWEST) || defined(AEI_VDSL_CUSTOMER_MTS)
+#if defined(CUSTOMER_NOT_USED_X) || defined(CUSTOMER_NOT_USED_X)
 #define RESET_POLL_TIME		1
 #define RESET_HOLD_TIME		10
 #define FACTORY_HOLD_TIME	15
-#elif defined(AEI_VDSL_CUSTOMER_TELUS)
-#if defined(AEI_VDSL_CUSTOMER_SASKTEL)
+#elif defined(SUPPORT_GPL)
+#if defined(CUSTOMER_NOT_USED_X)
 #define RESET_POLL_TIME         1
 #define RESET_HOLD_TIME         10
 #else
@@ -227,7 +227,7 @@ static int proc_set_param(struct file *f, const char *buf, unsigned long cnt, vo
 static int proc_set_led(struct file *f, const char *buf, unsigned long cnt, void *data);
 
 static irqreturn_t reset_isr(int irq, void *dev_id);
-#if defined(AEI_VDSL_CUSTOMER_QWEST) || defined(AEI_VDSL_CUSTOMER_MTS) || defined(AEI_VDSL_CUSTOMER_TELUS)
+#if defined(CUSTOMER_NOT_USED_X) || defined(CUSTOMER_NOT_USED_X) || defined(SUPPORT_GPL)
 static int count = 0;
 static struct timer_list reset_timer, *pTimer = NULL;
 static void reset_timer_func(unsigned long data);
@@ -279,8 +279,8 @@ uint32 board_major = 0;
 #if defined (WIRELESS)
 static unsigned short sesBtn_irq = BP_NOT_DEFINED;
 static unsigned short sesLed_gpio = BP_NOT_DEFINED;
-#if defined(AEI_VDSL_CUSTOMER_NCS) && defined(CONFIG_BCM96328)
-//#if defined(AEI_ADSL_CUSTOMER_QWEST_L5000)
+#if defined(SUPPORT_GPL) && defined(CONFIG_BCM96328)
+//#if defined(CUSTOMER_NOT_USED_X)
 static unsigned short sesLed_gpio_fail = BP_NOT_DEFINED;
 #endif
 #endif
@@ -550,11 +550,11 @@ static int __init brcm_board_init( void )
         boardLedInit();
         g_ledInitialized = 1;
 
-#if defined(AEI_VDSL_CUSTOMER_NCS) && defined(CONFIG_BCM96328)  
-/* #if defined(AEI_ADSL_CUSTOMER_QWEST_L5000) || defined(AEI_ADSL_CUSTOMER_TDS_GT784WN) */
+#if defined(SUPPORT_GPL) && defined(CONFIG_BCM96328)  
+/* #if defined(CUSTOMER_NOT_USED_X) || defined(SUPPORT_GPL) */
 /* per GT784WN spec, blinking green on bootup */
         boardLedCtrl(kLedPower, kLedStateSlowBlinkContinues);
-#elif defined(AEI_VDSL_CUSTOMER_TELUS)
+#elif defined(SUPPORT_GPL)
         boardLedCtrl(kLedPower, kLedStateRedSlowBlinkContinues);
 #endif
 
@@ -962,13 +962,13 @@ unsigned long kerSysGetMacAddressType( unsigned char *ifName )
     }
     else if(strstr(ifName, IF_NAME_PTM))
     {
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
         macAddressType = 0x12ffffff;
 #else
         macAddressType = MAC_ADDRESS_PTM;
 #endif
     }
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
     else if(strstr(ifName, IF_NAME_EWAN))
     {
         macAddressType = MAC_ADDRESS_ETH;
@@ -993,7 +993,7 @@ int kerSysGetMacAddress( unsigned char *pucaMacAddr, unsigned long ulId )
         NVRAM_MAC_ADDRESS_LEN - constMacAddrIncIndex);
     baseMacAddr >>= 8;
 
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
     if(ulId == 0x12ffffff)
     {
             baseMacAddr = (baseMacAddr + 1) << 8;
@@ -1011,7 +1011,7 @@ int kerSysGetMacAddress( unsigned char *pucaMacAddr, unsigned long ulId )
     for( i = 0, pMai = g_pMacInfo->MacAddrs; i < g_pMacInfo->ulNumMacAddrs;
         i++, pMai++ )
     {
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
 		if (i == 1)  /*This mac addr is used for atm0 or ptm0*/
 			continue;
 #endif
@@ -1038,7 +1038,7 @@ int kerSysGetMacAddress( unsigned char *pucaMacAddr, unsigned long ulId )
                     */
                     pMaiFreeNoId = pMai;
                     ulIdxNoId = i;
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
                     continue;
 #else
 		    break;
@@ -1053,7 +1053,7 @@ int kerSysGetMacAddress( unsigned char *pucaMacAddr, unsigned long ulId )
                         */
                         pMaiFreeId = pMai;
                         ulIdxId = i;
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
                         continue;
 #else
 			break;
@@ -1066,7 +1066,7 @@ int kerSysGetMacAddress( unsigned char *pucaMacAddr, unsigned long ulId )
     {
         /* An available MAC address was found. */
         memcpy(pucaMacAddr, g_pMacInfo->ucaBaseMacAddr,NVRAM_MAC_ADDRESS_LEN);
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
         if( pMaiFreeId )
         {
             baseMacAddr = (baseMacAddr + ulIdxId) << 8;
@@ -1218,7 +1218,7 @@ int kerSysGetAfeId( unsigned long *afeId )
     return 0;
 }
 
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 #if !defined (CONFIG_BCM96328)
 
 void restoreDatapump(int value){
@@ -1726,7 +1726,7 @@ static int board_ioctl( struct inode *inode, struct file *flip,
                         ctrlParms.strLen-8);
                     writeNvramData(pNvramData);
                 }
-#if defined (AEI_VDSL_CUSTOMER_NCS) 
+#if defined (SUPPORT_GPL) 
 #if !defined (CONFIG_BCM96328)
                 //SUPPORT_DSL_BONDING macro not carried here so leave out since non-bonding will not call this anyways
                 else if (ctrlParms.string && !strncmp(ctrlParms.string, "DSLDATAPUMP", 11)) {
@@ -2029,7 +2029,7 @@ static int board_ioctl( struct inode *inode, struct file *flip,
             ret = -EFAULT;
         break;
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
         case BOARD_IOCTL_GET_SN:
             if (copy_from_user((void*)&ctrlParms, (void*)arg,
                 sizeof(ctrlParms)) == 0)
@@ -2173,7 +2173,7 @@ static int board_ioctl( struct inode *inode, struct file *flip,
              }
              break;
 
-#endif   //AEI_VDSL_CUSTOMER_NCS
+#endif   //SUPPORT_GPL
 #ifdef AEI_VDSL_UPGRADE_DUALIMG_HISTORY_SPAD
     case BOARD_IOCTL_GET_DUAL_FW_VERSION:
             if (copy_from_user((void*)&ctrlParms, (void*)arg,
@@ -2537,7 +2537,7 @@ static int board_ioctl( struct inode *inode, struct file *flip,
                 ctrlParms.result = 0;
                 __copy_to_user((BOARD_IOCTL_PARMS*)arg, &ctrlParms, sizeof(BOARD_IOCTL_PARMS));
                 ret = 0;
-#if 0 //defined(AEI_VDSL_CUSTOMER_NCS)
+#if 0 //defined(SUPPORT_GPL)
             } else if(ctrlParms.strLen == 1){
                     SetGpio(23,0);
                     kerSysLedCtrl(kLedSes, kLedStateOff);
@@ -2739,8 +2739,8 @@ static void __init sesLed_mapGpio()
     {
         printk("SES: LED GPIO 0x%x is enabled\n", sesLed_gpio);
     }
-#if defined(AEI_VDSL_CUSTOMER_NCS) && defined(CONFIG_BCM96328)
-//#if defined(AEI_ADSL_CUSTOMER_QWEST_L5000)	
+#if defined(SUPPORT_GPL) && defined(CONFIG_BCM96328)
+//#if defined(CUSTOMER_NOT_USED_X)	
 	else
         printk("SES: LED GPIO sesLed_mapGpio error,sesLed_gpio=0x%lx\n",sesLed_gpio);
 
@@ -2764,7 +2764,7 @@ static void sesLed_ctrl(int action)
     if(sesLed_gpio == BP_NOT_DEFINED)
         return;
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
     {
     char status = ((action >> 8) & 0xff); /* extract status */
     char event = ((action >> 16) & 0xff); /* extract event */
@@ -2835,7 +2835,7 @@ static void sesLed_ctrl(int action)
     }
 
     kerSysLedCtrl(kLedSes, led);
-#endif //(AEI_VDSL_CUSTOMER_NCS)
+#endif //(SUPPORT_GPL)
 }
 
 static void __init ses_board_init()
@@ -3044,7 +3044,7 @@ void kerSysSetGpio(unsigned short bpGpio, GPIO_STATE_t state)
 
 static int restore_to_default_thread(void *arg)
 {
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
     printk("\n*** Restore to Factory Default Setting ***\n\n");       
     printk("\r\nThe system is being reset. Please wait...\r\n");
 
@@ -3067,13 +3067,13 @@ static int restore_to_default_thread(void *arg)
     return 0;
 }
 
-#if defined(AEI_VDSL_CUSTOMER_QWEST) || defined(AEI_VDSL_CUSTOMER_MTS)
+#if defined(CUSTOMER_NOT_USED_X) || defined(CUSTOMER_NOT_USED_X)
 static void reset_timer_func(unsigned long data)
 {
     if (!(GPIO->GPIOio & 0x0400000000))
     {
         count++;
-#if defined(AEI_VDSL_CUSTOMER_QWEST)
+#if defined(CUSTOMER_NOT_USED_X)
         if (count >= RESET_HOLD_TIME && count <= FACTORY_HOLD_TIME)
         {
             SetGpio(24, 1);
@@ -3084,7 +3084,7 @@ static void reset_timer_func(unsigned long data)
             printk("\r\nThe system is being reset. Hold it longer to get into bootloader...\r\n");
             kerSysMipsSoftReset();
         }
-#elif defined(AEI_VDSL_CUSTOMER_MTS)
+#elif defined(CUSTOMER_NOT_USED_X)
         if (count >= (RESET_HOLD_TIME/2) && count < RESET_HOLD_TIME)
         {
             SetGpio(24, 1);
@@ -3133,9 +3133,9 @@ static void reset_timer_func(unsigned long data)
 
     return;
 }
-#elif defined(AEI_VDSL_CUSTOMER_TELUS)
+#elif defined(SUPPORT_GPL)
 
-#if defined(AEI_VDSL_CUSTOMER_SASKTEL)
+#if defined(CUSTOMER_NOT_USED_X)
 /* SASKTEL requirement: hold time < 10s for reboot, > 10s for factory reset */
 static void reset_timer_func(unsigned long data)
 {
@@ -3225,20 +3225,20 @@ static void reset_timer_func(unsigned long data)
 
     return;
 }
-#endif /* AEI_VDSL_CUSTOMER_SASKTEL */
+#endif /* CUSTOMER_NOT_USED_X */
 #endif
 
 static irqreturn_t reset_isr(int irq, void *dev_id)
 {
     printk("\n*** ");
 
-#if defined(AEI_VDSL_CUSTOMER_QWEST) || defined(AEI_VDSL_CUSTOMER_MTS) || defined(AEI_VDSL_CUSTOMER_TELUS)
+#if defined(CUSTOMER_NOT_USED_X) || defined(CUSTOMER_NOT_USED_X) || defined(SUPPORT_GPL)
     /* Create a timer which fires every seconds */
     pTimer = &reset_timer;
     init_timer(pTimer);
     pTimer->function = reset_timer_func;
     pTimer->data = 0;
-#if defined (AEI_VDSL_CUSTOMER_TELUS)
+#if defined (SUPPORT_GPL)
     rirq = irq;
 #endif
     /* Start the timer */
@@ -3436,7 +3436,7 @@ static int proc_set_bootimage_param(struct file *f, const char *buf, unsigned lo
 
 #endif
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
 static int proc_get_other_param(char *page, char **start, off_t off, int cnt, int *eof, void *data)
 {
     int i = 0;
@@ -3507,7 +3507,7 @@ static int add_proc_files(void)
     static int BootImage[2] = {offset(NVRAM_DATA, szBootline), NVRAM_BOOTLINE_LEN};
 #endif
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
     static int Serial_num[2] = {offset(NVRAM_DATA, ulSerialNumber), 32};
     static int Wpa_key[2] = {offset(NVRAM_DATA, wpaKey), 32};
     static int Wps_pin[2] = {offset(NVRAM_DATA,wpsPin), 32};
@@ -3567,7 +3567,7 @@ static int add_proc_files(void)
 
 #endif
 
-#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(SUPPORT_GPL)
     p1 = create_proc_entry("Serial_num", 0644, p0);
 
     if (p1 == NULL)
@@ -4184,7 +4184,7 @@ EXPORT_SYMBOL(BpGetVoip1LedGpio);
 EXPORT_SYMBOL(BpGetDectLedGpio);
 EXPORT_SYMBOL(BpGetMoCALedGpio);
 EXPORT_SYMBOL(BpGetMoCAFailLedGpio);
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 EXPORT_SYMBOL(BpGetUsbLedGpio);
 EXPORT_SYMBOL(BpGetBootloaderPowerOnLedGpio);
 EXPORT_SYMBOL(BpGetBootloaderStopLedGpio);
@@ -4194,8 +4194,8 @@ EXPORT_SYMBOL(BpGetHpnaChipSelect);
 EXPORT_SYMBOL(BpGetWirelessSesExtIntr);
 EXPORT_SYMBOL(BpGetWirelessSesLedGpio);
 EXPORT_SYMBOL(BpGetWirelessFailSesLedGpio);
-#if defined(AEI_VDSL_CUSTOMER_NCS) && defined(CONFIG_BCM96328)
-//#if defined(AEI_ADSL_CUSTOMER_QWEST_L5000)
+#if defined(SUPPORT_GPL) && defined(CONFIG_BCM96328)
+//#if defined(CUSTOMER_NOT_USED_X)
 EXPORT_SYMBOL(BpGetWirelessSesLedGpiofail);
 #endif/*CUSTOMER_ACTIONTEC*/
 EXPORT_SYMBOL(BpGetWirelessFlags);
@@ -4208,7 +4208,7 @@ EXPORT_SYMBOL(BpGetExtAFEResetGpio);
 EXPORT_SYMBOL(BpGetExtAFELDPwrGpio);
 EXPORT_SYMBOL(BpGetExtAFELDModeGpio);
 EXPORT_SYMBOL(BpGet6829PortInfo);
-#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_GPL
 EXPORT_SYMBOL(SetGpio);
 #if !defined (CONFIG_BCM96328)
 EXPORT_SYMBOL(kerSysGetDslDatapump);

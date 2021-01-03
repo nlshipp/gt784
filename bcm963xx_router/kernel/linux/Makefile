@@ -348,7 +348,7 @@ LINUXINCLUDE    := -Iinclude \
                    -I$(srctree)/arch/$(hdr-arch)/include               \
                    -include include/linux/autoconf.h
 
-ifneq ($(strip $(AEI_VDSL_CUSTOMER_NCS)),)
+ifneq ($(strip $(SUPPORT_GPL)),)
 ifneq ($(INC_BRCMDRIVER_PUB_PATH),)
 LINUXINCLUDE += -I$(INC_BRCMDRIVER_PUB_PATH)/bcm963xx
 endif
@@ -579,7 +579,7 @@ KBUILD_CFLAGS	+= -pg
 endif
 
 # use actiontec macro in kernel
-ifneq ($(strip $(AEI_VDSL_CUSTOMER_NCS)),)
+ifneq ($(strip $(SUPPORT_GPL)),)
 KBUILD_CFLAGS	+= $(ACTION_TEC_DFLAGS)
 endif
 
