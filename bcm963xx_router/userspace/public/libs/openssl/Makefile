@@ -26,17 +26,14 @@ SHLIB_MINOR=9.7
 SHLIB_EXT=.so.$(SHLIB_MAJOR).$(SHLIB_MINOR)
 PLATFORM=linux-mips
 
-#OPTIONS = no-krb5 no-hw shared no-bf no-cast no-md4 no-mdc2 no-ripemd no-rc2 no-krb5 no_dsa no_ec 
-ifneq ($(strip $(BUILD_802_1X)),)
-OPTIONS=no-krb5 no-hw shared no-threads no-zlib no-bf no-cast no-mdc2 no-ripemd no-krb5  no_ec no_speed
+ifneq ($(strip $(AEI_VDSL_CUSTOMER_NCS)),)
+OPTIONS = no-krb5 no-hw shared no-bf no-cast no-md4 no-mdc2 no-ripemd no-rc2 no-krb5 no_dsa no_ec
 else
-
+OPTIONS = no-krb5 no-hw shared no-bf no-cast no_md2 no-md4 no-mdc2 no-ripemd no-rc2 no-krb5 no_dsa no_ec
+endif
 ifeq ($(strip $(BUILD_HTTPD_SSL)),)
 OPTIONS += no_engine no_ocsp
 endif
-
-endif
-
 ifneq ($(strip $(BENCHMARKS_SMP)),y)
 OPTIONS += no-threads no-zlib no_speed
 endif
@@ -89,18 +86,13 @@ OPENSSLDIR=/usr/local/ssl
 #CC= cc
 #CFLAG= -DL_ENDIAN -DTERMIO -O3 -fomit-frame-pointer -m486 -Wall -Wuninitialized -DSHA1_ASM -DMD5_ASM -DRMD160_ASM
 #CFLAG= -DOPENSSL_NO_KRB5 -O
-
-ifneq ($(strip $(BUILD_802_1X)),)
 CFLAG= -fPIC -DOPENSSL_THREADS -D_REENTRANT -DDSO_DLFCN -DHAVE_DLFCN_H -DOPENSSL_NO_KRB5 -DOPENSSL_NO_HW -DB_ENDIAN -Os -fomit-frame-pointer -Wall
-CFLAG+= -DOPENSSL_NO_IDEA  -DOPENSSL_NO_BF -DOPENSSL_NO_CAST -DOPENSSL_NO_RIPEMD -DOPENSSL_NO_MDC2 -DOPENSSL_NO_EC -DOPENSSL_NO_SPEED
-CFLAG += $(BRCM_WERROR_CFLAGS)
-else
-
-CFLAG= -fPIC -DOPENSSL_THREADS -D_REENTRANT -DDSO_DLFCN -DHAVE_DLFCN_H -DOPENSSL_NO_KRB5 -DOPENSSL_NO_HW -DB_ENDIAN -Os -fomit-frame-pointer -Wall
+ifneq ($(strip $(AEI_VDSL_CUSTOMER_NCS)),)
 CFLAG+= -DOPENSSL_NO_IDEA  -DOPENSSL_NO_BF -DOPENSSL_NO_CAST -DOPENSSL_NO_MD4 -DOPENSSL_NO_RIPEMD -DOPENSSL_NO_MDC2 -DOPENSSL_NO_RC2 -DOPENSSL_NO_DSA -DOPENSSL_NO_EC
-CFLAG += $(BRCM_WERROR_CFLAGS)
+else
+CFLAG+= -DOPENSSL_NO_IDEA  -DOPENSSL_NO_BF -DOPENSSL_NO_CAST -DOPENSSL_NO_MD2 -DOPENSSL_NO_MD4 -DOPENSSL_NO_RIPEMD -DOPENSSL_NO_MDC2 -DOPENSSL_NO_RC2 -DOPENSSL_NO_DSA -DOPENSSL_NO_EC
 endif
-
+CFLAG += $(BRCM_WERROR_CFLAGS)
 ifeq ($(strip $(BUILD_HTTPD_SSL)),)
 CFLAG+= -DOPENSSL_NO_ENGINE -DOPENSSL_NO_OCSP
 CFLAG+= -DOPENSSL_NO_RC5 -DOPENSSL_NO_ERR -DOPENSSL_NO_SSL2 
@@ -112,6 +104,9 @@ ifneq ($(strip $(BENCHMARKS_SMP)),y)
 CFLAG+= -DOPENSSL_NO_SPEED
 endif
 
+ifneq ($(strip $(AEI_VDSL_CUSTOMER_NCS)),)
+CFLAG+= $(ACTION_TEC_DFLAGS)
+endif
 
 #mwang: really should put this in LDFLAGS, but the app/Makefile does not have LDFLAG
 CFLAG += -Wl,-rpath,/lib:/lib/public
@@ -249,15 +244,20 @@ DIRS=   crypto fips ssl $(SHLIB_MARK) sigs apps tools
 SHLIBDIRS= crypto ssl
 
 # dirs in crypto to build
+ifneq ($(strip $(AEI_VDSL_CUSTOMER_NCS)),)
 SDIRS=  objects \
 	md2 md5 sha hmac \
 	des dh\
 	bn rsa dso \
 	buffer stack rand err \
 	evp asn1 pem x509 lhash bio txt_db x509v3 conf pkcs7 pkcs12 comp ui 
-
-ifneq ($(strip $(BUILD_802_1X)),)
-SDIRS+= rc2 md4 rc4 dsa
+else
+SDIRS=  objects \
+	md5 sha hmac \
+	des dh\
+	bn rsa dso \
+	buffer stack rand err \
+	evp asn1 pem x509 lhash bio txt_db x509v3 conf pkcs7 pkcs12 comp ui 
 endif
 
 # if BUILD_TR69C_SSL is enabled then add rc4
@@ -769,7 +769,7 @@ distclean: clean
 	rm -rf include INSTALL* install.com LICENSE MacOS Makefile.org makevms.com
 	rm -rf ms NEWS openssl.* os2 perl PROBLEMS README* shlib test times
 	rm -rf tools util VMS
-#	-find apps -type f -a ! -name progs.h -exec rm -f {} \;
+	-find apps -type f -a ! -name progs.h -exec rm -f {} \;
 	rm -f apps/md4.c
 	rm -rf apps/demoCA apps/set
 	-find crypto -type f -a ! \( -name opensslconf.h -o -name err_all.c \) -exec rm -f {} \;

@@ -545,7 +545,7 @@ static int __init serial_bcm63xx_init(void)
 	int ret;
 	int i;
 
-	printk(KERN_INFO "Serial: BCM63XX driver $Revision: 3.00 $\n");
+	printk(KERN_INFO "Serial: BCM63XX driver $Revision: 1.1.1.1 $\n");
 
     ret = uart_register_driver(&bcm63xx_reg);
 	if (ret >= 0) {
@@ -566,5 +566,5 @@ static void __exit serial_bcm63xx_exit(void)
 module_init(serial_bcm63xx_init);
 module_exit(serial_bcm63xx_exit);
 
-MODULE_DESCRIPTION("BCM63XX serial port driver $Revision: 3.00 $");
+MODULE_DESCRIPTION("BCM63XX serial port driver $Revision: 1.1.1.1 $");
 MODULE_LICENSE("GPL");

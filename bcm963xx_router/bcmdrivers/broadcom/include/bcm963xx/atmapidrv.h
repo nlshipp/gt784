@@ -254,7 +254,11 @@ typedef struct
 #define RM_UNUSED_BYTES_OFFSET              2
 #define RM_UNUSED_BYTES_LEN                 46
 #define OAM_LOOPBACK_DEFAULT_REPETITION     1
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+#define OAM_LOOPBACK_DEFAULT_TIMEOUT        5000    /* msec */
+#else
 #define OAM_LOOPBACK_DEFAULT_TIMEOUT        1000    /* msec */
+#endif
 #define OAM_LOOPBACK_RX_TIMEOUT_INTERVAL    10     /* check receive of OAM response every 10 ms */
 
 #if defined(__cplusplus)

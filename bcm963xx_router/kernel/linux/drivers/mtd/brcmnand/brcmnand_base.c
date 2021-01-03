@@ -5694,34 +5694,7 @@ int brcmnand_scan(struct mtd_info *mtd , int maxchips )
     // pbase is the physical address of the "logical" start of flash. Logical
     // means how Linux sees it,  and is given by the partition table defined in
     // bcm7xxx-nand.c. The "physical" start of the flash is always at 1FC0_0000
-#if defined(CONFIG_BCM96368)
-    if (chip->chipSize <= (256<<20))
-    {
-        if( ((GPIO->StrapBus & MISC_STRAP_BUS_BOOT_SEL_MASK) >>
-            MISC_STRAP_BUS_BOOT_SEL_SHIFT) == MISC_STRAP_BUS_BOOT_NAND )
-            chip->pbase = PHYS_FLASH_BASE + BOOT_OFFSET;
-        else
-            chip->pbase = 0x1e000000 - chip->chipSize;
-    }
-    else // 512MB and up
-        chip->pbase = 0; 
-#elif defined(CONFIG_BCM96362) || defined(CONFIG_BCM96328) || defined(CONFIG_BCM96816)
-    if (chip->chipSize <= (256<<20))
-    {
-        if( ((MISC->miscStrapBus & MISC_STRAP_BUS_BOOT_SEL_MASK) >>
-            MISC_STRAP_BUS_BOOT_SEL_SHIFT) == MISC_STRAP_BUS_BOOT_NAND )
-            chip->pbase = PHYS_FLASH_BASE + BOOT_OFFSET;
-        else
-            chip->pbase = 0x1e000000 - chip->chipSize;
-    }
-    else // 512MB and up
-        chip->pbase = 0; 
-#else
-    if (chip->chipSize <= (256<<20))
-        chip->pbase = 0x20000000 - chip->chipSize;
-    else // 512MB and up
-        chip->pbase = 0; 
-#endif
+    chip->pbase = 0; 
 
     // vbase is the address of the flash cache array
     // Start of Buffer Cache

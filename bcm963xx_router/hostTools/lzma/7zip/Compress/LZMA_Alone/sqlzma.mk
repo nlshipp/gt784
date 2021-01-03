@@ -4,7 +4,7 @@
 #
 # LICENSE follows the described one in lzma.txt.
 
-# $Id: sqlzma.mk,v 1.23 2006/11/27 03:54:58 jro Exp $
+# $Id: sqlzma.mk,v 1.1.1.1 2010/06/14 22:49:40 tliu Exp $
 
 ifndef Sqlzma
 $(error Sqlzma is not defined)

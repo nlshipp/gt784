@@ -17,7 +17,7 @@
  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#define RCSID	"$Id: main.c,v 1.3.2.1 2011/02/25 16:58:04 yzhang Exp $"
+#define RCSID	"$Id: main.c,v 1.3 2011/06/09 09:43:40 lzhang Exp $"
 
 #include <stdio.h>
 #include <ctype.h>
@@ -79,8 +79,6 @@ extern int  isPppoa;  /* set in options.c */
 #include "tsl_common.h"
 #include "ctl_msg.h"
 #include "dbussend_msg.h"
-
-static dbussend_hdl_st *ctlMsgHandle=NULL;
 #endif
 
 static const char rcsid[] = RCSID;
@@ -351,10 +349,6 @@ main(argc,argv)
          cmsLog_error("cmsMsg_init failed, ret=%d", ret);
          exit(EXIT_FATAL_ERROR);
       }
-
-#ifdef AEI_CONTROL_LAYER
-		  ctlMsgHandle = dbussend_init(); 
-#endif
 
       /* do this only for pppoe */
       if (!isPppoa)
@@ -697,9 +691,6 @@ main(argc,argv)
 	t = need_holdoff? holdoff: 0;
 	if (holdoff_hook)
 	    t = (*holdoff_hook)();
-#if defined(CUSTOMER_QNCS)/*NCS require a delay for a random interval between 0 and 3 minutes*/
-	t = rand()%(60*3);
-#endif
 	if (t > 0) {
 	    new_phase(PHASE_HOLDOFF);
 	    TIMEOUT(holdoff_end, NULL, t);
@@ -2470,9 +2461,11 @@ void sendCtlPppEventMessage(const SINT32 state,
                                     const char *lastconnectionerror)
 
 {
-   char buf[sizeof(int) + sizeof(CtlPppoeStateChangeMsgBody)]={0};
+   char buf[sizeof(CtlMsgHeader) + sizeof(CtlPppoeStateChangeMsgBody)]={0};
    CtlMsgHeader *msg=(CtlMsgHeader *) buf;
    CtlPppoeStateChangeMsgBody *pppoeBody = (CtlPppoeStateChangeMsgBody *) (msg->buffer);
+   static dbussend_hdl_st *ctlMsgHandle=NULL;
+
 
    if (console)
       return;
@@ -2480,6 +2473,8 @@ void sendCtlPppEventMessage(const SINT32 state,
    cmsLog_debug("pppd sendPppEventMessage: state=%d, lastConnetionError=%s", state, lastconnectionerror);
 
    fprintf(stderr, "%s@%d===>>>pppd sendPppEventMessage: state=%d, lastConnetionError=%s", __FUNCTION__,__LINE__,state, lastconnectionerror);
+   
+   ctlMsgHandle = dbussend_init(); 
 
    pppoeBody->pppState = state;
    
@@ -2513,7 +2508,7 @@ void sendCtlPppEventMessage(const SINT32 state,
    snprintf(pppoeBody->ppplastconnecterror, sizeof(pppoeBody->ppplastconnecterror), lastconnectionerror);         
 
 	msg->data_length=sizeof(int) + sizeof(CtlPppoeStateChangeMsgBody);      
-	  if (dbussend_sendmsg(ctlMsgHandle, CTL_MSG_TYPE(CTL_MSG_PPPOE_STATE_CHANGED), NULL, msg, sizeof(CtlPppoeStateChangeMsgBody)) < 0)
+	  if (dbussend_sendmsg(ctlMsgHandle, CTL_MSG_TYPE(CTL_MSG_PPPOE_STATE_CHANGED), NULL, msg, sizeof(CtlMsgHeader) + sizeof(CtlPppoeStateChangeMsgBody)) < 0)
 	  {
 		  tsl_printf("could not send out CMS_MSG_PPP_STATE_CHANGED\n");
 		  dbussend_uninit(ctlMsgHandle);
@@ -2522,7 +2517,7 @@ void sendCtlPppEventMessage(const SINT32 state,
 	  {
 		   tsl_printf("sent out CMS_MSG_PPP_STATE_CHANGED\n");
 	  }
-
+	  dbussend_uninit(ctlMsgHandle);	  
 	  return;
 
 }

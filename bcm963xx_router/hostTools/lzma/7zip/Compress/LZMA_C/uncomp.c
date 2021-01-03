@@ -5,7 +5,7 @@
  * LICENSE follows the described one in lzma.txt.
  */
 
-/* $Id: uncomp.c,v 1.30 2007/03/04 12:45:53 jro Exp $ */
+/* $Id: uncomp.c,v 1.1.1.1 2010/06/14 22:49:40 tliu Exp $ */
 
 /* extract some parts from lzma443/C/7zip/Compress/LZMA_C/LzmaTest.c */
 
@@ -214,7 +214,7 @@ module_exit(sqlzma_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Junjiro Okajima <hooanon05 at yahoo dot co dot jp>");
-MODULE_VERSION("$Id: uncomp.c,v 1.30 2007/03/04 12:45:53 jro Exp $");
+MODULE_VERSION("$Id: uncomp.c,v 1.1.1.1 2010/06/14 22:49:40 tliu Exp $");
 MODULE_DESCRIPTION("LZMA uncompress for squashfs. "
 		   "Some functions for squashfs to support LZMA and "
 		   "a tiny wrapper for LzmaDecode.c in LZMA SDK from www.7-zip.org.");

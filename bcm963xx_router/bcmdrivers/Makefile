@@ -172,6 +172,10 @@ ifneq ($(CONFIG_BCM_TRNG),)
   obj-$(CONFIG_BCM_TRNG) += opensource/char/trng/$(LN_NAME)/
 endif
 
+ifneq ($(CONFIG_BCM_WATCHDOG),)
+  LN_DRIVER_DIRS +=ln -sn impl$(CONFIG_BCM_WATCHDOG_IMPL) broadcom/char/watchdog/$(LN_NAME);
+  obj-$(CONFIG_BCM_WATCHDOG) += broadcom/char/watchdog/$(LN_NAME)/
+endif
 
 .PHONY : applinks symlinks clean
 

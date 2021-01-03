@@ -11,10 +11,10 @@
 #include <stdarg.h>
 #include <signal.h>
 #include <syslog.h>
-
+#include <sys/stat.h>
 #include "dproxy.h"
 #include "dns_decode.h"
-//#include "cache.h"
+#include "cache.h"
 #include "conf.h"
 #include "dns_list.h"
 #include "dns_construct.h"
@@ -33,65 +33,14 @@ int dns_wanup = 0;
 /* CMS message handle */
 void *msgHandle=NULL;
 int msg_fd;
-/* write web log if enableWebLog = 1 */
-int enableWebLog = 0 ;
-
-#ifdef CUSTOMER_VERIZON
-extern char primary_ns[CMS_IPADDR_LENGTH];
-extern char secondary_ns[CMS_IPADDR_LENGTH];
-static int sec_flag =0;
-static int timeout_flag = 0;
-void timeOutReq(dns_request_t * ptr);
-void init_time();
-void init_sigaction();
-void check_dns_timeout();
-void set_timeout_flag(int signo);
-
-struct wba_url {
-       char url[32];
-       char ip[32];
-};
-
-#if ACTION_TEC_WBA_DPROXY
-int wba_flag = 0;
-#endif
-
-#endif
-
-
-#ifdef CUSTOMER_ATT_DIAGNOSTIC
-int diagnostic_flag = 0;
-#endif
-
 
 #ifndef DNS_PROBE
 extern time_t dns_recover_time;
 #endif
 extern void dns_probe_print(void);
-
-#ifdef ACTION_TEC_DNS_CACHE
+#ifdef AEI_VDSL_DNS_CACHE
 time_t syn_time=0;
 int enable_dns_cache=0;
-#endif
-
-#ifdef ACTION_TEC_DNS_CACHE
-static int dns_cache_enabled()
-{
-   time_t t=time(NULL);
-   if (t-syn_time>3)
-   {
-	syn_time=t;
-//   	struct stat stats;
-    FILE* fp = NULL;
-	if (NULL != (fp = fopen("/var/dns_cache", "r")))
-  // 	if(stat("/var/dns_cache", &stats) == 0)
-	  enable_dns_cache=1;
-	else
-	  enable_dns_cache=0;
-   }
-   return enable_dns_cache;
-   
-}
 #endif
 
 /*****************************************************************************/
@@ -109,6 +58,26 @@ int is_connected()
   //BRCM
   return dns_wanup;
 }
+/*****************************************************************************/
+
+#if defined(AEI_VDSL_DNS_CACHE) 
+int dns_cache_enabled()
+{
+   time_t t=time(NULL);
+   if (t-syn_time>3)
+   {
+	syn_time=t;
+   	struct stat stats;
+   	if(stat("/var/dns_cache", &stats) == 0)
+	  enable_dns_cache=1;
+	else
+	  enable_dns_cache=0;
+   }
+   return enable_dns_cache;
+   
+}
+#endif
+
 /*****************************************************************************/
 int dns_init()
 {
@@ -179,48 +148,15 @@ int dns_init()
   dns_dyn_hosts_add();
 #endif
 
-  //cache_purge( config.purge_time );
+#if defined(AEI_VDSL_DNS_CACHE) 
+  cache_purge( config.purge_time );
+#endif
 
   //BCM
   dns_wanup = dns_probe_init();
-
+  
   return 1;
 }
-
-
-void get_lanip (char *ip, int len)
-{
-  FILE *fp;
-  char buffer[256] = {0};
-  char host_name[128] = {0};
-  char ip_address[32] = {0};
-  int  i =0;
-
-  fp = fopen("/var/hosts", "r");
-  if (!fp)
-     return;
-
-  memset (buffer, 0, sizeof(buffer));
-  while (fgets(buffer, sizeof(buffer)-1, fp) != NULL) 
-  {  
-     i++;
-     memset(ip_address, 0, sizeof(ip_address));
-     memset(host_name, 0, sizeof(host_name));    
-     sscanf(buffer, "%s %s", ip_address, host_name);
-     if (i == 2)
-     {
-         if ( (strlen (host_name) > 0) && (strlen(ip_address) > 0) )
-         {
-             strncpy (ip, ip_address, len);
-         }
-         break;
-     }
-     memset (buffer, 0, sizeof(buffer));
-  }
-  fclose (fp);
-  return;
-}
-
 /*****************************************************************************/
 void dns_handle_new_query(dns_request_t *m)
 {
@@ -231,34 +167,35 @@ void dns_handle_new_query(dns_request_t *m)
   /*BRCM: support IPv4 only*/
   if( m->message.question[0].type == A /*|| m->message.question[0].type == AAA*/){
       /* standard query */
-     //retval = cache_lookup_name( m->cname, m->ip );
-
-#ifdef ACTION_TEC_DNS_CACHE
-      if(!dns_cache_enabled())
-          retval = 0;
-      else{
-#endif
+      //retval = cache_lookup_name( m->cname, m->ip );
       
 #ifdef DNS_DYN_CACHE
-      if ((dns_entry = dns_dyn_find(m))) {
-        strcpy(m->ip, inet_ntoa(dns_entry->addr));
-        m->ttl = abs(dns_entry->expiry - time(NULL));
-        retval = 1;
-      }
-      else
-        retval = 0;
+#if defined(AEI_VDSL_DNS_CACHE) 
+      retval = cache_lookup_name( m->cname, m->ip );
+      if(retval !=1 && !dns_cache_enabled())
+          retval = 0;
+      else{
+        if(1 != retval) {
+      		if ((dns_entry = dns_dyn_find(m))) {
+        		strcpy(m->ip, inet_ntoa(dns_entry->addr));
+        		m->ttl = abs(dns_entry->expiry - time(NULL));
+        		retval = 1;
+      		}
+      		else
+        		retval = 0;
+	    }
+      	}
+#endif	
 #endif
-
-#ifdef ACTION_TEC_DNS_CACHE
-      }
-#endif
-
-
   }else if( m->message.question[0].type == PTR ) {
       /* reverse lookup */
       //retval = cache_lookup_ip( m->ip, m->cname );
 
 #ifdef DNS_DYN_CACHE
+#ifdef AEI_VDSL_DNS_CACHE
+      if(!dns_cache_enabled())
+          retval = 0;
+      else{
       if ((dns_entry = dns_dyn_find(m))) {
         strcpy(m->cname, dns_entry->cname);
         m->ttl = abs(dns_entry->expiry - time(NULL));
@@ -266,6 +203,8 @@ void dns_handle_new_query(dns_request_t *m)
       }
       else 
         retval = 0;
+      	}
+#endif	
 #endif
 
   }
@@ -277,127 +216,44 @@ void dns_handle_new_query(dns_request_t *m)
       retval = 0;
   }
 
-#ifdef CUSTOMER_ACTIONTEC
-  if(retval == 0){
-  
-	    FILE *fp;
-	    char hostname[40] = {0};
-	    char hostip[80] = {0};
-	    char tmp_buf[256] = {0};
-	    #define HOSTFILE "/var/hosts"
-	    
-	    if(fp = fopen(HOSTFILE, "r"))
-	    {
-		while(fgets(tmp_buf, sizeof(tmp_buf), fp))
-		{
-			sscanf(tmp_buf, "%s %s \n",hostip, hostname);
-			if(!strcmp(hostname, m->cname))
-			{
-			    strcpy(m->ip, hostip);
-			    retval = 1;
-			    break;
-			}
-			else
-			{
-			    retval = 0;
-			}
-		}
-                fclose (fp);
-	    }
-  
-  
-  
-  }
-
-#endif
-
-
-#if defined(CUSTOMER_VERIZON)  && defined(ACTION_TEC_WBA_DPROXY)
-  do{
-	  char flag[4]={0,0,0,0};
-	  //char *verizon_reg_url[2][]={
-          struct wba_url verizon_reg_url[] ={ 
-          {"activatemydsl.verizon.net", "206.46.232.55"},
-          {"activatemyfios.verizon.net", "206.46.232.56"},
-          {"wbadownload.verizon.net", "206.46.232.57"},
-          {"activate.verizon.net", "206.46.232.49"},
-          {"netservices.verizon.net", "206.46.232.44"},
-          {"sso.verizon.net", "206.46.232.47"},
-          {"dcshm.verizon.net", "206.46.230.68"},
-          {"dcs.verizon.net", "206.46.230.132"},
-          {"noaccess.verizon.net", "206.46.230.148"}
-	  };
-	  cmsPsp_get("wba_flag", flag, 4);
-          //printf("--flag=[%d] %d\n", flag[0], atoi(flag[0]));
-          wba_flag = 0;
-	  if(flag[0] == 0){/*WBA status is disable*/
-          wba_flag = 1;
-		  int ii;
-		  int count = sizeof(verizon_reg_url)/sizeof(struct wba_url);
-                  //printf("--count=%d\n", count);
-		  for(ii = 0 ;ii < count; ii++){
-			  if( strcmp(m->cname,verizon_reg_url[ii].url) == 0)
-                          {
-                              strcpy(m->ip, verizon_reg_url[ii].ip);
-                              //printf("--return ip as %s\n", verizon_reg_url[ii].ip);
-                              retval = 1;
-				  break;
-                          }
-		  }
-#if 1 
-		  if(ii == count ){ /*have not found one matched*/
-			strcpy(m->ip, "206.46.232.55");
-                        //printf("--return verizon ip 206.46.232.55\n");
-			retval = 1;
-		  }
-#endif
-	  }
-  }while(0);
-#endif
-
-
   debug(".......... %s ---- %s\n", m->cname, m->ip );
-  //printf("--.......... %s ---- %s retval=%d\n", m->cname, m->ip, retval );
- 
-#ifdef CUSTOMER_ATT_DIAGNOSTIC
-  diagnostic_flag = 1;  // set to 1 just for demo purpose
-#endif
   
   switch( retval )
   {
      case 0:
 
-     debug("config.name_server=%s is_connected=%d", config.name_server, is_connected());
+     debug("config.name_server=%s is_connected=%d\n", config.name_server, is_connected());
      inet_aton( config.name_server, &in );
 
-     if( is_connected()){
-        debug("Adding to list-> id: %d\n", m->message.header.id);
-        dns_list_add(m);
-        /* relay the query untouched */
-        debug("sending query out on dns_querysock\n");
+     if( is_connected())
+     {
+	if(strlen(m->cname)>0)
+        {
+            debug("---------------Adding to list-> id: %d\n", m->message.header.id);
+            dns_list_add(m);
+            /* relay the query untouched */
+            debug("sending query out on dns_querysock\n");
+	}
+        dns_write_packet( dns_querysock, in, PORT, m ); // send dns packet only wan up
      }else{
-#ifdef CUSTOMER_ATT_DIAGNOSTIC
-       char lan_ip[64];
-       memset (lan_ip, 0, sizeof(lan_ip));
-       get_lanip(lan_ip, sizeof(lan_ip)-1);
-       if (strlen (lan_ip) > 0)
-          strcpy(m->ip, lan_ip);
-       else
-          strcpy(m->ip, "192.168.0.1");
-       diagnostic_flag = 1;
-       dns_construct_reply( m );
-       dns_write_packet( dns_sock, m->src_addr, m->src_port, m );
-       return;
+
+#ifdef AEI_VDSL_CUSTOMER_TELUS
+            //
+            // do nothing here if wan is not up for Telus V2000H
+            //
+#else
+            inet_aton("128.9.0.107", &in);
+            dns_write_packet(dns_sock, in, PORT, m);				
+            dns_write_packet( dns_querysock, in, PORT, m );
 #endif
-        debug("wan not up, No DNS information: send to magic ppp addr.\n");
      }
-     dns_write_packet( dns_querysock, in, PORT, m );
+
      break;
 
      case 1:
         dns_construct_reply( m );
         dns_write_packet( dns_sock, m->src_addr, m->src_port, m );
-        debug("Cache hit\n");
+        debug("---------------Cache hit\n");
         break;
      default:
         debug("Unknown query type: %d\n", m->message.question[0].type );
@@ -422,21 +278,22 @@ void dns_handle_request(dns_request_t *m)
           dns_write_packet( dns_sock, ptr->src_addr, ptr->src_port, m );
           debug("Replying with answer from %s, id 0x%04x\n", inet_ntoa( m->src_addr), m->message.header.id);
           dns_list_unarm_requests_after_this( ptr );  // BRCM
-          dns_list_remove( ptr );         
-      #if 0 //BRCM: Don't write to cache for saving device resource.
+          dns_list_remove( ptr );    
+	    
+      #if 0 //BRCM: Don't write to cache for saving device resource.	
           if( m->message.header.flags.f.rcode == 0 ){ // lookup was succesful
-              debug("Cache append: %s ----> %s\n", m->cname, m->ip );
+              printf("------------Cache append: %s ----> %s\n", m->cname, m->ip );
               cache_name_append( m->cname, m->ip );
           }
       #endif
 #ifdef DNS_DYN_CACHE
-          if( m->message.question[0].type != AAA) /* No cache for IPv6 */
-		  {
-#ifdef ACTION_TEC_DNS_CACHE
-			  if(dns_cache_enabled())
+#ifdef AEI_VDSL_DNS_CACHE
+      if(dns_cache_enabled())
 #endif
-				dns_dyn_cache_add(m);
-		  }
+          if( m->message.question[0].type != AAA) /* No cache for IPv6 */
+          {
+             		dns_dyn_cache_add(m);
+          }
 #endif
           //BRCM
           dns_probe_activate(m->src_addr.s_addr);
@@ -509,14 +366,7 @@ static void processCmsMsg(void)
        break;
 
 #endif /* SUPPORT_DEBUG_TOOLS */
-    
-	 /*
-	  * change the web activity log status 
-	  */
-	 case CMS_MSG_DNSPROXY_DISABLE_WEBLOG:
-	   enableWebLog = 1 ;       
-       break;
- 
+
     default:
       cmsLog_error("unrecognized msg 0x%x", msg->type);
       break;
@@ -530,9 +380,6 @@ static void processCmsMsg(void)
   }
 }
 
-
-FILE* g_file;
-
 /*****************************************************************************/
 int dns_main_loop()
 {
@@ -541,17 +388,10 @@ int dns_main_loop()
     int next_probe_time = 0;
     int retval;
     dns_request_t m;
-    dns_request_t *ptr, *next;	
-#ifdef CUSTOMER_VERIZON
-    struct in_addr in;
-    int dns_sock_flag = 0;
-#endif
-    /* open log file */
-    g_file=fopen("/var/webActivityLog", "w");
+    dns_request_t *ptr, *next;
 
-#ifdef CUSTOMER_VERIZON
-    sleep(10);
-    init_sigaction();
+#if defined(AEI_VDSL_DNS_CACHE) 
+    int purge_time = PURGE_TIMEOUT;
 #endif
     while( !dns_main_quit )
     {
@@ -561,7 +401,6 @@ int dns_main_loop()
       //is no pending requests and not in probing procedure, timeout will
       //be 0, causing select() to wait forever until received packets on
       //any sockets.
-#ifndef CUSTOMER_VERIZON      
       int next_request_time = dns_list_next_time();
       if (next_request_time) {
          if (next_request_time < next_probe_time || !next_probe_time) {
@@ -573,8 +412,10 @@ int dns_main_loop()
       } else {
          tv.tv_sec = next_probe_time;
       }
-
+	tv.tv_usec = 0;
       if (tv.tv_sec == 0) { /* To wait indefinitely */
+//	    tv.tv_sec = 1;
+//	    ptv = &tv;
          ptv = NULL;
          debug("\n\n=============select will wait indefinitely============");
       } else {
@@ -582,51 +423,42 @@ int dns_main_loop()
         ptv = &tv;
         debug("select timeout = %lu seconds", tv.tv_sec);
      }
-#else
-    tv.tv_sec = 10;
-    tv.tv_usec = 0;
-    ptv = &tv;
-    debug("select timeout = %lu seconds",tv.tv_sec);
-#endif
+
       /* now copy the main rfds in the active one as it gets modified by select*/
       active_rfds = rfds;
-      	
+
       retval = select( FD_SETSIZE, &active_rfds, NULL, NULL, ptv );
 
       if (retval){
          debug("received something");
+
          if (FD_ISSET(msg_fd, &active_rfds)) { /* message from ssk */
             debug("received cms message");
             processCmsMsg();
 
          } else if (FD_ISSET(dns_sock, &active_rfds)) { /* DNS message */
-            debug("received DNS message (LAN side)\n");
+            debug("received DNS message (LAN side)");
             /* data is now available */
-#ifdef CUSTOMER_VERIZON			
-			if(!dns_sock_flag){
-				dns_sock_flag = 1;	
-	    	    init_time();
-			}		  
-#endif			
             bzero(&m, sizeof(dns_request_t));
             //BRCM
             //dns_read_packet( dns_sock, &m );
-            if (dns_read_packet(dns_sock, &m) == 0) 
-                dns_handle_request( &m );
+            if (dns_read_packet(dns_sock, &m) == 0) {
+               dns_handle_request( &m );
+            }
 
          } else if (FD_ISSET(dns_querysock, &active_rfds)) {
-            debug("received DNS response (WAN side)\n");
+            debug("received DNS response (WAN side)");
             bzero(&m, sizeof(dns_request_t));
             if (dns_read_packet(dns_querysock, &m) == 0 && !dns_probe_response(&m))
-				dns_handle_request( &m );
+               dns_handle_request( &m );
          }
+
       } else { /* select time out */
-      	   time_t now = time(NULL);
-		   int doSwitch=0;
-#ifndef  CUSTOMER_VERIZON	   
-          debug("select timed out, next_request_time=%d next_probe_time=%d dns_recover_time=%d",
+         time_t now = time(NULL);
+         int doSwitch=0;
+#ifndef DNS_PROBE
+         debug("select timed out, next_request_time=%d next_probe_time=%d dns_recover_time=%d",
                 next_request_time, next_probe_time, dns_recover_time);
-#endif	
 
          /*
           * There could be several reasons for select timeout.
@@ -643,39 +475,43 @@ int dns_main_loop()
          if (now >= dns_recover_time) {
             dns_probe_switchback();
          }
-		 ptr = dns_request_list;
-	 while (ptr) {
-		 next = ptr->next;
-		 if (ptr->expiry <= now) {
-			debug("removing expired request %p\n", ptr);
-		 
-			if (ptr->switch_on_timeout)
-			{
-				doSwitch = 1;
-				 /*
-				   * I don't see the point of sending an error reply to
-				   * the LAN client.  Why not just let it timeout.  It will
-				   * resend the request anyways, right?  Since the original
-				   * dproxy code did it, I'll leave it here.  mwang 8/31/09.
-				*/
-		 
-			   	dns_construct_error_reply(ptr);
-				dns_write_packet( dns_sock, ptr->src_addr, ptr->src_port, ptr );
-					   
-			 }
-			 dns_list_remove(ptr);
-		  }
-		  ptr = next;
-	 }
-#ifndef CUSTOMER_VERIZON	 
+#endif
+         ptr = dns_request_list;
+         while (ptr) {
+            next = ptr->next;
+
+            if (ptr->expiry <= now) {
+               debug("removing expired request %p\n", ptr);
+
+               if (ptr->switch_on_timeout)
+               {
+                  doSwitch = 1;
+                  /*
+                   * I don't see the point of sending an error reply to
+                   * the LAN client.  Why not just let it timeout.  It will
+                   * resend the request anyways, right?  Since the original
+                   * dproxy code did it, I'll leave it here.  mwang 8/31/09.
+                   */
+                  dns_construct_error_reply(ptr);
+                  dns_write_packet( dns_sock, ptr->src_addr, ptr->src_port, ptr );
+               }
+
+               dns_list_remove(ptr);
+            }
+
+            ptr = next;
+         }
+
 #ifndef DNS_PROBE
          if (doSwitch) {
-			 dns_probe_set_recover_time();
-	  }	
+            dns_probe_set_recover_time();
+         }
 #endif
-#endif
+
+
          /* purge cache */
-#if 0 //BRCM
+//#if 0 //BRCM
+#if defined(AEI_VDSL_DNS_CACHE) 
          purge_time--;
          if( !purge_time ){
              cache_purge( config.purge_time );
@@ -683,16 +519,11 @@ int dns_main_loop()
          }
 #endif
       } /* if (retval) */
-      //BRCM
-#ifdef CUSTOMER_VERIZON	  
-          if(timeout_flag)
-			 check_dns_timeout();
-#endif			 
-          next_probe_time = dns_probe();
-    }  /* while (!dns_main_quit) */
 
-    /* close web log file */
-    fclose(g_file);
+      //BRCM
+      next_probe_time = dns_probe();
+
+    }  /* while (!dns_main_quit) */
    return 0;
 }
 
@@ -869,104 +700,3 @@ int main(int argc, char **argv)
   return 0;
 }
 
-#ifdef CUSTOMER_VERIZON
-
-void init_time()
-{
-	struct itimerval value;
-	value.it_value.tv_sec = 2;
-	value.it_value.tv_usec = 0;
-	value.it_interval = value.it_value;
-	setitimer(ITIMER_REAL, &value, NULL);
-}
-
-void init_sigaction()
-{
-	struct sigaction tact;
-	tact.sa_handler = set_timeout_flag;
-	tact.sa_flags = 0;
-	sigemptyset(&tact.sa_mask);
-	sigaction(SIGALRM, &tact, NULL);
-}
-
-void set_timeout_flag(int signo)
-{
-	if(!timeout_flag)
-		timeout_flag = 1;
-}
-void check_dns_timeout()
-{
-	dns_request_t *ptr,*next;
-        time_t now = time(NULL);
-
-	ptr = dns_request_list;
-
-	while(ptr)
-	{
-	   next = ptr->next;
-	   if(!(ptr->message.header.flags.flags & 0x8000)){
-	   	if(strcmp(inet_ntoa( ptr->src_addr),"127.0.0.1")){
-		   debug("Replying with answer from %s, id 0x%04x\n", inet_ntoa( ptr->src_addr), ptr->message.header.id);	   
-		   if(now <= ptr->expiry){
-			if(now == ptr->timeout){
-				ptr->timeout = now + DNS_SERVER_TIMEOUT;
-				timeOutReq(ptr);
-			}else
-				debug("timeout value is %d",(ptr->timeout -now));
-		    }
-		   else{
-				debug("removing expired request %p\n", ptr);
-			        if (ptr->switch_on_timeout){
-				        dns_construct_error_reply(ptr);
-						dns_write_packet( dns_sock, ptr->src_addr, ptr->src_port, ptr );
-				  }
-				dns_list_remove(ptr);
-		  }
-	    }
-	   }
-	   ptr = next;
-	}
-	timeout_flag = 0;
-}
-//time out and send request again
-void timeOutReq(dns_request_t *ptr)
-{
-    time_t now = time(NULL);
-    int doSwitch=0;
-    int count = 0;
-    struct in_addr in;
-    if((ptr->pri_try_count + ptr->sec_try_count)>=(DNS_PROBE_MAX_TRY*DNS_SERVER_TIMEOUT))
-    {	//try 6 times ,then remove the request		
-		debug("removing try timeout request %p\n", ptr);
-		if (ptr->switch_on_timeout){
-		        dns_construct_error_reply(ptr);
-				dns_write_packet( dns_sock, ptr->src_addr, ptr->src_port, ptr );
-		  }
-		 dns_list_remove(ptr);	
-		 return;
-      }
-
-	if (primary_ns[0] &&
-		 !strcmp(config.name_server, primary_ns)){
-		if(ptr->pri_try_count >= DNS_PROBE_MAX_TRY){
-	        dns_probe_set_recover_time();
-		}
-		else {
-	        ptr->pri_try_count++;
-	        printf("Duplicate query to %s, send again %d\n", ptr->cname,ptr->pri_try_count);
-		     //strcpy(config.name_server,secondary_ns);
-	        inet_aton( config.name_server, &in );
-	        dns_write_packet( dns_querysock, in, PORT, ptr );	 
-		}
-	}
-    if (secondary_ns[0] &&
-	   !strcmp(config.name_server, secondary_ns)){
-		if(ptr->sec_try_count < DNS_PROBE_MAX_TRY){
-			ptr->sec_try_count++;
-		    printf("Duplicate query to %s, send secondary again %d\n", ptr->cname,ptr->sec_try_count);
-		    inet_aton( config.name_server, &in );
-		    dns_write_packet( dns_querysock, in, PORT,ptr );    
-		}
-	} 
-}
-#endif

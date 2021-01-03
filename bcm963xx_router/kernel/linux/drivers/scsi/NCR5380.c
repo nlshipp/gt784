@@ -28,6 +28,9 @@
 
 /*
  * $Log: NCR5380.c,v $
+ * Revision 1.1.1.1  2010/06/14 22:49:14  tliu
+ *  broadcom SDK 4.6.2
+ *
 
  * Revision 1.10 1998/9/2	Alan Cox
  *				(alan@lxorguk.ukuu.org.uk)

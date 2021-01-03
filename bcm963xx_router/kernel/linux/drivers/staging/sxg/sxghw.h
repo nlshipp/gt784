@@ -1,7 +1,7 @@
 /*************************************************************
  * Copyright © 1997-2007 Alacritech, Inc. All rights reserved
  *
- * $Id: sxghw.h,v 1.2 2008/07/24 17:24:23 chris Exp $
+ * $Id: sxghw.h,v 1.1.1.1 2010/06/14 22:49:25 tliu Exp $
  *
  * sxghw.h:
  *

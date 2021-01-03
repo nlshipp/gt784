@@ -46,7 +46,7 @@ static int std_rcv_pado(struct session* ses,
 extern char servicename[BUFLEN_264]; /* service name from the connection,  defined in options.c */
     cmsLog_debug("servicename=%s", sName);
     strncpy(servicename,  sName, sizeof(servicename));
-#if defined (FOLLOW_TR098)	
+#if defined (AEI_VDSL_CUSTOMER_QWEST) || defined(AEI_VDSL_CUSTOMER_CENTURYLINK)	
 	FILE *fpSn;
 	if((fpSn = fopen("/var/ppp/service_name", "w")) != NULL)
 	{	
@@ -63,7 +63,7 @@ extern char servicename[BUFLEN_264]; /* service name from the connection,  defin
     }
     memcpy(&ses->remote, &p_in->addr, sizeof(struct sockaddr_ll));
     memcpy( &ses->curr_pkt.addr, &ses->remote , sizeof(struct sockaddr_ll));
-#if defined(FOLLOW_TR098) 
+#if defined(AEI_VDSL_CUSTOMER_NCS) 
 	/* get AC-NAME from tags */
 	FILE *fp;
 	char acName[255] = {0};
@@ -77,7 +77,7 @@ extern char servicename[BUFLEN_264]; /* service name from the connection,  defin
 		fclose(fp);
 	}
 #endif
-          
+           
     ses->curr_pkt.hdr->code = PADR_CODE;
     
     /* The HOST_UNIQ has been verified already... there's no "if" about this */

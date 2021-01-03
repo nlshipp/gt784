@@ -51,6 +51,9 @@ typedef struct boardparameters
     unsigned short usGpioSecLedAdsl;        /* GPIO pin or not defined */
     unsigned short usGpioSecLedAdslFail;    /* GPIO pin or not defined */
     unsigned short usGpioLedSesWireless;    /* GPIO pin or not defined */
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    unsigned short usGpioLedSesWirelessFail;/* GPIO pin or not defined */
+#endif
     unsigned short usGpioLedHpna;           /* GPIO pin or not defined */
     unsigned short usGpioLedWanData;        /* GPIO pin or not defined */
     unsigned short usGpioLedWanError;       /* GPIO pin or not defined */
@@ -62,6 +65,12 @@ typedef struct boardparameters
 
     unsigned short usGpioLedMoCA;           /* GPIO pin or not defined */
     unsigned short usGpioLedMoCAFail;       /* GPIO pin or not defined */
+
+#ifdef AEI_VDSL_CUSTOMER_NCS
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    unsigned short usGpioLedUsb;            /* GPIO pin or not defined */
+#endif
+#endif
 
     unsigned short usExtIntrResetToDefault; /* ext intr or not defined */
     unsigned short usExtIntrSesBtnWireless; /* ext intr or not defined */
@@ -110,6 +119,10 @@ static BOARD_PARAMETERS g_bcm96362advnx =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_SERIAL_GPIO_15_AL,                   /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_GPIO_1_AL,                           /* usGpioLedWanData */
     BP_SERIAL_GPIO_10_AL,                   /* usGpioLedWanError */
@@ -176,6 +189,10 @@ static BOARD_PARAMETERS g_bcm96362advngr =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_SERIAL_GPIO_15_AL,                   /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_GPIO_1_AL,                           /* usGpioLedWanData */
     BP_SERIAL_GPIO_10_AL,                   /* usGpioLedWanError */
@@ -241,6 +258,10 @@ static BOARD_PARAMETERS g_bcm96362advngr2 =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_SERIAL_GPIO_15_AL,                   /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_GPIO_1_AL,                           /* usGpioLedWanData */
     BP_SERIAL_GPIO_10_AL,                   /* usGpioLedWanError */
@@ -311,6 +332,10 @@ static BOARD_PARAMETERS g_bcm96368vvw =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_GPIO_24_AL,                          /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_GPIO_5_AH,                           /* usGpioLedWanData */
     BP_GPIO_33_AH,                          /* usGpioLedWanError */
@@ -321,6 +346,12 @@ static BOARD_PARAMETERS g_bcm96368vvw =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
+#ifdef AEI_VDSL_CUSTOMER_NCS
+//#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedUsb */
+#endif
+#endif
 
     BP_EXT_INTR_0,                          /* usExtIntrResetToDefault */
     BP_EXT_INTR_1,                          /* usExtIntrSesBtnWireless */
@@ -376,6 +407,10 @@ static BOARD_PARAMETERS g_bcm96368vvwb =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_GPIO_24_AL,                          /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_GPIO_5_AH,                           /* usGpioLedWanData */
     BP_GPIO_33_AH,                          /* usGpioLedWanError */
@@ -386,6 +421,12 @@ static BOARD_PARAMETERS g_bcm96368vvwb =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
+#ifdef AEI_VDSL_CUSTOMER_NCS
+//#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedUsb */
+#endif
+#endif
 
     BP_EXT_INTR_0,                          /* usExtIntrResetToDefault */
     BP_EXT_INTR_1,                          /* usExtIntrSesBtnWireless */
@@ -420,6 +461,7 @@ static BOARD_PARAMETERS g_bcm96368vvwb =
     BP_NOT_DEFINED                          /* usGpioExtAFELDMode */
 };
 
+#ifndef AEI_VDSL_CUSTOMER_NCS
 static BOARD_PARAMETERS g_bcm96368ntr =
 {
     "96368NTR",                             /* szBoardId */
@@ -441,6 +483,10 @@ static BOARD_PARAMETERS g_bcm96368ntr =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_NOT_DEFINED,                         /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_GPIO_5_AH,                           /* usGpioLedWanData */
     BP_GPIO_33_AH,                          /* usGpioLedWanError */
@@ -484,6 +530,7 @@ static BOARD_PARAMETERS g_bcm96368ntr =
     BP_NOT_DEFINED,                         /* usGpioExtAFELDPwr */
     BP_NOT_DEFINED                          /* usGpioExtAFELDMode */
 };
+#endif
 
 static BOARD_PARAMETERS g_bcm96368sv2 =
 {
@@ -507,6 +554,10 @@ static BOARD_PARAMETERS g_bcm96368sv2 =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_NOT_DEFINED,                         /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_GPIO_5_AH,                           /* usGpioLedWanData */
     BP_GPIO_33_AH,                          /* usGpioLedWanError */
@@ -517,6 +568,12 @@ static BOARD_PARAMETERS g_bcm96368sv2 =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
+#ifdef AEI_VDSL_CUSTOMER_NCS
+//#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedUsb */
+#endif
+#endif
 
     BP_NOT_DEFINED,                         /* usExtIntrResetToDefault */
     BP_NOT_DEFINED,                         /* usExtIntrSesBtnWireless */
@@ -573,6 +630,10 @@ static BOARD_PARAMETERS g_bcm96368mvwg =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_GPIO_22_AL,                          /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+ #if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_GPIO_5_AH,                           /* usGpioLedWanData */
     BP_GPIO_31_AH,                          /* usGpioLedWanError */
@@ -583,6 +644,12 @@ static BOARD_PARAMETERS g_bcm96368mvwg =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
+#ifdef AEI_VDSL_CUSTOMER_NCS
+//#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedUsb */
+#endif
+#endif
 
     BP_EXT_INTR_0,                          /* usExtIntrResetToDefault */
     BP_EXT_INTR_1,                          /* usExtIntrSesBtnWireless */
@@ -639,6 +706,10 @@ static BOARD_PARAMETERS g_bcm96368mvwgb =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_GPIO_22_AL,                          /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_GPIO_5_AH,                           /* usGpioLedWanData */
     BP_GPIO_31_AH,                          /* usGpioLedWanError */
@@ -649,6 +720,12 @@ static BOARD_PARAMETERS g_bcm96368mvwgb =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
+#ifdef AEI_VDSL_CUSTOMER_NCS
+//#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedUsb */
+#endif
+#endif
 
     BP_EXT_INTR_0,                          /* usExtIntrResetToDefault */
     BP_EXT_INTR_1,                          /* usExtIntrSesBtnWireless */
@@ -682,7 +759,7 @@ static BOARD_PARAMETERS g_bcm96368mvwgb =
     BP_NOT_DEFINED,                         /* usGpioExtAFELDPwr */
     BP_NOT_DEFINED                          /* usGpioExtAFELDMode */
 };
-
+#ifndef AEI_VDSL_CUSTOMER_NCS
 static BOARD_PARAMETERS g_bcm96368mvwgj =
 {
     "96368MVWGJ",                           /* szBoardId */
@@ -705,6 +782,10 @@ static BOARD_PARAMETERS g_bcm96368mvwgj =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_GPIO_22_AL,                          /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_GPIO_5_AH,                           /* usGpioLedWanData */
     BP_GPIO_31_AH,                          /* usGpioLedWanError */
@@ -715,6 +796,12 @@ static BOARD_PARAMETERS g_bcm96368mvwgj =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
+#ifdef AEI_VDSL_CUSTOMER_NCS
+//#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedUsb */
+#endif
+#endif
 
     BP_EXT_INTR_0,                          /* usExtIntrResetToDefault */
     BP_EXT_INTR_1,                          /* usExtIntrSesBtnWireless */
@@ -748,7 +835,7 @@ static BOARD_PARAMETERS g_bcm96368mvwgj =
     BP_NOT_DEFINED,                         /* usGpioExtAFELDPwr */
     BP_NOT_DEFINED                          /* usGpioExtAFELDMode */
 };
-
+#endif
 static BOARD_PARAMETERS g_bcm96368mbg =
 {
     "96368MBG",                             /* szBoardId */
@@ -771,6 +858,10 @@ static BOARD_PARAMETERS g_bcm96368mbg =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_NOT_DEFINED,                         /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_GPIO_5_AH,                           /* usGpioLedWanData */
     BP_GPIO_31_AH,                          /* usGpioLedWanError */
@@ -781,6 +872,12 @@ static BOARD_PARAMETERS g_bcm96368mbg =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
+#ifdef AEI_VDSL_CUSTOMER_NCS
+//#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedUsb */
+#endif
+#endif
 
     BP_EXT_INTR_0,                          /* usExtIntrResetToDefault */
     BP_NOT_DEFINED,                         /* usExtIntrSesBtnWireless */
@@ -814,7 +911,7 @@ static BOARD_PARAMETERS g_bcm96368mbg =
     BP_NOT_DEFINED,                         /* usGpioExtAFELDPwr */
     BP_NOT_DEFINED                          /* usGpioExtAFELDMode */
 };
-
+#ifndef AEI_VDSL_CUSTOMER_NCS
 static BOARD_PARAMETERS g_bcm96368mbg6b =
 {
     "96368MBG6b",                           /* szBoardId */
@@ -837,6 +934,10 @@ static BOARD_PARAMETERS g_bcm96368mbg6b =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_NOT_DEFINED,                         /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_GPIO_5_AH,                           /* usGpioLedWanData */
     BP_GPIO_31_AH,                          /* usGpioLedWanError */
@@ -880,7 +981,7 @@ static BOARD_PARAMETERS g_bcm96368mbg6b =
     BP_NOT_DEFINED,                         /* usGpioExtAFELDPwr */
     BP_NOT_DEFINED                          /* usGpioExtAFELDMode */
 };
-
+#endif
 static BOARD_PARAMETERS g_bcm96368mbg6302 =
 {
     "96368MBG6302",                         /* szBoardId */
@@ -903,6 +1004,10 @@ static BOARD_PARAMETERS g_bcm96368mbg6302 =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_NOT_DEFINED,                         /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_GPIO_5_AH,                           /* usGpioLedWanData */
     BP_GPIO_31_AH,                          /* usGpioLedWanError */
@@ -913,6 +1018,12 @@ static BOARD_PARAMETERS g_bcm96368mbg6302 =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
+#ifdef AEI_VDSL_CUSTOMER_NCS
+//#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedUsb */
+#endif
+#endif
 
     BP_EXT_INTR_0,                          /* usExtIntrResetToDefault */
     BP_NOT_DEFINED,                         /* usExtIntrSesBtnWireless */
@@ -946,7 +1057,7 @@ static BOARD_PARAMETERS g_bcm96368mbg6302 =
     BP_GPIO_37_AH,                          /* usGpioExtAFELDPwr */
     BP_GPIO_36_AH                           /* usGpioExtAFELDMode */
 };
-
+#ifndef AEI_VDSL_CUSTOMER_NCS
 static BOARD_PARAMETERS g_bcm96368mng =
 {
     "96368MNG",                             /* szBoardId */
@@ -968,6 +1079,10 @@ static BOARD_PARAMETERS g_bcm96368mng =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_NOT_DEFINED,                         /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_GPIO_5_AH,                           /* usGpioLedWanData */
     BP_GPIO_31_AH,                          /* usGpioLedWanError */
@@ -978,6 +1093,12 @@ static BOARD_PARAMETERS g_bcm96368mng =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
+#ifdef AEI_VDSL_CUSTOMER_NCS
+//#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedUsb */
+#endif
+#endif
 
     BP_EXT_INTR_0,                          /* usExtIntrResetToDefault */
     BP_NOT_DEFINED,                         /* usExtIntrSesBtnWireless */
@@ -1015,7 +1136,6 @@ static BOARD_PARAMETERS g_bcm96368mng =
     BP_NOT_DEFINED,                         /* usGpioExtAFELDPwr */
     BP_NOT_DEFINED                          /* usGpioExtAFELDMode */
 };
-
 static BOARD_PARAMETERS g_bcm96367avng =
 {
     "96367AVNG",                            /* szBoardId */
@@ -1038,6 +1158,10 @@ static BOARD_PARAMETERS g_bcm96367avng =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_GPIO_23_AL,                          /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_NOT_DEFINED,                         /* usGpioLedWanData */
     BP_GPIO_31_AH,                          /* usGpioLedWanError */
@@ -1081,6 +1205,7 @@ static BOARD_PARAMETERS g_bcm96367avng =
     BP_NOT_DEFINED,                         /* usGpioExtAFELDPwr */
     BP_NOT_DEFINED                          /* usGpioExtAFELDMode */
 };
+#endif
 
 static BOARD_PARAMETERS g_bcm96368mvngr =
 {
@@ -1105,6 +1230,10 @@ static BOARD_PARAMETERS g_bcm96368mvngr =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_GPIO_23_AL,                          /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_GPIO_5_AH,                           /* usGpioLedWanData */
     BP_GPIO_3_AH,                           /* usGpioLedWanError */
@@ -1115,6 +1244,12 @@ static BOARD_PARAMETERS g_bcm96368mvngr =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
+#ifdef AEI_VDSL_CUSTOMER_NCS
+//#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedUsb */
+#endif
+#endif
 
     BP_EXT_INTR_0,                          /* usExtIntrResetToDefault */
     BP_EXT_INTR_1,                          /* usExtIntrSesBtnWireless */
@@ -1171,6 +1306,10 @@ static BOARD_PARAMETERS g_bcm96368mvngrP2 =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_GPIO_23_AL,                          /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_GPIO_5_AL,                           /* usGpioLedWanData */
     BP_GPIO_3_AL,                           /* usGpioLedWanError */
@@ -1181,6 +1320,12 @@ static BOARD_PARAMETERS g_bcm96368mvngrP2 =
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
     BP_NOT_DEFINED,                         /* usGpioLedMoCA */
     BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
+#ifdef AEI_VDSL_CUSTOMER_NCS
+//#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedUsb */
+#endif
+#endif
 
     BP_EXT_INTR_0,                          /* usExtIntrResetToDefault */
     BP_EXT_INTR_1,                          /* usExtIntrSesBtnWireless */
@@ -1214,12 +1359,466 @@ static BOARD_PARAMETERS g_bcm96368mvngrP2 =
     BP_NOT_DEFINED,                         /* usGpioExtAFELDPwr */
     BP_NOT_DEFINED                          /* usGpioExtAFELDMode */
 };
+#define AEI_VDSL_CUSTOMER_NCS 1
+#ifdef AEI_VDSL_CUSTOMER_NCS
+static BOARD_PARAMETERS g_vb784wg =
+{
+    "VB784WG",                                /* szBoardId */
+    (BP_OVERLAY_PCI |
+    BP_OVERLAY_PHY |
+    BP_OVERLAY_EPHY_LED_0 |
+    BP_OVERLAY_EPHY_LED_1 |
+    BP_OVERLAY_EPHY_LED_2 |
+    BP_OVERLAY_EPHY_LED_3 |
+    BP_OVERLAY_INET_LED |
+    BP_OVERLAY_USB_DEVICE),                 /* usGPIOOverlay */
+
+    BP_NOT_DEFINED,                         /* usGpioRj11InnerPair */
+    BP_NOT_DEFINED,                         /* usGpioRj11OuterPair */
+    BP_NOT_DEFINED,                         /* usGpioUartRts */
+    BP_NOT_DEFINED,                         /* usGpioUartCts */
+
+    BP_GPIO_2_AL,                           /* usGpioLedAdsl */
+    BP_NOT_DEFINED,                         /* usGpioLedAdslFail */
+    BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
+    BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
+    BP_GPIO_23_AL,                          /* usGpioLedSesWireless */
+    BP_GPIO_30_AL,                          /* usGpioLedSesWirelessFail */
+    BP_NOT_DEFINED,                         /* usGpioLedHpna */
+    BP_GPIO_5_AH,                           /* usGpioLedWanData */
+    BP_GPIO_31_AH,                          /* usGpioLedWanError */
+    BP_GPIO_22_AH,                          /* usGpioLedBlPowerOn */
+    BP_GPIO_24_AH,                          /* usGpioLedBlStop */
+    BP_NOT_DEFINED,                         /* usGpioFpgaReset */
+    BP_NOT_DEFINED,                         /* usGpioLedGpon */
+    BP_NOT_DEFINED,                         /* usGpioLedGponFail */
+    BP_NOT_DEFINED,                         /* usGpioLedMoCA */
+    BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
+    BP_GPIO_21_AL,                          /* usGpioLedUsb */
+
+    BP_EXT_INTR_0,                          /* usExtIntrResetToDefault */
+    BP_EXT_INTR_1,                          /* usExtIntrSesBtnWireless */
+    BP_NOT_DEFINED,                         /* usExtIntrHpna */
+
+    BP_NOT_DEFINED,                         /* usCsHpna */
+
+    BP_WLAN_ANT_MAIN,                       /* usAntInUseWireless */
+    0,                                      /* WLAN flags */
+
+    {{BP_ENET_EXTERNAL_SWITCH,              /* ucPhyType */
+    0x0,                                    /* ucPhyAddress */
+    BP_NOT_DEFINED,                         /* usGpioLedPhyLinkSpeed */
+    BP_ENET_CONFIG_MMAP,                    /* usConfigType */
+    {0x20, {0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x00, 0x00}}},  /* sw */
+    {BP_ENET_EXTERNAL_SWITCH,               /* ucPhyType */
+    0x0,                                    /* ucPhyAddress */
+    BP_NOT_DEFINED,                         /* usGpioLedPhyLinkSpeed */
+    BP_ENET_CONFIG_MDIO_PSEUDO_PHY,         /* usConfigType */
+    {0x3f, {0x00, 0x01, 0x02, 0x03, 0x04, 0x11, 0x00, 0x00}}}}, /* sw */
+    {{BP_VOIP_MIPS,                         /* ucDspType */
+    0,                                      /* ucDspAddress */
+    BP_NOT_DEFINED,                         /* usGpioLedVoip */
+    BP_NOT_DEFINED,                         /* usGpioVoip1Led */
+    BP_NOT_DEFINED,                         /* usGpioVoip1LedFail */
+    BP_NOT_DEFINED,                         /* usGpioVoip2Led */
+    BP_NOT_DEFINED,                         /* usGpioVoip2LedFail */
+    BP_NOT_DEFINED,                         /* usGpioPotsLed */
+    BP_NOT_DEFINED},                        /* usGpioDectLed */
+    {BP_VOIP_NO_DSP}},                      /* ucDspType */
+    BP_NOT_DEFINED,                         /* usGpioWirelessPowerDown */
+    {BP_AFE_CHIP_INT | BP_AFE_LD_6302 | BP_AFE_FE_ANNEXA | BP_AFE_FE_REV_6302_REV1,
+    BP_AFE_DEFAULT}, /* ulAfeIds */
+    BP_GPIO_28_AL,                         /* usGpioExtAFEReset */
+    BP_GPIO_37_AH,                         /* usGpioExtAFELDPwr */
+    BP_GPIO_36_AH                          /* usGpioExtAFELDMode */
+};
+
+static BOARD_PARAMETERS g_R1000H =
+{
+    "R1000H",                                /* szBoardId */
+    (BP_OVERLAY_PCI |
+    BP_OVERLAY_PHY |
+    BP_OVERLAY_EPHY_LED_0 |
+    BP_OVERLAY_EPHY_LED_1 |
+    BP_OVERLAY_EPHY_LED_2 |
+    BP_OVERLAY_EPHY_LED_3 |
+    BP_OVERLAY_INET_LED |
+    BP_OVERLAY_USB_DEVICE),                 /* usGPIOOverlay */
+
+    BP_NOT_DEFINED,                         /* usGpioRj11InnerPair */
+    BP_NOT_DEFINED,                         /* usGpioRj11OuterPair */
+    BP_NOT_DEFINED,                         /* usGpioUartRts */
+    BP_NOT_DEFINED,                         /* usGpioUartCts */
+
+    BP_GPIO_2_AL,                           /* usGpioLedAdsl */
+    BP_NOT_DEFINED,                         /* usGpioLedAdslFail */
+    BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
+    BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
+    BP_GPIO_22_AL,                          /* usGpioLedSesWireless */
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+    BP_NOT_DEFINED,                         /* usGpioLedHpna */
+    BP_GPIO_5_AH,                           /* usGpioLedWanData */
+    BP_GPIO_31_AH,                          /* usGpioLedWanError */
+    BP_GPIO_22_AH,                          /* usGpioLedBlPowerOn */
+    BP_GPIO_24_AH,                          /* usGpioLedBlStop */
+    BP_NOT_DEFINED,                         /* usGpioFpgaReset */
+    BP_NOT_DEFINED,                         /* usGpioLedGpon */
+    BP_NOT_DEFINED,                         /* usGpioLedGponFail */
+    BP_NOT_DEFINED,                         /* usGpioLedMoCA */
+    BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
+    BP_NOT_DEFINED,                         /* usGpioLedUsb */
+
+    BP_EXT_INTR_0,                          /* usExtIntrResetToDefault */
+    BP_EXT_INTR_1,                          /* usExtIntrSesBtnWireless */
+    BP_NOT_DEFINED,                         /* usExtIntrHpna */
+
+    BP_NOT_DEFINED,                         /* usCsHpna */
+
+    BP_WLAN_ANT_MAIN,                       /* usAntInUseWireless */
+    0,                                      /* WLAN flags */
+
+    {{BP_ENET_EXTERNAL_SWITCH,              /* ucPhyType */
+    0x0,                                    /* ucPhyAddress */
+    BP_NOT_DEFINED,                         /* usGpioLedPhyLinkSpeed */
+    BP_ENET_CONFIG_MMAP,                    /* usConfigType */
+    {0x20, {0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x00, 0x00}}},  /* sw */
+    {BP_ENET_EXTERNAL_SWITCH,               /* ucPhyType */
+    0x0,                                    /* ucPhyAddress */
+    BP_NOT_DEFINED,                         /* usGpioLedPhyLinkSpeed */
+    BP_ENET_CONFIG_MDIO_PSEUDO_PHY,         /* usConfigType */
+    {0x3f, {0x00, 0x01, 0x02, 0x03, 0x04, 0x11, 0x00, 0x00}}}}, /* sw */
+    {{BP_VOIP_MIPS,                         /* ucDspType */
+    0,                                      /* ucDspAddress */
+    BP_NOT_DEFINED,                         /* usGpioLedVoip */
+    BP_NOT_DEFINED,                         /* usGpioVoip1Led */
+    BP_NOT_DEFINED,                         /* usGpioVoip1LedFail */
+    BP_NOT_DEFINED,                         /* usGpioVoip2Led */
+    BP_NOT_DEFINED,                         /* usGpioVoip2LedFail */
+    BP_NOT_DEFINED,                         /* usGpioPotsLed */
+    BP_NOT_DEFINED},                        /* usGpioDectLed */
+    {BP_VOIP_NO_DSP}},                      /* ucDspType */
+    BP_NOT_DEFINED,                         /* usGpioWirelessPowerDown */
+    {BP_AFE_CHIP_INT | BP_AFE_LD_6302 | BP_AFE_FE_ANNEXA | BP_AFE_FE_REV_6302_REV1,
+    BP_AFE_DEFAULT}, /* ulAfeIds */
+    BP_GPIO_28_AL,                         /* usGpioExtAFEReset */
+    BP_GPIO_37_AH,                         /* usGpioExtAFELDPwr */
+    BP_GPIO_36_AH                          /* usGpioExtAFELDMode */
+};
+#endif
+
+#ifdef AEI_VDSL_CUSTOMER_NCS
+static BOARD_PARAMETERS g_V1000H =
+{
+    "V1000H",                                /* szBoardId */
+    (BP_OVERLAY_PCI |
+    BP_OVERLAY_PHY |
+    BP_OVERLAY_EPHY_LED_0 |
+    BP_OVERLAY_EPHY_LED_1 |
+    BP_OVERLAY_EPHY_LED_2 |
+    BP_OVERLAY_EPHY_LED_3 |
+    BP_OVERLAY_INET_LED |
+    BP_OVERLAY_USB_DEVICE),                 /* usGPIOOverlay */
+
+    BP_NOT_DEFINED,                         /* usGpioRj11InnerPair */
+    BP_NOT_DEFINED,                         /* usGpioRj11OuterPair */
+    BP_NOT_DEFINED,                         /* usGpioUartRts */
+    BP_NOT_DEFINED,                         /* usGpioUartCts */
+
+    BP_GPIO_2_AL,                           /* usGpioLedAdsl */
+    BP_NOT_DEFINED,                         /* usGpioLedAdslFail */
+    BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
+    BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
+    BP_GPIO_23_AL,                          /* usGpioLedSesWireless */
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+    BP_NOT_DEFINED,                         /* usGpioLedHpna */
+    BP_GPIO_5_AH,                           /* usGpioLedWanData */
+    BP_GPIO_31_AH,                          /* usGpioLedWanError */
+    BP_GPIO_22_AH,                          /* usGpioLedBlPowerOn */
+    BP_GPIO_24_AH,                          /* usGpioLedBlStop */
+    BP_NOT_DEFINED,                         /* usGpioFpgaReset */
+    BP_NOT_DEFINED,                         /* usGpioLedGpon */
+    BP_NOT_DEFINED,                         /* usGpioLedGponFail */
+    BP_NOT_DEFINED,                         /* usGpioLedMoCA */
+    BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
+    BP_NOT_DEFINED,                         /* usGpioLedUsb */
+
+    BP_EXT_INTR_0,                          /* usExtIntrResetToDefault */
+    BP_EXT_INTR_1,                          /* usExtIntrSesBtnWireless */
+    BP_NOT_DEFINED,                         /* usExtIntrHpna */
+
+    BP_NOT_DEFINED,                         /* usCsHpna */
+
+    BP_WLAN_ANT_MAIN,                       /* usAntInUseWireless */
+    0,                                      /* WLAN flags */
+
+    {{BP_ENET_EXTERNAL_SWITCH,              /* ucPhyType */
+    0x0,                                    /* ucPhyAddress */
+    BP_NOT_DEFINED,                         /* usGpioLedPhyLinkSpeed */
+    BP_ENET_CONFIG_MMAP,                    /* usConfigType */
+    {0x20, {0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x00, 0x00}}},  /* sw */
+    {BP_ENET_EXTERNAL_SWITCH,               /* ucPhyType */
+    0x0,                                    /* ucPhyAddress */
+    BP_NOT_DEFINED,                         /* usGpioLedPhyLinkSpeed */
+    BP_ENET_CONFIG_MDIO_PSEUDO_PHY,         /* usConfigType */
+    {0x3f, {0x00, 0x01, 0x02, 0x03, 0x04, 0x11, 0x00, 0x00}}}}, /* sw */
+    {{BP_VOIP_MIPS,                         /* ucDspType */
+    0,                                      /* ucDspAddress */
+    BP_NOT_DEFINED,                         /* usGpioLedVoip */
+    BP_NOT_DEFINED,                         /* usGpioVoip1Led */
+    BP_NOT_DEFINED,                         /* usGpioVoip1LedFail */
+    BP_NOT_DEFINED,                         /* usGpioVoip2Led */
+    BP_NOT_DEFINED,                         /* usGpioVoip2LedFail */
+    BP_NOT_DEFINED,                         /* usGpioPotsLed */
+    BP_NOT_DEFINED},                        /* usGpioDectLed */
+    {BP_VOIP_NO_DSP}},                      /* ucDspType */
+    BP_NOT_DEFINED,                         /* usGpioWirelessPowerDown */
+    {BP_AFE_CHIP_INT | BP_AFE_LD_6302 | BP_AFE_FE_ANNEXA | BP_AFE_FE_REV_6302_REV1,
+    BP_AFE_DEFAULT}, /* ulAfeIds */
+    BP_GPIO_28_AL,                         /* usGpioExtAFEReset */
+    BP_GPIO_37_AH,                         /* usGpioExtAFELDPwr */
+    BP_GPIO_36_AH                          /* usGpioExtAFELDMode */
+};
+
+static BOARD_PARAMETERS g_V1000F =
+{
+    "V1000F",                            /* szBoardId */
+    (BP_OVERLAY_PCI |
+    BP_OVERLAY_PHY |
+    BP_OVERLAY_EPHY_LED_0 |
+    BP_OVERLAY_EPHY_LED_1 |
+    BP_OVERLAY_EPHY_LED_2 |
+    BP_OVERLAY_EPHY_LED_3 |
+    BP_OVERLAY_INET_LED |
+    BP_OVERLAY_USB_DEVICE),                 /* usGPIOOverlay */
+
+    BP_NOT_DEFINED,                         /* usGpioRj11InnerPair */
+    BP_NOT_DEFINED,                         /* usGpioRj11OuterPair */
+    BP_NOT_DEFINED,                         /* usGpioUartRts */
+    BP_NOT_DEFINED,                         /* usGpioUartCts */
+
+    BP_GPIO_2_AL,                           /* usGpioLedAdsl */
+    BP_NOT_DEFINED,                         /* usGpioLedAdslFail */
+    BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
+    BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
+    BP_GPIO_23_AL,                          /* usGpioLedSesWireless */
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+    BP_NOT_DEFINED,                         /* usGpioLedHpna */
+    BP_GPIO_5_AH,                           /* usGpioLedWanData */
+    BP_GPIO_31_AH,                          /* usGpioLedWanError */
+    BP_GPIO_22_AH,                          /* usGpioLedBlPowerOn */
+    BP_GPIO_24_AH,                          /* usGpioLedBlStop */
+    BP_NOT_DEFINED,                         /* usGpioFpgaReset */
+    BP_NOT_DEFINED,                         /* usGpioLedGpon */
+    BP_NOT_DEFINED,                         /* usGpioLedGponFail */
+    BP_NOT_DEFINED,                         /* usGpioLedMoCA */
+    BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
+#ifdef AEI_VDSL_CUSTOMER_NCS
+    BP_NOT_DEFINED,                         /* usGpioLedUsb */
+#endif
+
+    BP_EXT_INTR_0,                          /* usExtIntrResetToDefault */
+    BP_EXT_INTR_1,                          /* usExtIntrSesBtnWireless */
+    BP_NOT_DEFINED,                         /* usExtIntrHpna */
+
+    BP_NOT_DEFINED,                         /* usCsHpna */
+
+    BP_WLAN_ANT_MAIN,                       /* usAntInUseWireless */
+    0,                                      /* WLAN flags */
+
+    {{BP_ENET_EXTERNAL_SWITCH,              /* ucPhyType */
+    0x0,                                    /* ucPhyAddress */
+    BP_NOT_DEFINED,                         /* usGpioLedPhyLinkSpeed */
+    BP_ENET_CONFIG_MMAP,                    /* usConfigType */
+    {0x1f, {0x01, 0x02, 0x03, 0x04, 0x12, 0x00, 0x00, 0x00}}},  /* sw */
+    {BP_ENET_NO_PHY}},                      /* ucPhyType */
+    {{BP_VOIP_MIPS,                         /* ucDspType */
+    0,                                      /* ucDspAddress */
+    BP_NOT_DEFINED,                         /* usGpioLedVoip */
+    BP_NOT_DEFINED,                         /* usGpioVoip1Led */
+    BP_NOT_DEFINED,                         /* usGpioVoip1LedFail */
+    BP_NOT_DEFINED,                         /* usGpioVoip2Led */
+    BP_NOT_DEFINED,                         /* usGpioVoip2LedFail */
+    BP_NOT_DEFINED,                         /* usGpioPotsLed */
+    BP_NOT_DEFINED},                        /* usGpioDectLed */
+    {BP_VOIP_NO_DSP}},                      /* ucDspType */
+    BP_NOT_DEFINED,                         /* usGpioWirelessPowerDown */
+    {BP_AFE_CHIP_INT | BP_AFE_LD_6302 | BP_AFE_FE_ANNEXA | BP_AFE_FE_REV_6302_REV1,
+    BP_AFE_DEFAULT},                        /* ulAfeIds */
+    BP_NOT_DEFINED,                         /* usGpioExtAFEReset */
+    BP_NOT_DEFINED,                         /* usGpioExtAFELDPwr */
+    BP_NOT_DEFINED                          /* usGpioExtAFELDMode */
+};
+
+
+static BOARD_PARAMETERS g_V2000H =
+{
+    "V2000H",                                /* szBoardId */
+    (BP_OVERLAY_PCI |
+    BP_OVERLAY_PHY |
+    BP_OVERLAY_EPHY_LED_0 |
+    BP_OVERLAY_EPHY_LED_1 |
+    BP_OVERLAY_EPHY_LED_2 |
+    BP_OVERLAY_EPHY_LED_3 |
+    BP_OVERLAY_INET_LED |
+    BP_OVERLAY_USB_DEVICE),                 /* usGPIOOverlay */
+
+    BP_NOT_DEFINED,                         /* usGpioRj11InnerPair */
+    BP_NOT_DEFINED,                         /* usGpioRj11OuterPair */
+    BP_NOT_DEFINED,                         /* usGpioUartRts */
+    BP_NOT_DEFINED,                         /* usGpioUartCts */
+
+    BP_GPIO_2_AL,                           /* usGpioLedAdsl */
+    BP_NOT_DEFINED,                         /* usGpioLedAdslFail */
+    BP_GPIO_27_AL,                          /* usGpioSecLedAdsl */
+    BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
+    BP_GPIO_23_AL,                          /* usGpioLedSesWireless */
+    BP_GPIO_30_AL,                         /* usGpioLedSesWirelessFail */
+    BP_NOT_DEFINED,                         /* usGpioLedHpna */
+    BP_GPIO_5_AH,                           /* usGpioLedWanData */
+    BP_GPIO_31_AH,                          /* usGpioLedWanError */
+    BP_GPIO_22_AH,                          /* usGpioLedBlPowerOn */
+    BP_GPIO_24_AH,                          /* usGpioLedBlStop */
+    BP_NOT_DEFINED,                         /* usGpioFpgaReset */
+    BP_NOT_DEFINED,                         /* usGpioLedGpon */
+    BP_NOT_DEFINED,                         /* usGpioLedGponFail */
+    BP_NOT_DEFINED,                         /* usGpioLedMoCA */
+    BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
+    BP_NOT_DEFINED,                         /* usGpioLedUsb */
+
+    BP_EXT_INTR_0,                          /* usExtIntrResetToDefault */
+    BP_EXT_INTR_1,                          /* usExtIntrSesBtnWireless */
+    BP_NOT_DEFINED,                         /* usExtIntrHpna */
+
+    BP_NOT_DEFINED,                         /* usCsHpna */
+
+    BP_WLAN_ANT_MAIN,                       /* usAntInUseWireless */
+    0,                                      /* WLAN flags */
+
+    {{BP_ENET_EXTERNAL_SWITCH,              /* ucPhyType */
+    0x0,                                    /* ucPhyAddress */
+    BP_NOT_DEFINED,                         /* usGpioLedPhyLinkSpeed */
+    BP_ENET_CONFIG_MMAP,                    /* usConfigType */
+    {0x20, {0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x00, 0x00}}},  /* sw */
+    {BP_ENET_EXTERNAL_SWITCH,               /* ucPhyType */
+    0x0,                                    /* ucPhyAddress */
+    BP_NOT_DEFINED,                         /* usGpioLedPhyLinkSpeed */
+    BP_ENET_CONFIG_MDIO_PSEUDO_PHY,         /* usConfigType */
+    {0x3f, {0x00, 0x01, 0x02, 0x03, 0x04, 0x11, 0x00, 0x00}}}}, /* sw */
+    {{BP_VOIP_MIPS,                         /* ucDspType */
+    0,                                      /* ucDspAddress */
+    BP_NOT_DEFINED,                         /* usGpioLedVoip */
+    BP_NOT_DEFINED,                         /* usGpioVoip1Led */
+    BP_NOT_DEFINED,                         /* usGpioVoip1LedFail */
+    BP_NOT_DEFINED,                         /* usGpioVoip2Led */
+    BP_NOT_DEFINED,                         /* usGpioVoip2LedFail */
+    BP_NOT_DEFINED,                         /* usGpioPotsLed */
+    BP_NOT_DEFINED},                        /* usGpioDectLed */
+    {BP_VOIP_NO_DSP}},                      /* ucDspType */
+    BP_NOT_DEFINED,                         /* usGpioWirelessPowerDown */
+    {BP_AFE_CHIP_INT | BP_AFE_LD_6302 | BP_AFE_FE_ANNEXA | BP_AFE_FE_REV_6302_REV1,
+     BP_AFE_CHIP_6306 | BP_AFE_LD_6302 | BP_AFE_FE_ANNEXA | BP_AFE_FE_REV_6302_REV1}, /* ulAfeIds */
+    BP_GPIO_28_AL,                         /* usGpioExtAFEReset */
+    BP_GPIO_37_AH,                         /* usGpioExtAFELDPwr */
+    BP_GPIO_36_AH                          /* usGpioExtAFELDMode */
+};
+
+static BOARD_PARAMETERS g_Q2000 =
+{
+    "Q2000",                                /* szBoardId */
+    (BP_OVERLAY_PCI |
+    BP_OVERLAY_PHY |
+    BP_OVERLAY_EPHY_LED_0 |
+    BP_OVERLAY_EPHY_LED_1 |
+    BP_OVERLAY_EPHY_LED_2 |
+    BP_OVERLAY_EPHY_LED_3 |
+    BP_OVERLAY_INET_LED |
+    BP_OVERLAY_USB_DEVICE),                 /* usGPIOOverlay */
+
+    BP_NOT_DEFINED,                         /* usGpioRj11InnerPair */
+    BP_NOT_DEFINED,                         /* usGpioRj11OuterPair */
+    BP_NOT_DEFINED,                         /* usGpioUartRts */
+    BP_NOT_DEFINED,                         /* usGpioUartCts */
+
+    BP_GPIO_2_AL,                           /* usGpioLedAdsl */
+    BP_GPIO_16_AL,                         /* usGpioLedAdslFail */
+    BP_GPIO_27_AL,                          /* usGpioSecLedAdsl */
+    BP_GPIO_17_AL,                         /* usGpioSecLedAdslFail */
+    BP_GPIO_23_AL,                          /* usGpioLedSesWireless */
+    BP_GPIO_30_AL,                         /* usGpioLedSesWirelessFail */
+    BP_NOT_DEFINED,                         /* usGpioLedHpna */
+    BP_GPIO_5_AH,                           /* usGpioLedWanData */
+    BP_GPIO_31_AH,                          /* usGpioLedWanError */
+    BP_GPIO_22_AH,                          /* usGpioLedBlPowerOn */
+    BP_GPIO_24_AH,                          /* usGpioLedBlStop */
+    BP_NOT_DEFINED,                         /* usGpioFpgaReset */
+    BP_NOT_DEFINED,                         /* usGpioLedGpon */
+    BP_NOT_DEFINED,                         /* usGpioLedGponFail */
+    BP_NOT_DEFINED,                         /* usGpioLedMoCA */
+    BP_NOT_DEFINED,                         /* usGpioLedMoCAFail */
+    BP_GPIO_21_AL,                          /* usGpioLedUsb */
+
+    BP_EXT_INTR_0,                          /* usExtIntrResetToDefault */
+    BP_EXT_INTR_1,                          /* usExtIntrSesBtnWireless */
+    BP_NOT_DEFINED,                         /* usExtIntrHpna */
+
+    BP_NOT_DEFINED,                         /* usCsHpna */
+
+    BP_WLAN_ANT_MAIN,                       /* usAntInUseWireless */
+    0,                                      /* WLAN flags */
+
+    {{BP_ENET_EXTERNAL_SWITCH,              /* ucPhyType */
+    0x0,                                    /* ucPhyAddress */
+    BP_NOT_DEFINED,                         /* usGpioLedPhyLinkSpeed */
+    BP_ENET_CONFIG_MMAP,                    /* usConfigType */
+    {0x20, {0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x00, 0x00}}},  /* sw */
+    {BP_ENET_EXTERNAL_SWITCH,               /* ucPhyType */
+    0x0,                                    /* ucPhyAddress */
+    BP_NOT_DEFINED,                         /* usGpioLedPhyLinkSpeed */
+    BP_ENET_CONFIG_MDIO_PSEUDO_PHY,         /* usConfigType */
+    {0x3f, {0x00, 0x01, 0x02, 0x03, 0x04, 0x11, 0x00, 0x00}}}}, /* sw */
+    {{BP_VOIP_MIPS,                         /* ucDspType */
+    0,                                      /* ucDspAddress */
+    BP_NOT_DEFINED,                         /* usGpioLedVoip */
+    BP_NOT_DEFINED,                         /* usGpioVoip1Led */
+    BP_NOT_DEFINED,                         /* usGpioVoip1LedFail */
+    BP_NOT_DEFINED,                         /* usGpioVoip2Led */
+    BP_NOT_DEFINED,                         /* usGpioVoip2LedFail */
+    BP_NOT_DEFINED,                         /* usGpioPotsLed */
+    BP_NOT_DEFINED},                        /* usGpioDectLed */
+    {BP_VOIP_NO_DSP}},                      /* ucDspType */
+    BP_NOT_DEFINED,                         /* usGpioWirelessPowerDown */
+    {BP_AFE_CHIP_INT | BP_AFE_LD_6302 | BP_AFE_FE_ANNEXA | BP_AFE_FE_REV_6302_REV1,
+     BP_AFE_CHIP_6306 | BP_AFE_LD_6302 | BP_AFE_FE_ANNEXA | BP_AFE_FE_REV_6302_REV1}, /* ulAfeIds */
+    BP_GPIO_28_AL,                         /* usGpioExtAFEReset */
+    BP_GPIO_37_AH,                         /* usGpioExtAFELDPwr */
+    BP_GPIO_36_AH                          /* usGpioExtAFELDMode */
+};
+#endif
 
 static PBOARD_PARAMETERS g_BoardParms[] =
 {&g_bcm96368vvw, &g_bcm96368mvwg, &g_bcm96368sv2, &g_bcm96368mbg,
-&g_bcm96368ntr, &g_bcm96368mbg6b, &g_bcm96368vvwb, &g_bcm96368mvwgb,
-&g_bcm96368mng, &g_bcm96368mbg6302, &g_bcm96368mvwgj, &g_bcm96367avng,
-&g_bcm96368mvngr, &g_bcm96368mvngrP2, 0};
+#ifndef AEI_VDSL_CUSTOMER_NCS
+&g_bcm96368ntr, 
+#endif
+#ifndef AEI_VDSL_CUSTOMER_NCS
+&g_bcm96368mbg6b,
+#endif
+&g_bcm96368vvwb, &g_bcm96368mvwgb,
+#ifndef AEI_VDSL_CUSTOMER_NCS
+&g_bcm96368mng, 
+#endif
+&g_bcm96368mbg6302, 
+#ifndef AEI_VDSL_CUSTOMER_NCS
+&g_bcm96368mvwgj, 
+&g_bcm96367avng,
+#endif
+&g_bcm96368mvngr, &g_bcm96368mvngrP2, 
+#ifdef AEI_VDSL_CUSTOMER_NCS
+&g_vb784wg,&g_R1000H,
+&g_V1000H, &g_V1000F, &g_V2000H,
+&g_Q2000,
+#endif
+0};
 #endif
 
 #if defined(_BCM96816_) || defined(CONFIG_BCM96816)
@@ -1242,6 +1841,10 @@ static BOARD_PARAMETERS g_bcm96816sv =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_NOT_DEFINED,                         /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_NOT_DEFINED,                         /* usGpioLedWanData */
     BP_NOT_DEFINED,                         /* usGpioLedWanError */
@@ -1294,6 +1897,10 @@ static BOARD_PARAMETERS g_bcm96816pvwm =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_NOT_DEFINED,                         /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_NOT_DEFINED,                         /* usGpioLedWanData */
     BP_NOT_DEFINED,                         /* usGpioLedWanError */
@@ -1355,6 +1962,10 @@ static BOARD_PARAMETERS g_bcm96829rg =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_NOT_DEFINED,                         /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_NOT_DEFINED,                         /* usGpioLedWanData */
     BP_NOT_DEFINED,                         /* usGpioLedWanError */
@@ -1408,6 +2019,10 @@ static BOARD_PARAMETERS g_bcm96816p2og =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_NOT_DEFINED,                         /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_NOT_DEFINED,                         /* usGpioLedWanData */
     BP_NOT_DEFINED,                         /* usGpioLedWanError */
@@ -1459,6 +2074,10 @@ static BOARD_PARAMETERS g_bcm96812pg =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_NOT_DEFINED,                         /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_NOT_DEFINED,                         /* usGpioLedWanData */
     BP_NOT_DEFINED,                         /* usGpioLedWanError */
@@ -1511,6 +2130,10 @@ static BOARD_PARAMETERS g_bcm96819bhr =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_NOT_DEFINED,                         /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_NOT_DEFINED,                         /* usGpioLedWanData */
     BP_NOT_DEFINED,                         /* usGpioLedWanError */
@@ -1563,17 +2186,22 @@ static BOARD_PARAMETERS g_bcm96328avng =
     BP_NOT_DEFINED,                         /* usGpioUartRts */
     BP_NOT_DEFINED,                         /* usGpioUartCts */
 
-    BP_GPIO_3_AL,                           /* usGpioLedAdsl */
+    BP_GPIO_19_AL,                           /* usGpioLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioLedAdslFail */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
-    BP_GPIO_9_AL,                           /* usGpioLedSesWireless */
-    BP_NOT_DEFINED,                         /* usGpioLedHpna */
+    BP_GPIO_29_AH,                           /* usGpioLedSesWireless */
+    BP_GPIO_31_AH,                         /* usGpioLedHpna */ /*Here in BCM6328,this parameter is used as led ses wireless fail*/
     // **** Set to BP_GPIO_0_AL when WanData LED is connected to GPIO11
-    BP_GPIO_0_AL,                           /* usGpioLedWanData */ 
-    BP_GPIO_2_AL,                           /* usGpioLedWanError */
-    BP_GPIO_4_AL,                           /* usGpioLedBlPowerOn */
-    BP_GPIO_8_AL,                           /* usGpioLedBlStop */
+    BP_GPIO_1_AL,                           /* usGpioLedWanData */ 
+    BP_GPIO_7_AL,                           /* usGpioLedWanError */
+    BP_GPIO_0_AL,                           /* usGpioLedBlPowerOn */
+#ifdef AEI_VDSL_CUSTOMER_NCS
+    /* turn off red on gpio 18 by default to stop amber when kernel boots */ 
+    BP_GPIO_18_AL,                           /* usGpioLedBlStop */
+#else
+    BP_GPIO_18_AH,                           /* usGpioLedBlStop */
+#endif
     BP_NOT_DEFINED,                         /* usGpioFpgaReset */
     BP_NOT_DEFINED,                         /* usGpioLedGpon */
     BP_NOT_DEFINED,                         /* usGpioLedGponFail */
@@ -1593,7 +2221,7 @@ static BOARD_PARAMETERS g_bcm96328avng =
     0x0,                                    /* ucPhyAddress */
     BP_NOT_DEFINED,                         /* usGpioLedPhyLinkSpeed */
     BP_ENET_CONFIG_MMAP,                    /* usConfigType */
-    {0x1f, {0x01, 0x02, 0x03, 0x04, 0x18, 0x00, 0x00, 0x00}}},  /* sw */
+    {0x0f, {0x01, 0x02, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00}}},  /* sw */
     {BP_ENET_NO_PHY}},                      /* ucPhyType */
     {{BP_VOIP_MIPS,                         /* ucDspType */
     0,                                      /* ucDspAddress */
@@ -1632,6 +2260,10 @@ static BOARD_PARAMETERS g_bcm96328avngrP1 =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_SERIAL_GPIO_11_AL,                   /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_SERIAL_GPIO_1_AL,                    /* usGpioLedWanData */
     BP_SERIAL_GPIO_13_AL,                   /* usGpioLedWanError */
@@ -1695,6 +2327,10 @@ static BOARD_PARAMETERS g_bcm96328avngr =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_SERIAL_GPIO_11_AL,                   /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_GPIO_1_AL,                           /* usGpioLedWanData */
     BP_SERIAL_GPIO_13_AL,                   /* usGpioLedWanError */
@@ -1757,6 +2393,10 @@ static BOARD_PARAMETERS g_bcm963281TAN =
     BP_NOT_DEFINED,                         /* usGpioSecLedAdsl */
     BP_NOT_DEFINED,                         /* usGpioSecLedAdslFail */
     BP_GPIO_9_AL,                           /* usGpioLedSesWireless */
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    BP_NOT_DEFINED,                         /* usGpioLedSesWirelessFail */
+ #endif
     BP_NOT_DEFINED,                         /* usGpioLedHpna */
     BP_GPIO_1_AL,                           /* usGpioLedWanData */
     BP_GPIO_7_AL,                           /* usGpioLedWanError */
@@ -2119,6 +2759,8 @@ int BpGetRtsCtsUartGpios( unsigned short *pusRts, unsigned short *pusCts )
     return( nRet );
 } /* BpGetUartRtsCtsGpios */
 
+
+
 /**************************************************************************
 * Name       : BpGetAdslLedGpio
 *
@@ -2438,6 +3080,81 @@ int BpGetWirelessSesLedGpio( unsigned short *pusValue )
     return( nRet );
 
 } /* BpGetWirelessSesLedGpio */
+
+#if defined(AEI_VDSL_CUSTOMER_NCS) && defined(CONFIG_BCM96328)
+//#if defined(AEI_ADSL_CUSTOMER_QWEST_L5000)
+int BpGetWirelessSesLedGpiofail( unsigned short *pusValue )
+{
+    int nRet;
+
+    if( g_pCurrentBp )
+    {
+        *pusValue = g_pCurrentBp->usGpioLedHpna;
+
+        if( g_pCurrentBp->usGpioLedHpna!= BP_NOT_DEFINED )
+        {
+            nRet = BP_SUCCESS;
+        }
+        else
+        {
+            nRet = BP_VALUE_NOT_DEFINED;
+        }
+    }
+    else
+    {
+        *pusValue = BP_NOT_DEFINED;
+        nRet = BP_BOARD_ID_NOT_SET;
+    }
+
+    return( nRet );
+
+} /* BpGetWirelessSesLedGpiofail*/
+#endif/*CUSTOMER_ACTIONTEC*/
+
+/**************************************************************************
+* Name       : BpGetWirelessFailSesLedGpio
+*
+* Description: This function returns the GPIO pin assignment for the Wireless
+*              Ses Led.
+*
+* Parameters : [OUT] pusValue - Address of short word that the Wireless Ses
+*                  Led GPIO pin is returned in.
+*
+* Returns    : BP_SUCCESS - Success, value is returned.
+*              BP_BOARD_ID_NOT_SET - Error, BpSetBoardId has not been called.
+*              BP_VALUE_NOT_DEFINED - At least one return value is not defined
+*                  for the board.
+***************************************************************************/
+int BpGetWirelessFailSesLedGpio( unsigned short *pusValue )
+{
+    int nRet;
+
+    if( g_pCurrentBp )
+    {
+ //#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+        *pusValue = g_pCurrentBp->usGpioLedSesWirelessFail;
+
+        if( g_pCurrentBp->usGpioLedSesWirelessFail != BP_NOT_DEFINED )
+        {
+            nRet = BP_SUCCESS;
+        }
+        else
+ #endif
+        {
+            nRet = BP_VALUE_NOT_DEFINED;
+        }
+    }
+    else
+    {
+        *pusValue = BP_NOT_DEFINED;
+        nRet = BP_BOARD_ID_NOT_SET;
+    }
+
+    return( nRet );
+
+} /* BpGetWirelessFailSesLedGpio */
+
 
 /* this data structure could be moved to boardparams structure in the future */
 /* does not require to rebuild cfe here if more srom entries are needed */
@@ -3347,6 +4064,53 @@ int BpGetMoCAFailLedGpio( unsigned short *pusValue )
 
     return( nRet );
 } /* BpGetMoCAFailLedGpio */
+
+#ifdef AEI_VDSL_CUSTOMER_NCS
+/**************************************************************************
+* Name       : BpGetUsbLedGpio
+*
+* Description: This function returns the GPIO pin assignment for the USB
+*              LED.
+*
+* Parameters : [OUT] pusValue - Address of short word that the USB LED
+*                  GPIO pin is returned in.
+*
+* Returns    : BP_SUCCESS - Success, value is returned.
+*              BP_BOARD_ID_NOT_SET - Error, BpSetBoardId has not been called.
+*              BP_VALUE_NOT_DEFINED - At least one return value is not defined
+*                  for the board.
+***************************************************************************/
+int BpGetUsbLedGpio( unsigned short *pusValue )
+{
+    int nRet;
+
+//#ifndef CONFIG_BCM96328
+#if (!defined(CONFIG_BCM96328) && !defined(_BCM96328_))
+    if( g_pCurrentBp )
+    {
+        *pusValue = g_pCurrentBp->usGpioLedUsb;
+
+        if( g_pCurrentBp->usGpioLedUsb != BP_NOT_DEFINED )
+        {
+            nRet = BP_SUCCESS;
+        }
+        else
+        {
+            nRet = BP_VALUE_NOT_DEFINED;
+        }
+    }
+    else
+    {
+        *pusValue = BP_NOT_DEFINED;
+        nRet = BP_BOARD_ID_NOT_SET;
+    }
+#else
+    nRet = BP_SUCCESS;
+#endif
+
+    return( nRet );
+} /* BpGetUsbLedGpio */
+#endif
 
 /**************************************************************************
 * Name       : BpGetHpnaExtIntr

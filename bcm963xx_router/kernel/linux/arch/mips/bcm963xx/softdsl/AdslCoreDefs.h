@@ -1,4 +1,4 @@
-#if defined(CONFIG_BCM96328)
+#if defined(CONFIG_BCM96368)
 #define ADSL_PHY_SDRAM_BIAS 0x100000
 #else
 #define ADSL_PHY_SDRAM_BIAS 0x1A0000

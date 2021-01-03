@@ -17,7 +17,7 @@
  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#define RCSID	"$Id: lcp.c,v 1.2 2010/12/17 05:23:35 bzhao Exp $"
+#define RCSID	"$Id: lcp.c,v 1.3 2010/09/06 08:02:52 xshi Exp $"
 
 /*
  * TODO:
@@ -53,18 +53,8 @@ static void lcp_delayed_up __P((void *));
  * LCP-related command-line options.
  */
 static int idle_for_echo=120;
-#ifdef CUSTOMER_ACTIONTEC
-#ifdef CUSTOMER_VERIZON_TEARDOWN//rayofox 
-int    lcp_echo_interval = 10;         /* Interval between */
-int    lcp_echo_fails = 18;    /* Tolerance to unanswered echo-requests */
-#else                                          
-int	lcp_echo_interval = 15; 	/* Interval between LCP echo-requests */
-int	lcp_echo_fails = 5;	/* Tolerance to unanswered echo-requests */
-#endif
-#else
 int	lcp_echo_interval = 30; 	/* Interval between LCP echo-requests */
 int	lcp_echo_fails = 3;	/* Tolerance to unanswered echo-requests */
-#endif
 //int	lcp_echo_interval = 0; 	/* Interval between LCP echo-requests */
 //int	lcp_echo_fails = 0;	/* Tolerance to unanswered echo-requests */
 bool	lax_recv = 0;		/* accept control chars in asyncmap */
@@ -1585,14 +1575,6 @@ lcp_reqci(f, inp, lenp, reject_if_disagree)
 	     */
 
 	    if (cishort == PPP_PAP) {
-#ifdef CUSTOMER_ACTIONTEC
-		FILE *fp;
-		if((fp = fopen("/var/ppp/auth_status", "w")) == NULL)
-		    perror("Failed to create file /var/ppp/auth_status.");
-		fputs("001", fp);
-		fclose(fp);
-#endif
-
 		if (ho->neg_chap ||	/* we've already accepted CHAP */
 		    cilen != CILEN_SHORT) {
 		    LCPDEBUG(("lcp_reqci: rcvd AUTHTYPE PAP, rejecting..."));
@@ -1624,10 +1606,6 @@ lcp_reqci(f, inp, lenp, reject_if_disagree)
 		break;
 	    }
 	    if (cishort == PPP_CHAP) {
-#ifdef CUSTOMER_ACTIONTEC
-		FILE *fp;
-#endif
-
 		if (ho->neg_upap ||	/* we've already accepted PAP */
 		    cilen != CILEN_CHAP) {
 		    LCPDEBUG(("lcp_reqci: rcvd AUTHTYPE CHAP, rejecting..."));
@@ -1653,22 +1631,6 @@ lcp_reqci(f, inp, lenp, reject_if_disagree)
 		    break;
 		}
 		GETCHAR(cichar, p);	/* get digest type*/
-#ifdef CUSTOMER_ACTIONTEC
-		if((fp = fopen("/var/ppp/auth_status", "w")) == NULL)
-		    perror("Failed to create file /var/ppp/auth_status.");
-		if (cichar == CHAP_DIGEST_MD5)
-		{
-		    fputs("010", fp);
-		}
-#ifdef CHAPMS
-		else if (cichar == CHAP_MICROSOFT)
-		{
-		    fputs("100", fp);
-		}
-#endif
-		fclose(fp);
-#endif
-
 		if (cichar != CHAP_DIGEST_MD5
 #ifdef CHAPMS
 		    && cichar != CHAP_MICROSOFT
@@ -1864,8 +1826,7 @@ endswitch:
     return (rc);			/* Return final code */
 }
 
-
-#ifdef CUSTOMER_ACTIONTEC
+#ifdef AEI_VDSL_CUSTOMER_NCS
 #define LCP_STATUS_INFO_PATH  "var/ppp/lcp_status"
 
 /*
@@ -1907,7 +1868,6 @@ void save_lcpecho_to_file(const char *file, int *count)
 		printf("failed to open file %s.\n", file);
 }
 #endif
-
 /*
  * lcp_up - LCP has come UP.
  */
@@ -1935,11 +1895,22 @@ lcp_up(f)
      * the interface MTU is set to the lower of that and the
      * MTU we want to use.
      */
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+	mtu= MIN(ho->neg_mru?ho->mru:PPP_MRU,ao->mru);	
+#ifdef HAVE_MULTILINK
+    if (!(multilink && go->neg_mrru && ho->neg_mrru))
+#endif /* HAVE_MULTILINK */
+	netif_set_mtu(f->unit,mtu);
+
+#else    
+
     mtu = ho->neg_mru? ho->mru: PPP_MRU;
 #ifdef HAVE_MULTILINK
     if (!(multilink && go->neg_mrru && ho->neg_mrru))
 #endif /* HAVE_MULTILINK */
 	netif_set_mtu(f->unit, MIN(mtu, ao->mru));
+
+#endif
     ppp_send_config(f->unit, mtu,
 		    (ho->neg_asyncmap? ho->asyncmap: 0xffffffff),
 		    ho->neg_pcompression, ho->neg_accompression);
@@ -1958,10 +1929,9 @@ lcp_up(f)
     if (!auth_failed)
         create_msg(BCM_PPPOE_SERVICE_AVAILABLE, MDMVS_ERROR_NONE);
     syslog(LOG_CRIT,"PPP LCP UP.\n");
-#ifdef CUSTOMER_ACTIONTEC
+#ifdef AEI_VDSL_CUSTOMER_NCS
     save_status_to_file(LCP_STATUS_INFO_PATH , 1);
-#endif 
-
+#endif
 }
 
 
@@ -1985,10 +1955,9 @@ lcp_down(f)
 		    (go->neg_asyncmap? go->asyncmap: 0xffffffff),
 		    go->neg_pcompression, go->neg_accompression);
     peer_mru[f->unit] = PPP_MRU;
-#ifdef CUSTOMER_ACTIONTEC
-    save_status_to_file(LCP_STATUS_INFO_PATH ,0);
-#endif 
-
+#ifdef AEI_VDSL_CUSTOMER_NCS
+    save_status_to_file(LCP_STATUS_INFO_PATH , 0);
+#endif
 }
 
 
@@ -2368,11 +2337,10 @@ LcpSendEchoRequest (f)
 	PUTLONG(lcp_magic, pktp);
         fsm_sdata(f, ECHOREQ, lcp_echo_number++ & 0xFF, pkt, pktp - pkt);
 	++lcp_echos_pending;
-#ifdef CUSTOMER_ACTIONTEC
+    }
+#ifdef AEI_VDSL_CUSTOMER_NCS
 	save_lcpecho_to_file("/var/ppp/lcp_echo_retry", &lcp_echo_number);
 #endif
-
-    }
 }
 
 /*
@@ -2393,10 +2361,9 @@ lcp_echo_lowerup (unit)
     /* If a timeout interval is specified then start the timer */
     if (lcp_echo_interval != 0)
         LcpEchoCheck (f);
-#ifdef CUSTOMER_ACTIONTEC
+#ifdef AEI_VDSL_CUSTOMER_NCS
 	save_lcpecho_to_file("/var/ppp/lcp_echo_period", &lcp_echo_interval);
 #endif
-
 }
 
 /*

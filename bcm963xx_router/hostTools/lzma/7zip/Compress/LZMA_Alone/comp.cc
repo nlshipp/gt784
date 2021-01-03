@@ -5,7 +5,7 @@
  * LICENSE follows the described one in lzma.txt.
  */
 
-/* $Id: comp.cc,v 1.29 2006/11/27 03:54:58 jro Exp $ */
+/* $Id: comp.cc,v 1.1.1.1 2010/06/14 22:49:40 tliu Exp $ */
 
 // extract some parts from lzma443/C/7zip/Compress/LZMA_Alone/LzmaAlone.cpp
 

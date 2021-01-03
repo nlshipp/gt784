@@ -17,9 +17,9 @@ if [ "$BUILD_OPROFILE" == "y" ]; then
     echo "Copy vmlinux with symbols for oprofile"
     cp -av $KERNEL_DIR/vmlinux $PROFILE/op/bin_symbols
     echo "Copy oprofile applications"
-    cp -av $USERAPPS_DIR/opensource/oprofile/op_bin/* $PROFILE/op
+    cp -av $BUILD_DIR/userspace/gpl/apps/oprofile/op_bin/* $PROFILE/op
     echo "Copy oprofile configuration files"
-    cp -av $USERAPPS_DIR/opensource/oprofile/op_home_dir/* $PROFILE/op
+    cp -av $BUILD_DIR/userspace/gpl/apps/oprofile/op_home_dir/* $PROFILE/op
 fi
 
 if [ "$FSSRC_DIR" == "" ]; then
@@ -53,6 +53,14 @@ mkdir $ROOTFS/var
 mkdir $ROOTFS/etc/adsl
 mkdir $ROOTFS/data
 cp -av $BRCMDRIVERS_DIR/broadcom/char/adsl/bcm9$BRCM_CHIP/*.bin  $ROOTFS/etc/adsl
+if [ "$BRCM_KERNEL_AUXFS_JFFS2" == "y" ]; then
+# Flash home.jffs2.img and mount to /osgi on target : gives JFFS2 formating 
+mkdir $ROOTFS/osgi
+fi
+
+if [ "$BUILD_CT_MIDDLEWARE" == "y" ]; then
+	mkdir -p $ROOTFS/usr/local/ct
+fi
 
 if [ "$BRCM_CHIP" == "6816" ] ; then
         mkdir $ROOTFS/etc/moca
@@ -120,6 +128,7 @@ ln -s /var/fyi/sys/dns $ROOTFS/etc/resolv.conf
 ln -s /var/fyi/sys/gateway $ROOTFS/etc/gateway.conf
 ln -s /var/udhcpd/udhcpd.conf $ROOTFS/etc/udhcpd.conf
 ln -s /var/udhcpd/udhcpd.leases $ROOTFS/etc/udhcpd.leases
+ln -s /var/dms.conf $ROOTFS/etc/dms.conf
 ln -s /var/ipsec/ipsec.conf $ROOTFS/etc/ipsec.conf
 ln -s /var/ipsec/racoon.conf $ROOTFS/etc/racoon.conf
 ln -s /var/ipsec/psk.txt $ROOTFS/etc/psk.txt
@@ -127,6 +136,10 @@ ln -s /var/iproute2/rt_tables $ROOTFS/etc/iproute2/rt_tables
 ln -s /var/tmp $ROOTFS/tmp
 ln -s /var/samba $ROOTFS/etc/samba
 
+if [ "$BUILD_TCPDUMP" == "m" ] ; then
+   cp tcpdump $ROOTFS/bin/tcpdump
+   chmod 755 $ROOTFS/bin/tcpdump
+fi
 
 if [ -x $PROFILE/special-buildFS ]; then
    $PROFILE/special-buildFS
@@ -205,7 +218,6 @@ find $TOP_DIR/$ROOTFS/lib/modules -name "*.ko"
    fi
 fi
 
-
 #delete unwanted module
 echo "deleting intermediate wl modules"
 MODULE_CLEAN_UP="wldrv.ko wl_tmp_partial.ko wlpartial.ko"
@@ -225,15 +237,53 @@ for f in $MODULE_CLEAN_UP; do \
 done
 eval "find $TOP_DIR/$ROOTFS/lib/modules -name wlobj-*.ko | xargs rm -f"
 
-# Continue to strip user apps and shared libraries using sstrip
-# Even though libcreduction did some stripping, we can make the
-# libraries even smaller by doing sstrip here.  Also libcreduction
-# does not process all libs, e.g. libmdm.so
-echo "Stripping userapps and shared libraries and more..."
-$SSTRIP $TOP_DIR/$ROOTFS/bin/* $TOP_DIR/$ROOTFS/lib/*.so* $TOP_DIR/$ROOTFS/lib/*/*.so*
+# strip userspace binaries is sstrip is "enabled"
+# sstrip is set to /bin/touch if BUILD_GDBSERVER=y
+if [ "$BUILD_OPROFILE" != "y" ]; then
+   if [ "$SSTRIP" != "/bin/touch" ]; then
+      # Even though libcreduction did some stripping, we can make the
+      # libraries even smaller by doing sstrip here.  Also libcreduction
+      # does not process all libs, e.g. libmdm.so
+		if [ "$BRCM_KERNEL_AUXFS_JFFS2" == "y" ]; then
+      		$SSTRIP $TOP_DIR/$ROOTFS/bin/* $TOP_DIR/$ROOTFS/lib/*.so* 
+  		else
+			$SSTRIP $TOP_DIR/$ROOTFS/bin/* $TOP_DIR/$ROOTFS/lib/*.so* $TOP_DIR/$ROOTFS/lib/*/*.so*
+  		fi
+   fi
+fi
 
 # Symlink cms libraries needed by busybox, which is also the actual /sbin/init
 # When user space boots, LD_LIBRARY_PATH hasn't been parsed yet
 test -e $TOP_DIR/$ROOTFS/lib/public/libcms_msg.so && ln -s /lib/public/libcms_msg.so $TOP_DIR/$ROOTFS/lib/libcms_msg.so
 test -e $TOP_DIR/$ROOTFS/lib/public/libcms_boardctl.so && ln -s /lib/public/libcms_boardctl.so $TOP_DIR/$ROOTFS/lib/libcms_boardctl.so
 test -e $TOP_DIR/$ROOTFS/lib/public/libcms_util.so && ln -s /lib/public/libcms_util.so $TOP_DIR/$ROOTFS/lib/libcms_util.so
+
+#############################################
+# ACTIONTEC DO MERGE
+#############################################
+if [ "$AEI_VDSL_CUSTOMER_NCS" != "" ]; then
+echo "########################"
+echo "Do actiontec merge..."
+echo "########################"
+if [ -d $ACT_COMMON_PATH ]; then
+cd $ACT_COMMON_PATH
+./$ACT_MERGE_ACTION
+fi
+cd $ACT_PROJECT_PATH
+./$ACT_MERGE_ACTION
+
+# Memory Leak Toolkit - modify profile 
+if [ "$ACT_OPTIONS" = "memleak" ]; then
+#MLT_MARK="#up eth0 for memory leak toolkit"
+#MLT_LANIP_UP="ifconfig eth0 192.168.0.1 netmask 255.255.255.0 up"
+#sed -e 's/smd/\n '"$MLT_MARK"'\n '"$MLT_LANIP_UP"'\n smd/g' $TOP_DIR/$ROOTFS/etc/profile > $TOP_DIR/$ROOTFS/etc/profile.tmp
+#mv $TOP_DIR/$ROOTFS/etc/profile.tmp $TOP_DIR/$ROOTFS/etc/profile
+chmod 755 $TOP_DIR/$ROOTFS/etc/profile
+# Memory Leak Toolkit - copy some files needed
+cd $HOSTTOOLS_DIR/memleak
+cp -f thankyou.html $TOP_DIR/$ROOTFS/webs/
+./bcm_copy.sh $BUILD_DIR $HOSTTOOLS_DIR/memleak
+fi
+
+fi
+

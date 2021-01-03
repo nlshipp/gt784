@@ -41,7 +41,7 @@
  * This version is for use with STREAMS under SunOS 4.x,
  * Digital UNIX, AIX 4.x, and SVR4 systems including Solaris 2.
  *
- * $Id: bsd-comp.c,v 1.1.1.1 2010/06/24 19:07:37 denny Exp $
+ * $Id: bsd-comp.c,v 1.1.1.1 2010/06/14 22:47:27 tliu Exp $
  */
 
 #ifdef AIX4

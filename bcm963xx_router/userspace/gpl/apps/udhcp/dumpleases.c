@@ -24,7 +24,6 @@ struct lease_t {
 	unsigned char chaddr[16];
 	u_int32_t yiaddr;
 	u_int32_t expires;
-	unsigned char name[64];
 };
 
 int main (int argc, char *argv[]) {
@@ -69,7 +68,7 @@ int main (int argc, char *argv[]) {
 		return 0;
 	}
 
-	printf("Mac Address       IP-Address      Expires %s           size=%d\n", mode == REMAINING ? "in" : "at",sizeof(lease));  
+	printf("Mac Address       IP-Address      Expires %s\n", mode == REMAINING ? "in" : "at");  
 	/*     "00:00:00:00:00:00 255.255.255.255 Wed Jun 30 21:49:08 1993" */
 	while (fread(&lease, sizeof(lease), 1, fp)) {
 
@@ -99,7 +98,6 @@ int main (int argc, char *argv[]) {
 				printf("%ld seconds\n", expires);
 			}
 		} else printf("%s", ctime(&expires));
-		printf(" <%s>",lease.name);
 	}
 	fclose(fp);
 	

@@ -1,6 +1,6 @@
 #
 # pppd makefile for Linux
-# $Id: Makefile,v 1.1.1.1.2.1 2011/02/25 16:58:04 yzhang Exp $
+# $Id: Makefile,v 1.3 2011/03/17 13:39:55 lzhang Exp $
 #
 
 # Default installation locations
@@ -43,9 +43,9 @@ endif
 #COPTS = -O2 -pipe -Wall -DDEBUG
 COPTS = -s -pipe -Wall -Os -fno-strict-aliasing 
 COPTS += $(BRCM_WERROR_CFLAGS)
-#COPTS +=  -DAEI_CONTROL_LAYER
 ifneq ($(strip $(AEI_CONTROL_LAYER)),)
 LIBS = $(ATMLIBDIR)/libatm.a -L../../../../private/apps/ctl_layer/lib -ldbus -ldbussend_msg
+COPTS +=  -DAEI_CONTROL_LAYER
 else
 LIBS = $(ATMLIBDIR)/libatm.a
 endif
@@ -157,8 +157,7 @@ ifeq ($(strip $(PPP_AUTODISCONN)),y)
 CFLAGS += -DAUTODISCONN
 endif
 
-
-CFLAGS += $(ACTION_TEC_DFLAGS)
+CFLAGS +=$(ACTION_TEC_DFLAGS)
 
 INSTALL= install -o root
 

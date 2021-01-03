@@ -1,22 +1,24 @@
+HOW TO BUILD A FIRMWARE FOR THE BROADCOM BCM963XX GT784WN DSL MODEM/ROUTER
 
-HOW TO BUILD A FIRMWARE FOR THE BROADCOM BCM963XX GT784WN NCS DSL MODEM/ROUTER
-
-Warning!! These instructions do not build a fully functional modem/router. You will need to add a way to access the device 
-into the code, before compiling it. (i.e. SSH, Telnet, or some type of GUI)
+Warning!! These instructions do not build a fully functional modem/router. You will need to add a way to access the device into the code, before compiling it.
+(i.e. SSH, Telnet, or some type of GUI)
 
 These Instructions Explain:
  
  * How to install the BCM963xx GPL source code onto the Linux workstation 
- * How to build the image file for the Actiontec GT784WN NCS 
+ * How to build the image file for the Actiontec GT784WN 
  * How to upgrade the device using the new firmware image file. 
- * How to recover the device to the original firmware. 
 
-NOTE: The following procedures are known to work with Fedora 9. 
+NOTE: The following procedures are known to work with the following versions of Fedora 9.
 
 The Actiontec GT784WN Source Code can be obtained from the Actiontec support website at http://opensource.actiontec.com.
 
 
-1. INSTALL THE BCM963XX 4.06L.02 CONSUMER RELEASE GT784WN NCS.
+IMPORTANT: When entering the file name at the command prompt be sure to replace the question marks "??.??L.??" with the release number.
+
+
+
+1. INSTALL THE BCM963XX 1.1L.1 CONSUMER RELEASE GT784WN.
 
 $ su
                     (open a console window and login as "su")
@@ -24,13 +26,13 @@ $ su
 # mkdir /tmp/consumer
                     (create a temp directory to install the source to)
 
-# cp bcm963xx_4.06L.02_consumer_release_GT784WN_NCS.tar.gz /tmp/consumer  
+# cp bcm963xx_TDS-??.??L.??_consumer_release_GT784WN.tar.gz /tmp/consumer  
                     (copy source code to temp directory)
 
 # cd /tmp/consumer
                     (make /tmp/consumer the working directory)
 
-# tar xvfz bcm963xx_4.06L.02_consumer_release_GT784WN_NCS.tar.gz
+# tar xvfz bcm963xx_TDS-??.??L.??_consumer_release_GT784WN.tar.gz
                     (decompress and extract the files so they can be installed)
 
 # ./consumer_install
@@ -40,53 +42,71 @@ $ su
 
 2. BUILD THE DESIRED IMAGE.
 
-# cd /tmp/consumer/bcm963xx_router
-                    (make /tmp/consumer/bcm963xx_router the working directory)
+# cd /opt/bcm963xx_router
+                    (make /opt/bcm963xx_router the working directory)
 
 # make PROFILE=96328GW
                     (running this "make" command will build the firmware image)
 
 
-YOU CAN UPLOAD THE IMAGE TO THE ROUTER BY FOLLOWING THESE STEPS.
+YOU CAN UPLOAD THE IMAGE TO THE ROUTER BY ONE OF THESE METHODS
 
-1. Use a Web browser to access the GT784WN NCS at it's LAN IP Address
+
+(They are in order of difficulty, with the simplest first.)
+
+
+
+STANDARD WEB INTERFACE UPGRADE METHOD
+
+1. Use a Web browser to access the GT784WN at it's LAN IP Address
 
 2. Navigate to the "Firmware Upgrade" page
 
 3. Use the Browse button to locate the newly created image file
-       (It will be in the /tmp/consumer/bcm963xx_router/images directory)
+       (It will be in the /opt/bcm963xx_router/images directory)
 
 4. Click the button to upgrade the Firmware
 
-5. Once the GUI says the upgrade has completed successfully, reboot the device to load the new firmware image. 
+5. The device will reboot using the new firmware image 
 
-6. Now the modem/router will be ready for you to access it with the method that you included before compiling the image.  
+6. To access the new firmware interface, use the (new) IP address, 192.168.1.1
+(You may need to renew the IP address of the workstation, to reach 192.168.1.1)
 
 
 
-YOU CAN RECOVER THE ROUTER BY FOLLOWING THESE STEPS.
+UPLOAD THE IMAGE TO THE ROUTER USING THE BOOTLOADER METHOD
 
-1.	Connect an Ethernet cable from your computer to the router.
+1. Enter Bootload mode, press enter at the console prompt...
+   ( *** Press any key to stop auto run (1 seconds) *** )
 
-2.	Set a static IP of 192.168.1.x with a default gateway of 192.168.1.1 to your NIC.
+2. Give the PC a static IP address: 192.168.1.2 & Subnet-Mask: 255.255.255.0
 
-3.	Power off your router.
+3. Use a Web browser to access the interface at the IP address, 192.168.1.1
 
-4.	Find a pen or something small that will fit into the reset button hole on the back of the unit.
+4. In the Software File Name:box, select the (new) firmware image 
+       (Look for it in the "images" directory at: /opt/bcm963xx_router/images )
 
-5.	Push and hold that reset button in and power on the unit.
+5. Click the Update Software button.
 
-6.	Wait for the power light to go red.
+TFTP METHOD
 
-7.	Release the reset button.
+1.Enable LAN side telnet support using the router's current web interface.
 
-8.	Open your web browser and go to the IP address of 192.168.1.1 you should get a screen that will give you instructions 
-    on how to load the original firmware image to the router.
+2.Telnet to the router
 
-PLEASE NOTE: The machine-readable software source code provided here is for Programmers who may wish to alter or customize 
-the code,and typically will not be of use to the vast majority of consumers. The software source code provided here is 
-subject to Version 2 of the GPL or other GPL or LGPL licenses which are all included in the download and are available 
-below and also at "http://www.gnu.org/licenses/" and as such, the software source code is distributed 
-WITHOUT ANY WARRANTY and subject to the copyrights of the authors. Compiling errors due to lack of public libraries/tools 
-in the customer's specific platform/OS are the responsibility of the user of this GPL source code.
- 
+3.Login.        (default username and password are both, admin)
+
+4.tftp get serverip:serverfile localfile 
+                (serverfile is the name of the file that resides on the server) 
+                (localfile is the name of the file that resides on the router)
+
+
+PLEASE NOTE: The machine-readable software source code provided here is for 
+Programmers who may wish to alter or customize the code, and typically will not 
+be of use to the vast majority of consumers. The software source code provided 
+here is subject to Version 2 of the GPL or other GPL or LGPL licenses which 
+are all included in the download and are available below and also at 
+"http://www.gnu.org/licenses/" and as such, the software source code is 
+distributed WITHOUT ANY WARRANTY and subject to the copyrights of the authors. 
+Compiling errors due to lack of public libraries/tools in the customer's 
+specific platform/OS are the responsibility of the user of this GPL source code.

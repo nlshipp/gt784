@@ -31,8 +31,11 @@
 # To add an app, add it to APP_DIRS, and write the target rule in the
 # last section of this Makefile
 #
-APP_DIRS = dhcpv6 ppp sshd ipsec-tools ledctl dhrystone
-
+ifneq ($(strip $(AEI_CONTROL_LAYER)),)
+APP_DIRS = dhcpv6-aei ppp sshd ipsec-tools ledctl dhrystone factoryctl
+else
+APP_DIRS = dhcpv6 ppp sshd ipsec-tools ledctl dhrystone factoryctl
+endif
 #
 # We need to declare these directory names as phony targets,
 # otherwise make will think the directories themselves are
@@ -44,7 +47,11 @@ APP_DIRS = dhcpv6 ppp sshd ipsec-tools ledctl dhrystone
 
 # Some apps have names that are different from their directory
 # name, so need to list them explictly here.
+ifneq ($(strip $(AEI_CONTROL_LAYER)),)
+all : $(APP_DIRS) pppd dhcpv6
+else
 all : $(APP_DIRS) pppd
+endif
 
 
 #
@@ -99,9 +106,14 @@ sshd: sanity_check
 endif
 
 ifneq ($(strip $(BUILD_IPV6)),)
+ifneq ($(strip $(AEI_CONTROL_LAYER)),)
+dhcpv6: sanity_check
+	$(MAKE) -C dhcpv6-aei
+else
 dhcpv6: sanity_check
 	(tar xkjf dhcpv6.tar.bz2 2> /dev/null || true)
 	$(MAKE) -C dhcpv6
+endif
 else
 dhcpv6: sanity_check
 	@echo "skipping dhcpv6 (not configured)"
@@ -139,5 +151,13 @@ dhrystone: sanity_check
 else
 dhrystone: sanity_check
 	@echo "skipping dhrystone (not configured)"
+endif
+
+ifneq ($(strip $(BUILD_FACTORYCTL)),)
+factoryctl: sanity_check
+	$(MAKE) -C $@
+else
+factoryctl: sanity_check
+	@echo "skipping $@ (not configured)"
 endif
 

@@ -52,6 +52,7 @@
 BcmPktDma_LocalXtmRxDma *g_pXtmRxDma[MAX_RECEIVE_QUEUES];
 BcmPktDma_LocalXtmTxDma *g_pXtmTxDma[MAX_TRANSMIT_QUEUES];
 #endif
+BcmPktDma_LocalXtmTxDma *g_pXtmSwTxDma[MAX_TRANSMIT_QUEUES];
 
 /* Binding with XTMRT */
 PBCMXTMRT_GLOBAL_INFO g_pXtmGlobalInfo = (PBCMXTMRT_GLOBAL_INFO)NULL; 
@@ -81,24 +82,24 @@ int bcmPktDma_XtmInitRxChan_Iudma(uint32 channel,
 
 int bcmPktDma_XtmInitTxChan_Iudma(uint32 channel,
                                   uint32 bufDescrs,
-                                  BcmPktDma_LocalXtmTxDma *pXtmTxDma)
+                                  BcmPktDma_LocalXtmTxDma *pXtmTxDma,
+                                  uint32 dmaType)
 {
+   BcmPktDma_LocalXtmTxDma **ppXtmTxDma ;
+
+   ppXtmTxDma = (dmaType == XTM_HW_DMA) ? g_pXtmTxDma : g_pXtmSwTxDma ;
+
     //printk("bcmPktDma_XtmInitTxChan_Iudma ch: %ld bufs: %ld txdma: %p\n", 
     //        channel, bufDescrs, pXtmTxDma);
 
-    g_pXtmTxDma[channel] = (BcmPktDma_LocalXtmTxDma *)pXtmTxDma;
-    
-    g_pXtmTxDma[channel]->txFreeBds = bufDescrs;
-    g_pXtmTxDma[channel]->txHeadIndex = 0;
-    g_pXtmTxDma[channel]->txTailIndex = 0;
-    g_pXtmTxDma[channel]->txEnabled = 0;
+   ppXtmTxDma[channel] = (BcmPktDma_LocalXtmTxDma *)pXtmTxDma;
 
-#if 0
-    /* Code not necessary. Copies from A to A */
-    g_pXtmTxDma[channel]->txBds = (volatile DmaDesc *)pXtmTxDma->txBds;
-    g_pXtmTxDma[channel]->txDma = (volatile DmaChannelCfg *)pXtmTxDma->txDma;
-    g_pXtmTxDma[channel]->pKeyPtr = pXtmTxDma->pKeyPtr;
-#endif
+   ppXtmTxDma[channel]->txFreeBds = bufDescrs;
+   ppXtmTxDma[channel]->txHeadIndex = 0;
+   ppXtmTxDma[channel]->txTailIndex = 0;
+   ppXtmTxDma[channel]->txEnabled = 0;
+   if (dmaType == XTM_SW_DMA)
+      ppXtmTxDma[channel]->txSchedHeadIndex = 0;
     
     return 1;
 }
@@ -164,11 +165,16 @@ uint32 bcmPktDma_XtmRecv_Iudma(int channel, unsigned char **pBuf, int * pLen)
    Notes: channel in XTM mode refers to a specific TXQINFO struct of a 
           specific XTM Context
 -------------------------------------------------------------------------- */
-int bcmPktDma_XtmXmitAvailable_Iudma(int channel) 
+int bcmPktDma_XtmXmitAvailable_Iudma(int channel, uint32 dmaType)
 {
     BcmPktDma_LocalXtmTxDma *txdma;
+    BcmPktDma_LocalXtmTxDma **ppXtmTxDma ;
+
+    ppXtmTxDma = (dmaType == XTM_HW_DMA) ? g_pXtmTxDma : g_pXtmSwTxDma ;
+
     
-    txdma = g_pXtmTxDma[channel];
+    txdma = ppXtmTxDma[channel];
+    
     if (txdma->txFreeBds != 0)  return 1;
     
     return 0;
@@ -179,14 +185,24 @@ int bcmPktDma_XtmXmitAvailable_Iudma(int channel)
  Purpose: Coordinate with FAP for tx enable
   Return: 1 on success; 0 otherwise
 -------------------------------------------------------------------------- */
-int bcmPktDma_XtmTxEnable_Iudma( int channel, PDEV_PARAMS unused )
+int bcmPktDma_XtmTxEnable_Iudma( int channel, PDEV_PARAMS unused, uint32 dmaType )
 {
     BcmPktDma_LocalXtmTxDma *txdma;
+    BcmPktDma_LocalXtmTxDma **ppXtmTxDma ;
+
+    ppXtmTxDma = (dmaType == XTM_HW_DMA) ? g_pXtmTxDma : g_pXtmSwTxDma ;
 
     //printk("bcmPktDma_XtmTxEnable_Iudma ch: %d\n", channel);
 
-    txdma = g_pXtmTxDma[channel];
+    txdma = ppXtmTxDma[channel];
     txdma->txEnabled = 1;
+
+    /* The other SW entity which reads from this DMA in case of SW_DMA,
+     * will always look at this bit to start processing anything from
+     * the DMA queue.
+     */
+    if (dmaType == XTM_SW_DMA)
+       txdma->txDma->cfg = DMA_ENABLE ;
     return 1;
 }
 
@@ -195,50 +211,62 @@ int bcmPktDma_XtmTxEnable_Iudma( int channel, PDEV_PARAMS unused )
  Purpose: Coordinate with FAP for tx disable
   Return: 1 on success; 0 otherwise
 -------------------------------------------------------------------------- */
-int bcmPktDma_XtmTxDisable_Iudma( int channel )
+int bcmPktDma_XtmTxDisable_Iudma( int channel, uint32 dmaType, void (*func) (uint32 param1,
+         BcmPktDma_XtmTxDma *txswdma), uint32 param1)
 {
-    BcmPktDma_LocalXtmTxDma *txdma;
     int j;
+    BcmPktDma_LocalXtmTxDma *txdma;
+    BcmPktDma_LocalXtmTxDma **ppXtmTxDma ;
 
-    txdma = g_pXtmTxDma[channel];
+    ppXtmTxDma = (dmaType == XTM_HW_DMA) ? g_pXtmTxDma : g_pXtmSwTxDma ;
+
+    txdma = ppXtmTxDma[channel];
     txdma->txEnabled = 0;
 
     /* Changing txEnabled to 0 prevents any more packets
      * from being queued on a transmit DMA channel.  Allow all currenlty
      * queued transmit packets to be transmitted before disabling the DMA.
      */
-    for (j = 0; j < 2000 && (txdma->txDma->cfg & DMA_ENABLE) == DMA_ENABLE; j++)
-    {
-#if !defined(CONFIG_BCM_FAP) && !defined(CONFIG_BCM_FAP_MODULE)
-        udelay(500);
-#else
-        {
-            /* Increase wait from .1 sec to .5 sec to handle longer XTM packets - May 2010 */
-            uint32 prevJiffies = fap4keTmr_jiffies + (FAPTMR_HZ) / 2; /* .5 sec */
-                                                                       
-            while(!fap4keTmr_isTimeAfter(fap4keTmr_jiffies, prevJiffies)); 
 
-            if((txdma->txDma->cfg & DMA_ENABLE) == DMA_ENABLE) 
-            {
+    if (dmaType == XTM_HW_DMA) {
+
+       for (j = 0; j < 2000 && (txdma->txDma->cfg & DMA_ENABLE) == DMA_ENABLE; j++)
+       {
+#if !defined(CONFIG_BCM_FAP) && !defined(CONFIG_BCM_FAP_MODULE)
+          udelay(500);
+#else
+          {
+             /* Increase wait from .1 sec to .5 sec to handle longer XTM packets - May 2010 */
+             uint32 prevJiffies = fap4keTmr_jiffies + (FAPTMR_HZ) / 2; /* .5 sec */
+
+             while(!fap4keTmr_isTimeAfter(fap4keTmr_jiffies, prevJiffies)); 
+
+             if((txdma->txDma->cfg & DMA_ENABLE) == DMA_ENABLE) 
+             {
                 return 0;    /* return so caller can handle the failure */
-            }
-        }
+             }
+          }
 #endif
-    }
+       }
 
-    /* Take interface down if necessary */
-    if ((txdma->txDma->cfg & DMA_ENABLE) == DMA_ENABLE)
-    {
-        /* This should not happen. */
-        txdma->txDma->cfg = DMA_PKT_HALT;
+       if ((txdma->txDma->cfg & DMA_ENABLE) == DMA_ENABLE)
+       {
+          /* This should not happen. */
+          txdma->txDma->cfg = DMA_PKT_HALT;
 #if !defined(CONFIG_BCM_FAP) && !defined(CONFIG_BCM_FAP_MODULE)
-        udelay(500);
+          udelay(500);
 #else
-        /* This will not happen in the FAP/FAP_MODULE case */
+          /* This will not happen in the FAP/FAP_MODULE case */
 #endif
-        txdma->txDma->cfg = 0;
-        if ((txdma->txDma->cfg & DMA_ENABLE) == DMA_ENABLE)
-            return 0;    /* return so caller can handle the failure */
+          txdma->txDma->cfg = 0;
+          if ((txdma->txDma->cfg & DMA_ENABLE) == DMA_ENABLE)
+             return 0;    /* return so caller can handle the failure */
+       }
+    } /* if DMA is HW Type */
+    else {
+
+       /* No blocking wait for SW DMAs */
+       (*func)(param1, txdma) ;
     }
 
     return 1;
@@ -316,13 +344,17 @@ int bcmPktDma_XtmRxDisable_Iudma( int channel )
 -------------------------------------------------------------------------- */
 BOOL bcmPktDma_XtmForceFreeXmitBufGet_Iudma(int channel, uint32 *pKey,
                                             uint32 *pTxSource, uint32 *pTxAddr,
-                                            uint32 *pRxChannel)
+                                            uint32 *pRxChannel, uint32 dmaType,
+                                            uint32 noGlobalBufAccount)
 {
-    BcmPktDma_LocalXtmTxDma *txdma;
     BOOL ret = FALSE;
     int  bdIndex;
+    BcmPktDma_LocalXtmTxDma *txdma;
+    BcmPktDma_LocalXtmTxDma **ppXtmTxDma ;
 
-    txdma = g_pXtmTxDma[channel];
+    ppXtmTxDma = (dmaType == XTM_HW_DMA) ? g_pXtmTxDma : g_pXtmSwTxDma ;
+
+    txdma = ppXtmTxDma[channel];
     bdIndex = txdma->txHeadIndex;
     *pKey = 0;
 #if defined(CONFIG_BCM_FAP) || defined(CONFIG_BCM_FAP_MODULE)
@@ -335,6 +367,7 @@ BOOL bcmPktDma_XtmForceFreeXmitBufGet_Iudma(int channel, uint32 *pKey,
     /* Reclaim transmitted buffers */
     if (txdma->txFreeBds < txdma->ulQueueSize)
     {
+       /* Dont check for DMA_OWN status */
         {
            *pKey = txdma->txRecycle[bdIndex].key;
 #if defined(CONFIG_BCM_FAP) || defined(CONFIG_BCM_FAP_MODULE)
@@ -350,6 +383,7 @@ BOOL bcmPktDma_XtmForceFreeXmitBufGet_Iudma(int channel, uint32 *pKey,
            txdma->ulNumTxBufsQdOne--;
 #if !defined(CONFIG_BCM96816) && !defined(CONFIG_BCM96362)
            // FIXME - Which chip uses more then one TX queue?
+           if (!noGlobalBufAccount)
            g_pXtmGlobalInfo->ulNumTxBufsQdAll--;
 #endif
 
@@ -409,7 +443,8 @@ DmaDesc *bcmPktDma_XtmAllocTxBds(int channel, int numBds)
 
     /* Allocate Tx Descriptors in DDR */
     /* Leave room for alignment by caller - Apr 2010 */
-    if ((p = kmalloc(numBds * size + 0x10, GFP_KERNEL))) {
+    p = kmalloc(numBds * size + 0x10, GFP_ATOMIC) ;
+    if (p !=NULL) {
         memset(p, 0, numBds * size + 0x10);
         cache_flush_len(p, numBds * size + 0x10);
     }
@@ -463,7 +498,8 @@ DmaDesc *bcmPktDma_XtmAllocRxBds(int channel, int numBds)
 
     /* Allocate Rx Descriptors in DDR */
     /* Leave room for alignment by caller - Apr 2010 */
-    if ((p = kmalloc(numBds * sizeof(DmaDesc) + 0x10, GFP_KERNEL))) {
+    p = kmalloc(numBds * sizeof(DmaDesc) + 0x10, GFP_ATOMIC) ;
+    if (p != NULL) {
         memset(p, 0, numBds * sizeof(DmaDesc) + 0x10);
         cache_flush_len(p, numBds * sizeof(DmaDesc) + 0x10);
     }
@@ -492,6 +528,7 @@ EXPORT_SYMBOL(bcmPktDma_XtmForceFreeXmitBufGet_Iudma);
 #if !(defined(CONFIG_BCM_FAP) || defined(CONFIG_BCM_FAP_MODULE))
 EXPORT_SYMBOL(g_pXtmRxDma);
 EXPORT_SYMBOL(g_pXtmTxDma);
+EXPORT_SYMBOL(g_pXtmSwTxDma);
 #endif
 
 #endif  /* #ifndef CONFIG_BCM96816 */

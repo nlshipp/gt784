@@ -1,5 +1,5 @@
 /*
- * $Id: types.h,v 1.61.2.11 Broadcom SDK $
+ * $Id: bcmswapitypes.h,v 1.3 2011/04/09 09:54:06 ywu Exp $
  *
  * $Copyright: Copyright 2008 Broadcom Corporation.
  * This program is the proprietary software of Broadcom Corporation
@@ -118,6 +118,7 @@ enum {
     ETHSWVLAN,
     ETHSWGETRXCOUNTERS,
     ETHSWRESETRXCOUNTERS,
+    ETHRESETHPNATRXCOUNTERS,
     ETHSWPBVLAN,
     ETHSWCOSCONF,
     ETHSWCOSSCHED,

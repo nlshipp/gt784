@@ -17,7 +17,7 @@
 #define NR_RX_BDS(x)            NR_RX_BDS_MAX
 #define NR_TX_BDS               2500
 #else
-#define NR_RX_BDS_MAX           400
+#define NR_RX_BDS_MAX           1200
 #define NR_RX_BDS(x)            NR_RX_BDS_MAX
 #define NR_TX_BDS               180
 #endif

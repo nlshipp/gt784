@@ -67,6 +67,7 @@
 /* Typedefs. */
 
 #if defined (WIRELESS)
+
 #define SES_EVENT_BTN_PRESSED      0x00000001
 #define SES_EVENTS                 SES_EVENT_BTN_PRESSED /*OR all values if any*/
 #define SES_LED_OFF                0
@@ -77,7 +78,7 @@
 #define WLAN_ONBOARD_SLOT	WLAN_ONCHIP_DEV_SLOT
 #else
 #define WLAN_ONBOARD_SLOT       1 /* Corresponds to IDSEL -- EBI_A11/PCI_AD12 */
-#endif
+#endif // CONFIG_BCM96362
 
 #define BRCM_VENDOR_ID       0x14e4
 #define BRCM_WLAN_DEVICE_IDS 0x4300
@@ -85,6 +86,52 @@
 
 #define WLAN_ON   1
 #define WLAN_OFF  0
+
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+
+#define WSC_PROC_IDLE         0
+#define WSC_PROC_WAITING      1
+#define WSC_PROC_SUCC         2
+#define WSC_PROC_TIMEOUT      3
+#define WSC_PROC_FAIL         4
+#define WSC_PROC_M2_SENT      5
+#define WSC_PROC_M7_SENT      6
+#define WSC_PROC_MSG_DONE     7
+#define WSC_PROC_PBC_OVERLAP  8
+/*WPS SM State*/
+#define WSC_EVENTS_PROC_START              2
+#define WSC_EVENTS_PROC_IDLE               (WSC_PROC_IDLE + WSC_EVENTS_PROC_START)
+#define WSC_EVENTS_PROC_WAITING            (WSC_PROC_WAITING + WSC_EVENTS_PROC_START)
+#define WSC_EVENTS_PROC_SUCC               (WSC_PROC_SUCC  + WSC_EVENTS_PROC_START)
+#define WSC_EVENTS_PROC_TIMEOUT            (WSC_PROC_TIMEOUT + WSC_EVENTS_PROC_START)
+#define WSC_EVENTS_PROC_FAIL               (WSC_PROC_FAIL + WSC_EVENTS_PROC_START)
+#define WSC_EVENTS_PROC_M2_SENT            (WSC_PROC_M2_SENT + WSC_EVENTS_PROC_START)
+#define WSC_EVENTS_PROC_M7_SENT            (WSC_PROC_M7_SENT + WSC_EVENTS_PROC_START)
+#define WSC_EVENTS_PROC_MSG_DONE           (WSC_PROC_MSG_DONE + WSC_EVENTS_PROC_START)
+#define WSC_EVENTS_PROC_PBC_OVERLAP        (WSC_PROC_PBC_OVERLAP + WSC_EVENTS_PROC_START)
+
+#endif //AEI_VDSL_CUSTOMER_NCS
+
+#endif //WIRELESS
+
+#if defined(AEI_VDSL_CUSTOMER_QWEST) || defined(AEI_VDSL_CUSTOMER_MTS)
+#define RESET_POLL_TIME		1
+#define RESET_HOLD_TIME		10
+#define FACTORY_HOLD_TIME	15
+#elif defined(AEI_VDSL_CUSTOMER_TELUS)
+#if defined(AEI_VDSL_CUSTOMER_SASKTEL)
+#define RESET_POLL_TIME         1
+#define RESET_HOLD_TIME         10
+#else
+#define RESET_POLL_TIME		1
+#define NOT_LONG_ENOUGH_TIME    3
+#define FACTORY_HOLD_TIME	30
+#endif
+#endif 
+
+#if defined(AEI_VDSL_QOS_SINK)
+int actiontec_cmf_flag=0;
+int actiontec_cmf_ret=0;
 #endif
 
 typedef struct
@@ -180,6 +227,12 @@ static int proc_set_param(struct file *f, const char *buf, unsigned long cnt, vo
 static int proc_set_led(struct file *f, const char *buf, unsigned long cnt, void *data);
 
 static irqreturn_t reset_isr(int irq, void *dev_id);
+#if defined(AEI_VDSL_CUSTOMER_QWEST) || defined(AEI_VDSL_CUSTOMER_MTS) || defined(AEI_VDSL_CUSTOMER_TELUS)
+static int count = 0;
+static struct timer_list reset_timer, *pTimer = NULL;
+static void reset_timer_func(unsigned long data);
+static unsigned short rirq = BP_NOT_DEFINED;
+#endif
 
 static PMAC_INFO g_pMacInfo = NULL;
 static PGPON_INFO g_pGponInfo = NULL;
@@ -226,6 +279,10 @@ uint32 board_major = 0;
 #if defined (WIRELESS)
 static unsigned short sesBtn_irq = BP_NOT_DEFINED;
 static unsigned short sesLed_gpio = BP_NOT_DEFINED;
+#if defined(AEI_VDSL_CUSTOMER_NCS) && defined(CONFIG_BCM96328)
+//#if defined(AEI_ADSL_CUSTOMER_QWEST_L5000)
+static unsigned short sesLed_gpio_fail = BP_NOT_DEFINED;
+#endif
 #endif
 
 #if defined(MODULE)
@@ -492,6 +549,14 @@ static int __init brcm_board_init( void )
 
         boardLedInit();
         g_ledInitialized = 1;
+
+#if defined(AEI_VDSL_CUSTOMER_NCS) && defined(CONFIG_BCM96328)  
+/* #if defined(AEI_ADSL_CUSTOMER_QWEST_L5000) || defined(AEI_ADSL_CUSTOMER_TDS_GT784WN) */
+/* per GT784WN spec, blinking green on bootup */
+        boardLedCtrl(kLedPower, kLedStateSlowBlinkContinues);
+#elif defined(AEI_VDSL_CUSTOMER_TELUS)
+        boardLedCtrl(kLedPower, kLedStateRedSlowBlinkContinues);
+#endif
 
         if( BpGetResetToDefaultExtIntr(&rstToDflt_irq) == BP_SUCCESS )
         {
@@ -816,12 +881,17 @@ void dumpaddr( unsigned char *pAddr, int nLen )
 
 void kerSysMipsSoftReset(void)
 {
+    // Power Management on Ethernet Ports may have brought down EPHY PLL
+    // and soft reset below will lock-up 6362 if the PLL is not up
+    // therefore bring it up here to give it time to stabilize
+    GPIO->RoboswEphyCtrl &= ~EPHY_PWR_DOWN_DLL;
     // let UART finish printing
     udelay(100);
 #if defined(CONFIG_SMP)
     smp_send_stop();
     udelay(20);
 #endif
+    local_irq_disable();
 
 #if defined(CONFIG_BCM_CPLD1)
     // Determine if this was a request to enter Standby mode
@@ -892,8 +962,18 @@ unsigned long kerSysGetMacAddressType( unsigned char *ifName )
     }
     else if(strstr(ifName, IF_NAME_PTM))
     {
+#if defined(AEI_VDSL_CUSTOMER_QWEST)
+        macAddressType = 0x12ffffff;
+#else
         macAddressType = MAC_ADDRESS_PTM;
+#endif
     }
+#ifdef AEI_VDSL_CUSTOMER_NCS
+    else if(strstr(ifName, IF_NAME_EWAN))
+    {
+        macAddressType = MAC_ADDRESS_ETH;
+    }
+#endif
 
     return macAddressType;
 }
@@ -913,9 +993,29 @@ int kerSysGetMacAddress( unsigned char *pucaMacAddr, unsigned long ulId )
         NVRAM_MAC_ADDRESS_LEN - constMacAddrIncIndex);
     baseMacAddr >>= 8;
 
+#if defined(AEI_VDSL_CUSTOMER_QWEST)
+    if(ulId == 0x12ffffff)
+    {
+            baseMacAddr = (baseMacAddr + 1) << 8;
+            memcpy( pucaMacAddr, g_pMacInfo->ucaBaseMacAddr,
+                constMacAddrIncIndex);
+            memcpy( pucaMacAddr + constMacAddrIncIndex, (unsigned char *)
+                &baseMacAddr, NVRAM_MAC_ADDRESS_LEN - constMacAddrIncIndex );
+            g_pMacInfo->MacAddrs[1].ulId = ulId;
+            g_pMacInfo->MacAddrs[1].chInUse = 1;
+            return nRet;
+  
+    }
+#endif
+
     for( i = 0, pMai = g_pMacInfo->MacAddrs; i < g_pMacInfo->ulNumMacAddrs;
         i++, pMai++ )
     {
+#if defined(AEI_VDSL_CUSTOMER_QWEST)
+		if (i == 1)  /*This mac addr is used for atm0 or ptm0*/
+			continue;
+#endif
+
         if( ulId == pMai->ulId || ulId == MAC_ADDRESS_ANY )
         {
             /* This MAC address has been used by the caller in the past. */
@@ -938,6 +1038,11 @@ int kerSysGetMacAddress( unsigned char *pucaMacAddr, unsigned long ulId )
                     */
                     pMaiFreeNoId = pMai;
                     ulIdxNoId = i;
+#ifdef AEI_VDSL_CUSTOMER_NCS
+                    continue;
+#else
+		    break;
+#endif
                 }
                 else
                     if( pMai->ulId != 0 && pMaiFreeId == NULL )
@@ -948,6 +1053,11 @@ int kerSysGetMacAddress( unsigned char *pucaMacAddr, unsigned long ulId )
                         */
                         pMaiFreeId = pMai;
                         ulIdxId = i;
+#ifdef AEI_VDSL_CUSTOMER_NCS
+                        continue;
+#else
+			break;
+#endif
                     }
             }
     }
@@ -956,6 +1066,28 @@ int kerSysGetMacAddress( unsigned char *pucaMacAddr, unsigned long ulId )
     {
         /* An available MAC address was found. */
         memcpy(pucaMacAddr, g_pMacInfo->ucaBaseMacAddr,NVRAM_MAC_ADDRESS_LEN);
+#ifdef AEI_VDSL_CUSTOMER_NCS
+        if( pMaiFreeId )
+        {
+            baseMacAddr = (baseMacAddr + ulIdxId) << 8;
+            memcpy( pucaMacAddr, g_pMacInfo->ucaBaseMacAddr,
+                constMacAddrIncIndex);
+            memcpy( pucaMacAddr + constMacAddrIncIndex, (unsigned char *)
+                &baseMacAddr, NVRAM_MAC_ADDRESS_LEN - constMacAddrIncIndex );
+            pMaiFreeId->ulId = ulId;
+            pMaiFreeId->chInUse = 1;
+        }
+        else
+        {
+            baseMacAddr = (baseMacAddr + ulIdxNoId) << 8;
+            memcpy( pucaMacAddr, g_pMacInfo->ucaBaseMacAddr,
+                constMacAddrIncIndex);
+            memcpy( pucaMacAddr + constMacAddrIncIndex, (unsigned char *)
+                &baseMacAddr, NVRAM_MAC_ADDRESS_LEN - constMacAddrIncIndex );
+            pMaiFreeNoId->ulId = ulId;
+            pMaiFreeNoId->chInUse = 1;
+        }
+#else
         if( pMaiFreeNoId )
         {
             baseMacAddr = (baseMacAddr + ulIdxNoId) << 8;
@@ -976,6 +1108,7 @@ int kerSysGetMacAddress( unsigned char *pucaMacAddr, unsigned long ulId )
             pMaiFreeId->ulId = ulId;
             pMaiFreeId->chInUse = 1;
         }
+#endif
     }
     else
         if( i == g_pMacInfo->ulNumMacAddrs )
@@ -1084,6 +1217,38 @@ int kerSysGetAfeId( unsigned long *afeId )
     kfree(pNvramData);
     return 0;
 }
+
+#ifdef AEI_VDSL_CUSTOMER_NCS
+#if !defined (CONFIG_BCM96328)
+
+void restoreDatapump(int value){
+
+	NVRAM_DATA nvramData;
+	readNvramData(&nvramData);
+ 	nvramData.dslDatapump=value;
+ 	writeNvramData(&nvramData);
+
+
+}
+
+int kerSysGetDslDatapump(unsigned char *dslDatapump)
+{
+    NVRAM_DATA *pNvramData;
+
+    pNvramData = kmalloc(sizeof(NVRAM_DATA), GFP_KERNEL);
+    if (pNvramData == NULL)
+    {
+       printk("ERROR - Could not allocate memory for pNvramData (%s)\n", __FUNCTION__);
+       return -1;
+    }
+    readNvramData(pNvramData);
+    *dslDatapump = (unsigned char)pNvramData->dslDatapump;
+    kfree(pNvramData);
+    return 0;
+}
+#endif
+#endif
+
 void kerSysLedCtrl(BOARD_LED_NAME ledName, BOARD_LED_STATE ledState)
 {
     if (g_ledInitialized)
@@ -1280,6 +1445,20 @@ static PFILE_TAG getBootImageTag(void)
 
         kfree(pNvramData);
 
+#if defined(AEI_VDSL_DUAL_IMAGE)
+		  if(sequence1 != IMAGE1_SEQUENCE || sequence2 != IMAGE2_SEQUENCE )
+		  {  
+			if( bootPartition == BOOT_LATEST_IMAGE )
+			{
+				pTag = pTag1;
+			}
+			else /* Boot from the second image. */
+			{
+				pTag = pTag2;
+			}
+		  }
+		  else
+#endif
         if( bootPartition == BOOT_LATEST_IMAGE )
             pTag = (sequence2 > sequence1) ? pTag2 : pTag1;
         else /* Boot from the image configured. */
@@ -1326,6 +1505,9 @@ static int flashFsKernelImage( unsigned char *imagePtr, int imageLen )
     unsigned int baseAddr = (unsigned int) flash_get_memptr(0);
     unsigned int totalSize = (unsigned int) flash_get_total_size();
     unsigned int reservedBytesAtEnd;
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+    unsigned int reserverdBytersAuxfs;
+#endif
     unsigned int availableSizeOneImg;
     unsigned int reserveForTwoImages;
     unsigned int availableSizeTwoImgs;
@@ -1337,7 +1519,12 @@ static int flashFsKernelImage( unsigned char *imagePtr, int imageLen )
     unsigned int rootfsOffset = (unsigned int) rootfsAddr - IMAGE_BASE - TAG_LEN;
     FLASH_ADDR_INFO flash_info;
     NVRAM_DATA *pNvramData;
-
+#if defined(AEI_VDSL_DUAL_IMAGE)
+    int newImageSequence = simple_strtoul(pTag->imageSequence, NULL, 10);
+#endif
+#if defined(AEI_VDSL_UPGRADE_DUALIMG_HISTORY_SPAD)
+//	char ugstatus[3]="12";
+#endif
     pNvramData = kmalloc(sizeof(NVRAM_DATA), GFP_KERNEL);
     if (pNvramData == NULL)
     {
@@ -1364,8 +1551,14 @@ static int flashFsKernelImage( unsigned char *imagePtr, int imageLen )
     kernelAddr += BOOT_OFFSET;
 
     reservedBytesAtEnd = flash_get_reserved_bytes_at_end(&flash_info);
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+    reserverdBytersAuxfs = flash_get_reserved_bytes_auxfs();
+    reservedBytesAtEnd = reservedBytesAtEnd - reserverdBytersAuxfs;
+#endif 
+
     availableSizeOneImg = totalSize - ((unsigned int) rootfsAddr - baseAddr) -
         reservedBytesAtEnd;
+
     reserveForTwoImages =
         (flash_info.flash_rootfs_start_offset > reservedBytesAtEnd)
         ? flash_info.flash_rootfs_start_offset : reservedBytesAtEnd;
@@ -1392,11 +1585,18 @@ static int flashFsKernelImage( unsigned char *imagePtr, int imageLen )
     // in the partition that is not currently being used to boot from.
     if( curImgSize <= availableSizeTwoImgs &&
         newImgSize <= availableSizeTwoImgs &&
+#ifdef AEI_VDSL_DUAL_IMAGE
+         newImageSequence== IMAGE2_SEQUENCE )
+#else
         getPartitionFromTag( pCurTag ) == 1 )
+#endif
     {
         // Update rootfsAddr to point to the second boot partition.
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+        int offset = ((totalSize-reserverdBytersAuxfs) / 2) + TAG_LEN;
+#else
         int offset = (totalSize / 2) + TAG_LEN;
-
+#endif
         sprintf(((PFILE_TAG) tagFs)->kernelAddress, "%lu",
             (unsigned long) IMAGE_BASE + offset + (kernelAddr - rootfsAddr));
         kernelAddr = baseAddr + offset + (kernelAddr - rootfsAddr);
@@ -1404,9 +1604,22 @@ static int flashFsKernelImage( unsigned char *imagePtr, int imageLen )
         sprintf(((PFILE_TAG) tagFs)->rootfsAddress, "%lu",
             (unsigned long) IMAGE_BASE + offset);
         rootfsAddr = baseAddr + offset;
+#if defined(AEI_VDSL_UPGRADE_DUALIMG_HISTORY_SPAD)
+	//sprintf(ugstatus,"22");
+#endif
+		
     }
-
+#ifdef AEI_VDSL_DUAL_IMAGE
+    memset(((PFILE_TAG) tagFs)->imageSequence,0,sizeof(((PFILE_TAG) tagFs)->imageSequence));
+    if(newImageSequence== IMAGE2_SEQUENCE )
+    {
+        sprintf(((PFILE_TAG) tagFs)->imageSequence,"%d",IMAGE2_SEQUENCE);
+    }
+    else
+        sprintf(((PFILE_TAG) tagFs)->imageSequence,"%d",IMAGE1_SEQUENCE);
+#else
     UpdateImageSequenceNumber( ((PFILE_TAG) tagFs)->imageSequence );
+#endif
     crc = CRC32_INIT_VALUE;
     crc = getCrc32((unsigned char *)tagFs, (UINT32)TAG_LEN-TOKEN_LEN, crc);
     *(unsigned long *) &((PFILE_TAG) tagFs)->tagValidationToken[0] = crc;
@@ -1419,7 +1632,7 @@ static int flashFsKernelImage( unsigned char *imagePtr, int imageLen )
         return status;
     }
 
-    
+#if !defined(AEI_VDSL_DUAL_IMAGE)   
     for( p = pNvramData->szBootline; p[2] != '\0'; p++ )
     {
         if( p[0] == 'p' && p[1] == '=' && p[2] != BOOT_LATEST_IMAGE )
@@ -1430,7 +1643,20 @@ static int flashFsKernelImage( unsigned char *imagePtr, int imageLen )
             break;
         }
     }
+#endif
     kfree(pNvramData);
+#if defined(AEI_VDSL_UPGRADE_DUALIMG_HISTORY_SPAD)
+
+	if(status==0){
+                        NVRAM_DATA nvramData;
+                        readNvramData(&nvramData);
+                       // memset(&nvramData.ugstatus[0],0,3);
+                      //  strncpy(&nvramData.ugstatus[0],ugstatus,3-1);
+                      if(nvramData.ugstatus[1]!='0')
+                       nvramData.ugstatus[1]='2';
+                        writeNvramData(&nvramData);
+	}
+#endif
     return(status);
 }
 
@@ -1500,6 +1726,19 @@ static int board_ioctl( struct inode *inode, struct file *flip,
                         ctrlParms.strLen-8);
                     writeNvramData(pNvramData);
                 }
+#if defined (AEI_VDSL_CUSTOMER_NCS) 
+#if !defined (CONFIG_BCM96328)
+                //SUPPORT_DSL_BONDING macro not carried here so leave out since non-bonding will not call this anyways
+                else if (ctrlParms.string && !strncmp(ctrlParms.string, "DSLDATAPUMP", 11)) {
+                    if (strlen(ctrlParms.string) > 11)
+                        pNvramData->dslDatapump = (unsigned long) simple_strtol(ctrlParms.string+11, NULL, 10);
+                    else
+                        pNvramData->dslDatapump = 0;
+
+                    writeNvramData(pNvramData);
+                }
+#endif
+#endif
                 else
                     ret = kerSysNvRamSet(ctrlParms.string, ctrlParms.strLen, ctrlParms.offset);
                 break;
@@ -1534,8 +1773,10 @@ static int board_ioctl( struct inode *inode, struct file *flip,
                 break;
 
             case BCM_IMAGE_FS:
-                if( (ret = flashFsKernelImage(ctrlParms.string, ctrlParms.strLen)) == 0 )
-                    kerSysMipsSoftReset();
+                if( (ret = flashFsKernelImage(ctrlParms.string, ctrlParms.strLen)) == 0 ){
+	
+			kerSysMipsSoftReset();
+                }
                 break;
 
             case BCM_IMAGE_KERNEL:  // not used for now.
@@ -1737,7 +1978,36 @@ static int board_ioctl( struct inode *inode, struct file *flip,
         else
             ret = -EFAULT;
         break;
-
+#if defined(AEI_VDSL_QOS_SINK)
+    /* rewrite a little from SDK3, don't need 3 ioctls to do this, can use 1 */
+    case BOARD_IOCTL_CMF_FLAG:
+        if (copy_from_user((void*)&ctrlParms, (void*)arg, sizeof(ctrlParms)) == 0) {
+            switch (ctrlParms.action) {
+            case CMF_ON:
+                actiontec_cmf_flag=1;
+	        ctrlParms.result = 0;
+                 __copy_to_user((BOARD_IOCTL_PARMS*)arg, &ctrlParms,
+                    sizeof(BOARD_IOCTL_PARMS));
+                ret=0;
+                break;
+            case CMF_OFF:
+                actiontec_cmf_flag=0;
+                if(actiontec_cmf_ret==0) ctrlParms.result = 0;
+                else ctrlParms.result = 1;
+                __copy_to_user((BOARD_IOCTL_PARMS*)arg, &ctrlParms,
+                    sizeof(BOARD_IOCTL_PARMS));
+                ret=0;
+                break;
+            default:
+                ret = -EINVAL;
+                printk("Not supported.  invalid command %d\n", ctrlParms.action);
+                break;
+            }
+        }
+        else
+            ret = -EFAULT;
+        break;
+#endif
     case BOARD_IOCTL_RELEASE_MAC_ADDRESS:
         if (copy_from_user((void*)&ctrlParms, (void*)arg, sizeof(ctrlParms)) == 0)
         {
@@ -1759,6 +2029,303 @@ static int board_ioctl( struct inode *inode, struct file *flip,
             ret = -EFAULT;
         break;
 
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+        case BOARD_IOCTL_GET_SN:
+            if (copy_from_user((void*)&ctrlParms, (void*)arg,
+                sizeof(ctrlParms)) == 0)
+            {
+                if( ctrlParms.string )
+                {
+                    NVRAM_DATA nvramData;
+                    readNvramData(&nvramData);
+                    __copy_to_user(ctrlParms.string, &nvramData.ulSerialNumber[0], 32 - 1);
+                }
+
+                ctrlParms.result = 0;
+                __copy_to_user((BOARD_IOCTL_PARMS*)arg, &ctrlParms,
+                    sizeof(BOARD_IOCTL_PARMS));
+            }
+            break;
+
+        case BOARD_IOCTL_GET_FW_VERSION:
+            if (copy_from_user((void*)&ctrlParms, (void*)arg,
+                sizeof(ctrlParms)) == 0)
+            {
+                if (ctrlParms.offset==0){
+                        if( ctrlParms.string )
+                        {
+                                NVRAM_DATA nvramData;
+                                readNvramData(&nvramData);
+                                __copy_to_user(ctrlParms.string, &nvramData.chFactoryFWVersion[0], 48 - 1);
+                        }
+                }else if(ctrlParms.offset==1){
+                        if( ctrlParms.string )
+                        {
+                                NVRAM_DATA nvramData;
+                                readNvramData(&nvramData);
+                                __copy_to_user(ctrlParms.string, &nvramData.ulSerialNumber[0], 32 - 1);
+                        }
+
+                }else if(ctrlParms.offset==2){
+                        if( ctrlParms.string )
+                        {
+                                NVRAM_DATA nvramData;
+                                readNvramData(&nvramData);
+                                __copy_to_user(ctrlParms.string, &nvramData.wpsPin[0], 32 - 1);
+                        }
+
+                }else if(ctrlParms.offset==3){
+                        if( ctrlParms.string )
+                        {
+                                NVRAM_DATA nvramData;
+                                readNvramData(&nvramData);
+                                __copy_to_user(ctrlParms.string, &nvramData.wpaKey[0], 32 - 1);
+                                __copy_to_user(ctrlParms.string, &nvramData.wpaKey[0], 32 - 1);
+                        }
+
+                }
+
+
+                ctrlParms.result = 0;
+                __copy_to_user((BOARD_IOCTL_PARMS*)arg, &ctrlParms,
+                    sizeof(BOARD_IOCTL_PARMS));
+            }
+            break;
+
+        case BOARD_IOCTL_RESET_FW_VERSION:
+                if (copy_from_user((void*)&ctrlParms, (void*)arg,
+                sizeof(ctrlParms)) == 0)
+            {
+                if (ctrlParms.offset==0){
+                        NVRAM_DATA nvramData;
+                        readNvramData(&nvramData);
+                        memset(&nvramData.chFactoryFWVersion[0],0,48);
+                        nvramData.chFactoryFWVersion[0]='\0';
+                        writeNvramData(&nvramData);
+                }else if(ctrlParms.offset==1){
+                        NVRAM_DATA nvramData;
+                        readNvramData(&nvramData);
+                        memset(&nvramData.ulSerialNumber[0],0,32);
+                        nvramData.ulSerialNumber[0]='\0';
+                        writeNvramData(&nvramData);
+
+                }else if(ctrlParms.offset==2){
+                        NVRAM_DATA nvramData;
+                        readNvramData(&nvramData);
+                        memset(&nvramData.wpsPin[0],0,32);
+                        nvramData.wpsPin[0]='\0';
+                        writeNvramData(&nvramData);
+                }else if(ctrlParms.offset==3){
+                        NVRAM_DATA nvramData;
+                        readNvramData(&nvramData);
+                        memset(&nvramData.wpaKey[0],0,32);
+                        nvramData.wpaKey[0]='\0';
+                        writeNvramData(&nvramData);
+                 }
+
+                ctrlParms.result = 0;
+                __copy_to_user((BOARD_IOCTL_PARMS*)arg, &ctrlParms,
+                    sizeof(BOARD_IOCTL_PARMS));
+
+             }
+             break;
+         case BOARD_IOCTL_SET_FW_VERSION:
+                if (copy_from_user((void*)&ctrlParms, (void*)arg,
+                sizeof(ctrlParms)) == 0)
+            {
+
+                if(ctrlParms.string && strlen(ctrlParms.string)>0)
+                {
+                        if (ctrlParms.offset==0){
+
+                                NVRAM_DATA nvramData;
+                                readNvramData(&nvramData);
+                                memset(&nvramData.chFactoryFWVersion[0],0,48);
+                                strncpy(&nvramData.chFactoryFWVersion[0],ctrlParms.string,48-1);
+                                writeNvramData(&nvramData);
+                        }else if(ctrlParms.offset==1){
+                                NVRAM_DATA nvramData;
+                                readNvramData(&nvramData);
+                                memset(&nvramData.ulSerialNumber[0],0,32);
+                                strncpy(&nvramData.ulSerialNumber[0],ctrlParms.string,32-1);
+                                writeNvramData(&nvramData);
+
+                        }else if(ctrlParms.offset==2){
+                                NVRAM_DATA nvramData;
+                                readNvramData(&nvramData);
+                                memset(&nvramData.wpsPin[0],0,32);
+                                strncpy(&nvramData.wpsPin[0],ctrlParms.string,32-1);
+                                writeNvramData(&nvramData);
+
+                        }else if(ctrlParms.offset==3){
+                                NVRAM_DATA nvramData;
+                                readNvramData(&nvramData);
+                                memset(&nvramData.wpaKey[0],0,32);
+                                strncpy(&nvramData.wpaKey[0],ctrlParms.string,32-1);
+                                writeNvramData(&nvramData);
+
+                        }
+                }
+                ctrlParms.result = 0;
+                __copy_to_user((BOARD_IOCTL_PARMS*)arg, &ctrlParms,
+                    sizeof(BOARD_IOCTL_PARMS));
+
+             }
+             break;
+
+#endif   //AEI_VDSL_CUSTOMER_NCS
+#ifdef AEI_VDSL_UPGRADE_DUALIMG_HISTORY_SPAD
+    case BOARD_IOCTL_GET_DUAL_FW_VERSION:
+            if (copy_from_user((void*)&ctrlParms, (void*)arg,
+                sizeof(ctrlParms)) == 0)
+            {
+
+                if (ctrlParms.offset==0){ //image 0
+                        if( ctrlParms.string )
+                        {
+                                  PFILE_TAG pTag1 = getTagFromPartition(1);
+					if(pTag1)
+                                __copy_to_user(ctrlParms.string, pTag1->signiture_2, SIG_LEN_2 - 1);
+					else
+						__copy_to_user(ctrlParms.string, "", SIG_LEN_2 - 1);
+                        }
+                }else if(ctrlParms.offset==1){ //image 1
+                        if( ctrlParms.string )
+                        {
+    		  			PFILE_TAG pTag2 = getTagFromPartition(2);
+					if(pTag2)
+                                __copy_to_user(ctrlParms.string, pTag2->signiture_2, SIG_LEN_2 - 1);		
+						else
+						__copy_to_user(ctrlParms.string, "", SIG_LEN_2 - 1);
+				
+                        }
+
+                }
+
+                ctrlParms.result = 0;
+                __copy_to_user((BOARD_IOCTL_PARMS*)arg, &ctrlParms,
+                    sizeof(BOARD_IOCTL_PARMS));
+            }
+	break;		
+    case BOARD_IOCTL_GET_DUAL_UG_INFO:
+            if (copy_from_user((void*)&ctrlParms, (void*)arg,
+                sizeof(ctrlParms)) == 0)
+            {
+
+                if (ctrlParms.offset==0){ //status
+                        if( ctrlParms.string )
+                        {
+                                NVRAM_DATA nvramData;
+					readNvramData(&nvramData);
+                                __copy_to_user(ctrlParms.string, &nvramData.ugstatus[0], 3-1);
+                        }
+                }else if(ctrlParms.offset==1){ //history image1
+                        if( ctrlParms.string )
+                        {
+                                NVRAM_DATA nvramData;
+					readNvramData(&nvramData);				
+                                __copy_to_user(ctrlParms.string, &nvramData.ugimage1[0], 30-1);
+                        }
+
+                }else if(ctrlParms.offset==2){ //history image1
+                        if( ctrlParms.string )
+                        {
+                                NVRAM_DATA nvramData;
+					readNvramData(&nvramData);				
+                                __copy_to_user(ctrlParms.string, &nvramData.ugimage2[0], 30-1);
+                        }
+
+                }
+
+                ctrlParms.result = 0;
+                __copy_to_user((BOARD_IOCTL_PARMS*)arg, &ctrlParms,
+                    sizeof(BOARD_IOCTL_PARMS));
+            }
+					
+	break;
+    case BOARD_IOCTL_SET_DUAL_UG_INFO:
+                if (copy_from_user((void*)&ctrlParms, (void*)arg,
+                sizeof(ctrlParms)) == 0)
+            {
+
+                if(ctrlParms.string && strlen(ctrlParms.string)>0)
+                {
+                        if (ctrlParms.offset==0){
+
+                                NVRAM_DATA nvramData;
+                                readNvramData(&nvramData);
+                                memset(&nvramData.ugstatus[0],0,3);
+                                strncpy(&nvramData.ugstatus[0],ctrlParms.string,3-1);
+                                writeNvramData(&nvramData);
+                        }else if(ctrlParms.offset==1){
+                                NVRAM_DATA nvramData;
+                                readNvramData(&nvramData);
+                                memset(&nvramData.ugimage1[0],0,30);
+								
+                                strncpy(&nvramData.ugimage1[0],ctrlParms.string,30-1);
+                                writeNvramData(&nvramData);
+
+                        }else if(ctrlParms.offset==2){
+                                NVRAM_DATA nvramData;
+                                readNvramData(&nvramData);
+                                memset(&nvramData.ugimage2[0],0,30);
+                                strncpy(&nvramData.ugimage2[0],ctrlParms.string,30-1);
+                                writeNvramData(&nvramData);
+
+                        }
+                }
+                ctrlParms.result = 0;
+                __copy_to_user((BOARD_IOCTL_PARMS*)arg, &ctrlParms,
+                    sizeof(BOARD_IOCTL_PARMS));
+
+             }
+
+	break;	
+	
+#endif
+#if defined(AEI_VDSL_SIGNED_FIRMWARE)
+    case BOARD_IOCTL_GET_PRODUCTID:
+            if (copy_from_user((void*)&ctrlParms, (void*)arg,
+                sizeof(ctrlParms)) == 0)
+            {
+
+                if (ctrlParms.offset==0){ //image 0
+                        if( ctrlParms.string )
+                        {
+                                  PFILE_TAG pTag1 = getTagFromPartition(1);
+					if(pTag1)
+                                __copy_to_user(ctrlParms.string, pTag1->signiture_1, 10);
+					else
+						__copy_to_user(ctrlParms.string, "", 10);
+                        }
+                }else if(ctrlParms.offset==1){ //image 1
+                        if( ctrlParms.string )
+                        {
+    		  			PFILE_TAG pTag2 = getTagFromPartition(2);
+					if(pTag2)
+                                __copy_to_user(ctrlParms.string, pTag2->signiture_1, 10);		
+						else
+						__copy_to_user(ctrlParms.string, "", 10);
+				
+                        }
+
+                }
+                ctrlParms.result = 0;
+                __copy_to_user((BOARD_IOCTL_PARMS*)arg, &ctrlParms,
+                    sizeof(BOARD_IOCTL_PARMS));
+            }
+	break;		
+    case BOARD_IOCTL_GET_FS_OFFSET:
+        {
+            FLASH_ADDR_INFO fInfo;
+            kerSysFlashAddrInfoGet(&fInfo);
+            ctrlParms.result = fInfo.flash_rootfs_start_offset;
+            //printk("###offset(%x)\n",fInfo.flash_rootfs_start_offset);
+            __copy_to_user((BOARD_IOCTL_PARMS*)arg, &ctrlParms, sizeof(BOARD_IOCTL_PARMS));
+            ret = 0;
+        }
+	    break;		
+#endif
     case BOARD_IOCTL_GET_PSI_SIZE:
         {
             FLASH_ADDR_INFO fInfo;
@@ -1778,7 +2345,7 @@ static int board_ioctl( struct inode *inode, struct file *flip,
 
             ctrlParms.result = (fInfo.flash_backup_psi_number_blk > 0) ?
                 fInfo.flash_persistent_length : 0;
-            printk("backup_psi_number_blk=%d result=%d\n", fInfo.flash_backup_psi_number_blk, fInfo.flash_persistent_length);
+            //printk("backup_psi_number_blk=%d result=%d\n", fInfo.flash_backup_psi_number_blk, fInfo.flash_persistent_length);
             __copy_to_user((BOARD_IOCTL_PARMS*)arg, &ctrlParms, sizeof(BOARD_IOCTL_PARMS));
             ret = 0;
         }
@@ -1970,8 +2537,17 @@ static int board_ioctl( struct inode *inode, struct file *flip,
                 ctrlParms.result = 0;
                 __copy_to_user((BOARD_IOCTL_PARMS*)arg, &ctrlParms, sizeof(BOARD_IOCTL_PARMS));
                 ret = 0;
-            } else
+#if 0 //defined(AEI_VDSL_CUSTOMER_NCS)
+            } else if(ctrlParms.strLen == 1){
+                    SetGpio(23,0);
+                    kerSysLedCtrl(kLedSes, kLedStateOff);
+            } else if(ctrlParms.strLen == 0){
+                    SetGpio(23,1);
+                    kerSysLedCtrl(kLedSes, kLedStateOff);
+#endif
+            } else {
                 ret = -EFAULT;
+	    }
 
             break;
         }
@@ -2013,7 +2589,44 @@ static int board_ioctl( struct inode *inode, struct file *flip,
             ret = -EFAULT;
         }
         break;
+#ifdef AEI_VDSL_SMARTLED
+    case BOARD_IOCTL_SET_INET:
+        if (copy_from_user((void*)&ctrlParms, (void*)arg, sizeof(ctrlParms)) == 0) {
+            register uint32 *pv32;
 
+            pv32 = 0xb0000098;
+            if (ctrlParms.strLen == 0)
+               (*pv32) &= 0xffffffdf;
+            else
+               (*pv32) |= 0x00000020;
+
+            ctrlParms.result = 1;
+            __copy_to_user((BOARD_IOCTL_PARMS*)arg, &ctrlParms, sizeof(BOARD_IOCTL_PARMS));
+            ret = 0;
+        }
+        else {
+            ret = -EFAULT;
+        }
+        break;
+    case BOARD_IOCTL_SET_INET_TRAFFIC_BLINK:
+        if (copy_from_user((void*)&ctrlParms, (void*)arg, sizeof(ctrlParms)) == 0) {
+            register uint32 *pv32;
+
+            pv32 = 0xb0000090;
+            if (ctrlParms.strLen == 0)
+               (*pv32) |= 0x00004000;
+            else
+               (*pv32) &= 0xffffbfff;
+
+            ctrlParms.result = 1;
+            __copy_to_user((BOARD_IOCTL_PARMS*)arg, &ctrlParms, sizeof(BOARD_IOCTL_PARMS));
+            ret = 0;
+        }
+        else {
+            ret = -EFAULT;
+        }
+        break;
+#endif
 #if defined(CONFIG_BCM_CPLD1)
     case BOARD_IOCTL_SET_SHUTDOWN_MODE:
         BcmCpld1SetShutdownMode();
@@ -2126,6 +2739,21 @@ static void __init sesLed_mapGpio()
     {
         printk("SES: LED GPIO 0x%x is enabled\n", sesLed_gpio);
     }
+#if defined(AEI_VDSL_CUSTOMER_NCS) && defined(CONFIG_BCM96328)
+//#if defined(AEI_ADSL_CUSTOMER_QWEST_L5000)	
+	else
+        printk("SES: LED GPIO sesLed_mapGpio error,sesLed_gpio=0x%lx\n",sesLed_gpio);
+
+#if 1/*CUSTOMER_ACTIONTEC*/
+    if( BpGetWirelessSesLedGpiofail(&sesLed_gpio_fail ) == BP_SUCCESS )
+    {
+        printk("SES: LED GPIO 0x%x is enabled\n", sesLed_gpio_fail );
+    }
+#endif/*CUSTOMER_ACTIONTEC*/
+	else
+        printk("SES: LED GPIO sesLed_mapGpio error,sesLed_gpio_fail =0x%lx\n",sesLed_gpio_fail );
+#endif		
+
 }
 
 static void sesLed_ctrl(int action)
@@ -2133,9 +2761,61 @@ static void sesLed_ctrl(int action)
     char blinktype = ((action >> 24) & 0xff); /* extract blink type for SES_LED_BLINK  */
 
     BOARD_LED_STATE led;
-
     if(sesLed_gpio == BP_NOT_DEFINED)
         return;
+
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+    {
+    char status = ((action >> 8) & 0xff); /* extract status */
+    char event = ((action >> 16) & 0xff); /* extract event */
+
+    if ((action & 0xff) == SES_LED_OFF) { /* extract led */
+       kerSysLedCtrl(kLedSes, kLedStateOff);
+       printk("< SES_LED_OFF >\n");
+       return;
+    }
+
+    switch ((int) event) {
+	case   WSC_EVENTS_PROC_IDLE: 
+    	    printk("< WSC_EVENTS_PROC_IDLE >\n");
+   	    kerSysLedCtrl(kLedSes, kLedStateOn);
+	    break;
+    	case	WSC_EVENTS_PROC_WAITING:
+            printk("< WSC_EVENTS_PROC_WAITING >\n");
+      	    kerSysLedCtrl(kLedSes, kLedStateOn);
+            kerSysLedCtrl(kLedSes, kLedStateUserWpsInProgress);
+	    break;
+    	case	WSC_EVENTS_PROC_SUCC:
+            printk("< WSC_EVENTS_PROC_SUCC >\n");
+       	    kerSysLedCtrl(kLedSes, kLedStateOn);
+    	    break;
+    	case	WSC_EVENTS_PROC_FAIL:
+            printk("< WSC_EVENTS_PROC_FAIL > status=%d\n", status);
+            if ( status == 0 ) {
+		kerSysLedCtrl(kLedSes, kLedStateFail);
+            	kerSysLedCtrl(kLedSes, kLedStateSlowBlinkContinues);
+	    }
+	    else if ( status == 1 ) {
+       	    	kerSysLedCtrl(kLedSes, kLedStateFail);
+	    }
+	    break;
+    	case	WSC_EVENTS_PROC_PBC_OVERLAP:
+            printk("< WSC_EVENTS_PROC_PBC_OVERLAP >\n");
+            if ( status == 0 ) {
+       	        kerSysLedCtrl(kLedSes, kLedStateOn);
+            	kerSysLedCtrl(kLedSes, kLedStateSlowBlinkContinues);
+	    }
+	    else if ( status == 1 )
+       	    	kerSysLedCtrl(kLedSes, kLedStateOn);
+     	    break;
+	default:
+            printk("< WSC_EVENTS_UNRECGNIZED >\n");
+	    SetGpio(30,0);
+	    SetGpio(23,0);
+            //kerSysLedCtrl(kLedSes, kLedStateSlowBlinkContinues);
+    }//switch
+    }//block
+#else
 
     action &= 0xff; /* extract led */
 
@@ -2155,6 +2835,7 @@ static void sesLed_ctrl(int action)
     }
 
     kerSysLedCtrl(kLedSes, led);
+#endif //(AEI_VDSL_CUSTOMER_NCS)
 }
 
 static void __init ses_board_init()
@@ -2167,7 +2848,7 @@ static void __exit ses_board_deinit()
     if(sesBtn_irq)
         BcmHalInterruptDisable(sesBtn_irq);
 }
-#endif
+#endif //defined WIRELESS
 
 /***************************************************************************
 * Dying gasp ISR and functions.
@@ -2361,27 +3042,213 @@ void kerSysSetGpio(unsigned short bpGpio, GPIO_STATE_t state)
       SetGpio(bpGpio, state);
 }
 
-
 static int restore_to_default_thread(void *arg)
 {
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+    printk("\n*** Restore to Factory Default Setting ***\n\n");       
+    printk("\r\nThe system is being reset. Please wait...\r\n");
+
+    int blk_size = flash_get_sector_size(0);
+    printk("\r\nblk_size =%d\r\n",blk_size);
+
+    if (blk_size <= 65536)
+        kerSysPersistentSet( "Reset Persistent", strlen("Reset Persistent"), 0 );
+    else
+        kerClearScratchPad(blk_size);
+#else	
     char buf[256];
-
     memset(buf,0, 256);
-
     // Do this in a kernel thread so we don't have any restriction
     printk("Restore to Factory Default Setting ***\n\n");
     kerSysPersistentSet( buf, 256, 0 );
+#endif
+	
     kernel_restart(NULL);
     return 0;
 }
+
+#if defined(AEI_VDSL_CUSTOMER_QWEST) || defined(AEI_VDSL_CUSTOMER_MTS)
+static void reset_timer_func(unsigned long data)
+{
+    if (!(GPIO->GPIOio & 0x0400000000))
+    {
+        count++;
+#if defined(AEI_VDSL_CUSTOMER_QWEST)
+        if (count >= RESET_HOLD_TIME && count <= FACTORY_HOLD_TIME)
+        {
+            SetGpio(24, 1);
+            SetGpio(25, 1);
+        }
+        else if (count > FACTORY_HOLD_TIME)
+        {          
+            printk("\r\nThe system is being reset. Hold it longer to get into bootloader...\r\n");
+            kerSysMipsSoftReset();
+        }
+#elif defined(AEI_VDSL_CUSTOMER_MTS)
+        if (count >= (RESET_HOLD_TIME/2) && count < RESET_HOLD_TIME)
+        {
+            SetGpio(24, 1);
+            SetGpio(25, 1);
+        }
+        else if (count == RESET_HOLD_TIME)
+        {
+            int blk_size = flash_get_sector_size(0);
+
+            printk("\n*** Restore to Factory Default Setting ***\n\n");
+            if (blk_size <= 65536)
+                kerSysPersistentSet("Reset Persistent", strlen("Reset Persistent"), 0);
+            else
+                kerClearScratchPad(blk_size);
+                          
+            printk("\r\nThe system is being reset. Please wait...\r\n");
+            kerSysMipsSoftReset();
+        }
+#endif
+    }
+    else
+    {
+        if (count < RESET_HOLD_TIME)
+        {
+            printk("\r\nThe system is being reset. Please wait...\r\n");
+            kerSysMipsSoftReset();
+        }
+        else if (count >= RESET_HOLD_TIME && count <= FACTORY_HOLD_TIME)
+        {
+            int blk_size = flash_get_sector_size(0);
+
+            printk("\n*** Restore to Factory Default Setting ***\n\n");
+            printk("\r\nThe system is being reset. Please wait...\r\n");
+
+            if (blk_size <= 65536)
+                kerSysPersistentSet("Reset Persistent", strlen("Reset Persistent"), 0);
+            else
+                kerClearScratchPad(blk_size);
+
+            kerSysMipsSoftReset();
+        }
+    }
+
+    pTimer->expires = jiffies + HZ*RESET_POLL_TIME;
+    add_timer(pTimer);
+
+    return;
+}
+#elif defined(AEI_VDSL_CUSTOMER_TELUS)
+
+#if defined(AEI_VDSL_CUSTOMER_SASKTEL)
+/* SASKTEL requirement: hold time < 10s for reboot, > 10s for factory reset */
+static void reset_timer_func(unsigned long data)
+{
+    if (!(GPIO->GPIOio & 0x0400000000))
+    {
+        count++;
+    }
+    else
+    {
+        if (count < RESET_HOLD_TIME)
+        { 
+            printk("\r\nThe system is being reset. Please wait...\r\n");
+            kerSysMipsSoftReset();
+        }
+        else
+        {
+            int blk_size = flash_get_sector_size(0);
+
+            printk("\n*** Restore to Factory Default Setting ***\n\n");
+            printk("\r\nThe system is being reset. Please wait...\r\n");
+
+            if (blk_size <= 65536)
+                kerSysPersistentSet("Reset Persistent", strlen("Reset Persistent"), 0);
+            else
+                kerClearScratchPad(blk_size);
+
+            kerSysMipsSoftReset();
+        }
+    }
+
+    pTimer->expires = jiffies + HZ*RESET_POLL_TIME;
+    add_timer(pTimer);
+
+    return;
+}
+#else
+/* Telus requirement:  If reset button is held up to 3 seconds, do nothing.  If held from 3 to 30 seconds restore default
+*/
+static void reset_timer_func(unsigned long data)
+{
+    if (!(GPIO->GPIOio & 0x0400000000))
+    {
+        count++;
+        if (count > FACTORY_HOLD_TIME)
+        {
+            int blk_size = flash_get_sector_size(0);
+
+            printk("\n*** Restore to Factory Default Setting ***\n\n");
+            printk("\r\nThe system is being reset. Please wait...\r\n");
+
+            if (blk_size <= 65536)
+                kerSysPersistentSet("Reset Persistent", strlen("Reset Persistent"), 0);
+            else
+                kerClearScratchPad(blk_size);
+
+            kerSysMipsSoftReset();
+        }
+    }
+    else
+    {
+        if (count <= NOT_LONG_ENOUGH_TIME)
+        { 
+            printk("\n*** Reset held for %d seconds so not restoring factory default ***\n\n",count);
+            count = 0;
+            if (rirq != BP_NOT_DEFINED)
+               BcmHalInterruptEnable(rirq);
+            return;          
+        }
+        else if (count <= FACTORY_HOLD_TIME)
+        {
+            int blk_size = flash_get_sector_size(0);
+
+            printk("\n*** Restore to Factory Default Setting ***\n\n");
+            printk("\r\nThe system is being reset. Please wait...\r\n");
+
+            if (blk_size <= 65536)
+                kerSysPersistentSet("Reset Persistent", strlen("Reset Persistent"), 0);
+            else
+                kerClearScratchPad(blk_size);
+
+            kerSysMipsSoftReset();
+        }
+    }
+
+    pTimer->expires = jiffies + HZ*RESET_POLL_TIME;
+    add_timer(pTimer);
+
+    return;
+}
+#endif /* AEI_VDSL_CUSTOMER_SASKTEL */
+#endif
 
 static irqreturn_t reset_isr(int irq, void *dev_id)
 {
     printk("\n*** ");
 
+#if defined(AEI_VDSL_CUSTOMER_QWEST) || defined(AEI_VDSL_CUSTOMER_MTS) || defined(AEI_VDSL_CUSTOMER_TELUS)
+    /* Create a timer which fires every seconds */
+    pTimer = &reset_timer;
+    init_timer(pTimer);
+    pTimer->function = reset_timer_func;
+    pTimer->data = 0;
+#if defined (AEI_VDSL_CUSTOMER_TELUS)
+    rirq = irq;
+#endif
+    /* Start the timer */
+    reset_timer_func(0);
+    return IRQ_HANDLED;
+#else
     INIT_WORK(&restoreDefaultWork, restore_to_default_thread);
     schedule_work(&restoreDefaultWork);
     return IRQ_HANDLED;
+#endif
 }
 
 
@@ -2481,11 +3348,174 @@ static void __init kerSysCheckPowerDownPcie(void)
 }
 #endif
 
+#ifdef AEI_VDSL_DUAL_IMAGE
+static int proc_get_bootimage_param(char *page, char **start, off_t off, int cnt, int *eof, void *data)
+{
+    int i = 0;
+    int r = 0;
+    int offset  = ((int *)data)[0];
+    int length  = ((int *)data)[1];
+    NVRAM_DATA *pNvramData;
+    char bootPartition = BOOT_LATEST_IMAGE;
+    char *p;
+
+    *eof = 1;
+
+    if ((offset < 0) || (offset + length > sizeof(NVRAM_DATA)))
+        return 0;
+
+    pNvramData = kmalloc(sizeof(NVRAM_DATA), GFP_KERNEL);
+    if (pNvramData == NULL)
+    {
+       return 0;
+    }
+
+    if (readNvramData(pNvramData) == 0)
+    {
+        for( p = pNvramData->szBootline; p[2] != '\0'; p++ )
+        {
+            if( p[0] == 'p' && p[1] == '=' )
+            {
+                bootPartition = p[2];
+                break;
+            }
+        }
+
+
+        r += sprintf(page + r, "%c ", bootPartition);
+    }
+
+    r += sprintf(page + r, "\n");
+    kfree(pNvramData);
+    return (r < cnt)? r: 0;
+}
+
+static int proc_set_bootimage_param(struct file *f, const char *buf, unsigned long cnt, void *data)
+{
+    NVRAM_DATA *pNvramData;
+    char input[32];
+
+    int i = 0;
+    int r = cnt;
+    int offset  = ((int *)data)[0];
+    int length  = ((int *)data)[1];
+    char *p;
+
+    if ((offset < 0) || (offset + length > sizeof(NVRAM_DATA)))
+        return 0;
+    if ((cnt > 2) || (copy_from_user(input, buf, cnt) != 0))
+        return -EFAULT;
+    if(input[0]!=BOOT_LATEST_IMAGE && input[0]!=BOOT_PREVIOUS_IMAGE)
+        return -EFAULT;
+
+    pNvramData = kmalloc(sizeof(NVRAM_DATA), GFP_KERNEL);
+    if (pNvramData == NULL)
+    {
+       printk("ERROR - Could not allocate memory for pNvramData (%s)\n", __FUNCTION__);
+       return 0;
+    }
+
+    if (readNvramData(pNvramData) == 0)
+    {
+        for( p = pNvramData->szBootline; p[2] != '\0'; p++ )
+        {
+            if( p[0] == 'p' && p[1] == '=' )
+            {
+                p[2]=input[0];
+                break;
+            }
+        }
+
+        writeNvramData(pNvramData);
+        kfree(pNvramData);
+        return cnt;
+    }
+    kfree(pNvramData);
+    return 0;
+}
+
+#endif
+
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+static int proc_get_other_param(char *page, char **start, off_t off, int cnt, int *eof, void *data)
+{
+    int i = 0;
+    int r = 0;
+    int offset  = ((int *)data)[0];
+    int length  = ((int *)data)[1];
+    NVRAM_DATA *pNvramData;
+
+    *eof = 1;
+
+    if ((offset < 0) || (offset + length > sizeof(NVRAM_DATA)))
+        return 0;
+
+    pNvramData = kmalloc(sizeof(NVRAM_DATA), GFP_KERNEL);
+    if (pNvramData == NULL)
+    {
+       return 0;
+    }
+    if (readNvramData(pNvramData) == 0)
+    {
+	r += snprintf(page + r, length, "%s", &((unsigned char *)pNvramData)[offset]);
+    }
+
+    r += sprintf(page + r, "\n");
+    kfree(pNvramData);
+    return (r < cnt)? r: 0;
+}
+
+static int proc_set_other_param(struct file *f, const char *buf, unsigned long cnt, void *data)
+{
+    NVRAM_DATA *pNvramData;
+    char input[64];
+    int i = 0;
+    int r = cnt;
+    int offset  = ((int *)data)[0];
+    int length  = ((int *)data)[1];
+    memset(input, 0, 64);
+    if ((offset < 0) || (offset + length > sizeof(NVRAM_DATA)))
+        return 0;
+    if ((cnt  > length ) || (copy_from_user(input, buf, cnt) != 0))
+        return -EFAULT;
+    pNvramData = kmalloc(sizeof(NVRAM_DATA), GFP_KERNEL);
+    if (pNvramData == NULL)
+    {
+       printk("ERROR - Could not allocate memory for pNvramData (%s)\n", __FUNCTION__);
+       return 0;
+    }
+    if (readNvramData(pNvramData) == 0)
+    {
+        memset(((char *)pNvramData) + offset, 0, length);	
+	strncpy(((char *)pNvramData) + offset, input, cnt - 1);
+        writeNvramData(pNvramData);
+        kfree(pNvramData);
+        return cnt;
+    }
+    kfree(pNvramData);
+    return 0;
+}
+#endif
+
+
 static int add_proc_files(void)
 {
 #define offset(type, elem) ((int)&((type *)0)->elem)
 
     static int BaseMacAddr[2] = {offset(NVRAM_DATA, ucaBaseMacAddr), NVRAM_MAC_ADDRESS_LEN};
+#if defined(AEI_VDSL_DUAL_IMAGE)
+    static int BootImage[2] = {offset(NVRAM_DATA, szBootline), NVRAM_BOOTLINE_LEN};
+#endif
+
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+    static int Serial_num[2] = {offset(NVRAM_DATA, ulSerialNumber), 32};
+    static int Wpa_key[2] = {offset(NVRAM_DATA, wpaKey), 32};
+    static int Wps_pin[2] = {offset(NVRAM_DATA,wpsPin), 32};
+    static int Hw_ver[2] = {offset(NVRAM_DATA, chFactoryFWVersion), 48};
+#if 0
+    static int Ssid[2] = {offset(NVRAM_DATA, ssid), 6};
+#endif
+#endif
 
     struct proc_dir_entry *p0;
     struct proc_dir_entry *p1;
@@ -2514,6 +3544,120 @@ static int add_proc_files(void)
 	//New linux no longer requires proc_dir_entry->owner field.
 #else
     p1->owner       = THIS_MODULE;
+#endif
+
+#if defined(AEI_VDSL_DUAL_IMAGE)
+    p1 = create_proc_entry("BootImage", 0644, p0);
+
+    if (p1 == NULL)
+    {
+        printk("add_proc_files: failed to create proc files!\n");
+        return -1;
+    }
+
+    p1->data        = BootImage;
+    p1->read_proc   = proc_get_bootimage_param;
+    p1->write_proc  = proc_set_bootimage_param;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
+	//New linux no longer requires proc_dir_entry->owner field.
+#else
+    p1->owner       = THIS_MODULE;
+#endif
+
+#endif
+
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+    p1 = create_proc_entry("Serial_num", 0644, p0);
+
+    if (p1 == NULL)
+    {
+        printk("add_proc_files: failed to create proc files!\n");
+        return -1;
+    }
+
+    p1->data        = Serial_num;
+    p1->read_proc   = proc_get_other_param;
+    p1->write_proc  = proc_set_other_param;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
+        //New linux no longer requires proc_dir_entry->owner field.
+#else
+    p1->owner       = THIS_MODULE;
+#endif
+
+    p1 = create_proc_entry("Wpa_key", 0644, p0);
+
+    if (p1 == NULL)
+    {
+        printk("add_proc_files: failed to create proc files!\n");
+        return -1;
+    }
+
+    p1->data        = Wpa_key;
+    p1->read_proc   = proc_get_other_param;
+    p1->write_proc  = proc_set_other_param;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
+        //New linux no longer requires proc_dir_entry->owner field.
+#else
+    p1->owner       = THIS_MODULE;
+#endif
+ p1 = create_proc_entry("Wps_pin", 0644, p0);
+
+    if (p1 == NULL)
+    {
+        printk("add_proc_files: failed to create proc files!\n");
+        return -1;
+    }
+
+    p1->data        = Wps_pin;
+    p1->read_proc   = proc_get_other_param;
+    p1->write_proc  = proc_set_other_param;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
+        //New linux no longer requires proc_dir_entry->owner field.
+#else
+    p1->owner       = THIS_MODULE;
+#endif
+
+    p1 = create_proc_entry("Hw_ver", 0644, p0);
+
+    if (p1 == NULL)
+    {
+        printk("add_proc_files: failed to create proc files!\n");
+        return -1;
+    }
+
+    p1->data        = Hw_ver;
+    p1->read_proc   = proc_get_other_param;
+    p1->write_proc  = proc_set_other_param;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
+        //New linux no longer requires proc_dir_entry->owner field.
+#else
+    p1->owner       = THIS_MODULE;
+#endif
+
+#if 0
+    p1 = create_proc_entry("Ssid", 0644, p0);
+
+    if (p1 == NULL)
+    {
+        printk("add_proc_files: failed to create proc files!\n");
+        return -1;
+    }
+
+    p1->data        = Ssid;
+    p1->read_proc   = proc_get_other_param;
+    p1->write_proc  = proc_set_other_param;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
+        //New linux no longer requires proc_dir_entry->owner field.
+#else
+    p1->owner       = THIS_MODULE;
+#endif
+#endif
 #endif
 
     p1 = create_proc_entry("led", 0644, NULL);
@@ -2974,6 +4118,20 @@ unsigned long kerSysGetUbusFreq(unsigned long miscStrapBus)
 
 }  /* kerSysGetUbusFreq */
 
+#ifdef AEI_ADSL_BONDING_NONBONDING_AUTOSWITCH
+/* need gpl code to use Linux kernel timer functions, so put here */
+unsigned long XtmOsLinuxUptime()
+{
+    struct timespec uptime;
+
+    do_posix_clock_monotonic_gettime(&uptime);
+    monotonic_to_bootbased(&uptime);
+
+    return (unsigned long) uptime.tv_sec;
+}
+EXPORT_SYMBOL(XtmOsLinuxUptime);
+#endif
+
 /***************************************************************************
 * MACRO to call driver initialization and cleanup functions.
 ***************************************************************************/
@@ -3026,10 +4184,20 @@ EXPORT_SYMBOL(BpGetVoip1LedGpio);
 EXPORT_SYMBOL(BpGetDectLedGpio);
 EXPORT_SYMBOL(BpGetMoCALedGpio);
 EXPORT_SYMBOL(BpGetMoCAFailLedGpio);
+#ifdef AEI_VDSL_CUSTOMER_NCS
+EXPORT_SYMBOL(BpGetUsbLedGpio);
+EXPORT_SYMBOL(BpGetBootloaderPowerOnLedGpio);
+EXPORT_SYMBOL(BpGetBootloaderStopLedGpio);
+#endif
 EXPORT_SYMBOL(BpGetHpnaExtIntr);
 EXPORT_SYMBOL(BpGetHpnaChipSelect);
 EXPORT_SYMBOL(BpGetWirelessSesExtIntr);
 EXPORT_SYMBOL(BpGetWirelessSesLedGpio);
+EXPORT_SYMBOL(BpGetWirelessFailSesLedGpio);
+#if defined(AEI_VDSL_CUSTOMER_NCS) && defined(CONFIG_BCM96328)
+//#if defined(AEI_ADSL_CUSTOMER_QWEST_L5000)
+EXPORT_SYMBOL(BpGetWirelessSesLedGpiofail);
+#endif/*CUSTOMER_ACTIONTEC*/
 EXPORT_SYMBOL(BpGetWirelessFlags);
 EXPORT_SYMBOL(BpGetWirelessPowerDownGpio);
 EXPORT_SYMBOL(BpUpdateWirelessSromMap);
@@ -3040,6 +4208,13 @@ EXPORT_SYMBOL(BpGetExtAFEResetGpio);
 EXPORT_SYMBOL(BpGetExtAFELDPwrGpio);
 EXPORT_SYMBOL(BpGetExtAFELDModeGpio);
 EXPORT_SYMBOL(BpGet6829PortInfo);
+#ifdef AEI_VDSL_CUSTOMER_NCS
+EXPORT_SYMBOL(SetGpio);
+#if !defined (CONFIG_BCM96328)
+EXPORT_SYMBOL(kerSysGetDslDatapump);
+EXPORT_SYMBOL(restoreDatapump);
+#endif
+#endif
 #if defined (CONFIG_BCM_ENDPOINT_MODULE)
 EXPORT_SYMBOL(BpGetVoiceBoardId);
 EXPORT_SYMBOL(BpGetVoiceBoardIds);

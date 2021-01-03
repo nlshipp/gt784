@@ -123,9 +123,15 @@
  */
 #define CMS_DYNAMIC_LAUNCH_SERVER_FD  3
 
-#ifdef CUSTOMER_ACTIONTEC /*support https*/
-#define CMS_DYNAMIC_LAUNCH_SERVER_FD2 4
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+/*for httpd only*/
+#define CMS_DYNAMIC_LAUNCH_SERVER_FD2  4
+
+#ifdef AEI_VDSL_CUSTOMER_SASKTEL
+#define CMS_DYNAMIC_LAUNCH_SERVER_FD3  5
 #endif
+#endif
+
 
 
 /** This is the port ftpd listens on.
@@ -205,6 +211,9 @@
 #ifdef SUPPORT_HTTPD_SSL
 #define HTTPD_PORT      80
 #define HTTPDS_PORT      443
+#ifdef AEI_VDSL_CUSTOMER_SASKTEL
+#define DEF_HTTPS_PORT_TECH_USER 51080
+#endif
 #else
 #define HTTPD_PORT      80
 #endif
@@ -249,13 +258,22 @@
 /** This is the port tr69c listens on for connection requests from the ACS.
  * 
  */
-#ifdef ACTION_TEC_TR69C
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(AEI_VDSL_CUSTOMER_TELUS) 
+#define     BYPASS_STR          "RMAT"
+#define TR69C_CONN_REQ_PORT      7547
+#else
 #define TR69C_CONN_REQ_PORT      4567
+#endif
+#define TR64C_HTTP_CONN_SECPORT     53
+#elif defined(AEI_VDSL_CUSTOMER_TELUS)
+#define TR69C_CONN_REQ_PORT      7547
 #else
 #define TR69C_CONN_REQ_PORT      30005
 #endif
-
-
+#ifdef AEI_VDSL_CUSTOMER_NCS
+#define BRIDGE_2IP_INF_STR          "br0:private"
+#endif
 /** This is the path part of the URL for tr69c connection requests from the ACS.
  * 
  */
@@ -271,7 +289,14 @@
  * is very important, and you do not want the tr69c client to exit, then you
  * can set this to a very large value (e.g. 2160356, which is one year).
  */
-#define TR69C_EXIT_ON_IDLE_TIMEOUT       30 
+#ifdef AEI_VDSL_CUSTOMER_NCS
+/* we do not want tr69c client to exit, because each time tr69c startup
+ * it will reset some configuration and save it to flash, this time consuming
+ */
+#define TR69C_EXIT_ON_IDLE_TIMEOUT       2160356
+#else
+#define TR69C_EXIT_ON_IDLE_TIMEOUT       30
+#endif
 
 
 /** Maximum number of Layer 2 bridges supported.
@@ -295,22 +320,13 @@
  */
 #define MAX_MDM_PARAM_NAME_LENGTH   55
 
-#ifdef REVERSION_EWAN
-#define EWAN_IFC_STR                "ewan"
-#endif
 /** DNS Probing parameters for both dnsprobe and dproxy. They probe every
  * 30 seconds. Timeout is 3 seconds and only retry 2 more times. */
 #define DNS_PROBE_INTERVAL 30
 #define DNS_PROBE_TIMEOUT 3 
 #define DNS_PROBE_MAX_TRY 3
-
-#ifdef CUSTOMER_ACTIONTEC
-#define MDMVS_GRE            "GRE"
-#define MDMVS_ESP            "ESP"
+#ifdef AEI_VDSL_CUSTOMER_NCS
 #define BYPASS_STR                  "RMAT"
 #define BRIDGE_2IP_INF_STR          "br0:private"
 #endif
-
-
-
 #endif  /* __CMS_PARAMS_H__ */

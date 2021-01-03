@@ -78,20 +78,19 @@ int oal_readLogPartial(int ptr, char* buffer)
   int i=BCM_SYSLOG_READ_BUFFER_ERROR;
   int len;
   int end=0;
-
   if ( (log_shmid = shmget(KEY_ID, 0, 0)) == -1) {
-    cmsLog_error("Syslog disabled or log buffer not allocated\n");
+    printf("Syslog disabled or log buffer not allocated\n");
     goto output_end;
   }
   // Attach shared memory to our char*
   if ( (buf = shmat(log_shmid, NULL, SHM_RDONLY)) == NULL) {
-    cmsLog_error("Can't get access to circular buffer from syslogd\n");
+    printf("Can't get access to circular buffer from syslogd\n");
     end = 1;
     goto output_end;
   }
   
   if ( (log_semid = semget(KEY_ID, 0, 0)) == -1) {
-    cmsLog_error("Can't get access to semaphone(s) for circular buffer from syslogd\n");
+    printf("Can't get access to semaphone(s) for circular buffer from syslogd\n");
     end = 1;
     goto output_end;
   }
@@ -103,12 +102,11 @@ int oal_readLogPartial(int ptr, char* buffer)
   else
     i = ptr;
   if (buf->head == buf->tail) {
-    cmsLog_debug("<empty syslog buffer>\n");
+    printf("<empty syslog buffer>\n");
     i = BCM_SYSLOG_READ_BUFFER_END;
     end = 1;
     goto nothing2display;
   }
-
 readnext:
   if ( i != buf->tail) {
     if (i >= buf->size )
@@ -126,13 +124,13 @@ readnext:
         if (i >= buf->size )
           i = 0;
       }
+#ifndef AEI_VDSL_TR098_QWEST
     /* work around for syslogd.c bug which generate first log without timestamp */
-#if 0 /*timestamp format had been changed in syslogd.c  */
     if (strlen(buffer) < 16 || buffer[3] != ' ' || buffer[6] != ' ' ||
       buffer[9] != ':' || buffer[12] != ':' || buffer[15] != ' ') {
         goto readnext;
       }
-#endif 
+#endif
     buffer[len-BCM_SYSLOG_MESSAGE_LEN_BYTES-1] = '\n';
     buffer[len-BCM_SYSLOG_MESSAGE_LEN_BYTES] = '\0';
   }
@@ -154,5 +152,85 @@ output_end:
     buffer[0]='\0';
   }
   return i;
+}
+
+char *oal_getDeviceLog(void)
+{
+	int shmid;
+	int semid;
+	struct shbuf_ds *h;
+	char *buffer;
+	int size;
+	int i;
+	char *s, *d;
+
+	if ((shmid = shmget(KEY_ID, 0, 0)) == -1)
+	{
+		cmsLog_debug("Syslog disabled or log buffer not allocated\n");
+		return NULL;
+	}
+
+	if ((semid = semget(KEY_ID, 0, 0)) == -1)
+	{
+		cmsLog_error("Can't get access to semaphone(s) for circular buffer from syslogd\n");
+		return NULL;
+	}
+
+	// Attach shared memory to our char*
+	if ((h = shmat(shmid, NULL, SHM_RDONLY)) == NULL) {
+		cmsLog_error("Can't get access to circular buffer from syslogd\n");
+		return NULL;
+	}
+
+	sem_down(semid);
+	if (h->head == h->tail)
+	{
+		sem_up(semid);
+		shmdt(h);
+		return NULL;
+	}
+	
+	size = h->tail - h->head;
+	if (size < 0)
+		size += h->size;
+
+	buffer = (char *)cmsMem_alloc(size + 1, 0);
+	if (buffer == NULL)
+	{
+		cmsLog_error("malloc(%d) returns NULL", size);
+		sem_up(semid);
+		shmdt(h);
+		return NULL;
+	}
+	
+	s = h->data + h->head;	
+	d = buffer;
+
+	if (h->head < h->tail)
+	{
+		for (i = h->head; i != h->tail; i++, s++) 
+		{
+			if (*s != '\0')
+				*d++ = *s;
+		}
+	}
+	else
+	{
+		for (i = h->head; i != h->size; i++, s++)
+		{
+			if (*s != '\0')
+				*d++ = *s;
+		}
+		s = h->data;
+		for (i = 0; i < h->tail; i++, s++)
+		{
+			if (*s != '\0')
+				*d++ = *s;
+		}
+	}
+	*d = '\0';
+	sem_up(semid);
+	shmdt(h);
+	return buffer;
 }
 

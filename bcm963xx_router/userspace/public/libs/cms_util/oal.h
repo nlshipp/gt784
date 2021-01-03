@@ -61,6 +61,9 @@ void oal_free(void *buf);
 /* in oal_timestamp.c */
 void oalTms_get(CmsTimestamp *tms);
 CmsRet oalTms_getXSIDateTime(UINT32 t, char *buf, UINT32 bufLen);
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+CmsRet oalTms_getGUIDateTime(char *buf, UINT32 bufLen);
+#endif
 
 /* in oal_strconv.c */
 CmsRet oal_strtol(const char *str, char **endptr, SINT32 base, SINT32 *val);
@@ -100,4 +103,10 @@ extern CmsRet oalFil_copyToBuffer(const char *filename, UINT8 *buf, UINT32 *bufS
 /* in oal_passwd.c */
 extern char * oalPass_crypt(const char *clear, const char *salt);
 
+/*
+ * 	If successful, the oal_getDeviceLog function returns a buffer containing all the messages in syslogd's
+ * 	message buffer.	And the buffer should be freeed with the cmsMem_free function. On failure, the
+ * 	oal_getDeviceLog function returns NULL.
+ */
+char *oal_getDeviceLog(void);
 #endif /* __OAL_H__ */

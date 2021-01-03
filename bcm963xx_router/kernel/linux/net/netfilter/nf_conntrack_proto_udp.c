@@ -30,6 +30,8 @@
 #endif
 
 static unsigned int nf_ct_udp_timeout __read_mostly = 30*HZ;
+//static unsigned int nf_ct_udp_timeout __read_mostly = 130*HZ;//for RFC6092 REC-14
+
 #if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
 /*RFC 4008 */
 #define  nf_ct_udp_timeout_stream  blog_nat_udp_def_idle_timeout

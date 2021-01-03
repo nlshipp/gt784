@@ -249,6 +249,13 @@ typedef struct dev_params
 #define PTM_FLOW_PRI_LOW     0
 #define PTM_FLOW_PRI_HIGH    1
 
+#ifdef AEI_VDSL_CUSTOMER_QWEST
+struct xtm_multicast_stats {
+    unsigned long rx_multicast_bytes;
+    unsigned long tx_multicast_bytes;
+};  
+#endif
+
 /* The definition of the driver control structure */
 typedef struct bcmxtmrt_dev_context
 {
@@ -261,6 +268,9 @@ typedef struct bcmxtmrt_dev_context
     /* ATM/PTM fields. */
     XTM_ADDR Addr;
     UINT32 ulLinkState;
+    UINT32 ulLinkUsRate[MAX_BOND_PORTS] ;
+    UINT32 ulLinkDsRate ;
+    UINT32 ulTrafficType ;
     UINT32 ulPortDataMask ;
     UINT32 ulOpenState;
     UINT32 ulAdminStatus;
@@ -281,13 +291,25 @@ typedef struct bcmxtmrt_dev_context
     DEV_PARAMS devParams;
 #endif
 
+#ifdef AEI_VDSL_CUSTOMER_NCS
+    UINT16 usMirrorInFlags;
+    UINT16 usMirrorOutFlags;
+#else
     /*Port Mirroring fields*/
     char szMirrorIntfIn[MIRROR_INTF_SIZE];
     char szMirrorIntfOut[MIRROR_INTF_SIZE];
+#endif
+
+#ifdef AEI_VDSL_SMARTLED
+    UINT8 inetTrafficBlinkEnable;
+#endif
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
     struct napi_struct napi;
-#endif  
+#endif
+#ifdef AEI_VDSL_CUSTOMER_QWEST
+    struct xtm_multicast_stats multi_stats;
+#endif
 } BCMXTMRT_DEV_CONTEXT, *PBCMXTMRT_DEV_CONTEXT;
 
 /* ATM Bonding Definitions */
@@ -319,10 +341,8 @@ typedef union _XtmRtPtmBondFragHdr {
 /* PTM Tx Bonding Definitions */
 
 #define XTMRT_PTM_BOND_MAX_FRAG_PER_PKT      8
-//#define XTMRT_PTM_BOND_TX_MAX_FRAGMENT_SIZE  508
-//#define XTMRT_PTM_BOND_TX_MIN_FRAGMENT_SIZE  60
-#define XTMRT_PTM_BOND_TX_MAX_FRAGMENT_SIZE  252
-#define XTMRT_PTM_BOND_TX_MIN_FRAGMENT_SIZE  60
+#define XTMRT_PTM_BOND_TX_MAX_FRAGMENT_SIZE  508
+#define XTMRT_PTM_BOND_TX_MIN_FRAGMENT_SIZE  64
 #define XTMRT_PTM_BOND_HDR_NON_EOP           0
 
 typedef union _XtmRtPtmTxBondHeader {
@@ -338,15 +358,16 @@ typedef union _XtmRtPtmTxBondHeader {
 /* PTM Rx Bonding Definitions */
 
 /* tune both the following timeout factors together on receive queue */
-#define RX_SEQ_TIMEOUT        (msecs_to_jiffies(500))
-#define MAX_TICK_COUNT        (250/SAR_TIMEOUT)
+//#define RX_SEQ_TIMEOUT        (msecs_to_jiffies(250))
+#define RX_SEQ_TIMEOUT        (msecs_to_jiffies(15))
+//#define MAX_TICK_COUNT        (250/SAR_TIMEOUT)
+#define MAX_TICK_COUNT        1
 
 /* Commands for the resync method */
 #define RESYNC_TIMEOUT        0x01
 #define RESYNC_OVERFLOW       0x02
 #define RESYNC_PORT           0x04
 #define RESYNC_FLUSH          0x08
-#define RESYNC_STARTUP        0x10
 
 #define RESYNC_LIMIT          5
 #define DROP_WEIGHT           5
@@ -386,13 +407,13 @@ typedef union _XtmRtPtmTxBondHeader {
                                              * For 2ms delay differential.
                                              * @ rates 50 ms DS
                                              */
-#define XTMRT_PTM_BOND_RX_QUEUE_LEN          256
-#define XTMRT_PTM_BOND_RX_QUEUE_LEN_MASK     255
+#define XTMRT_PTM_BOND_RX_QUEUE_LEN          512
+#define XTMRT_PTM_BOND_RX_QUEUE_LEN_MASK     (XTMRT_PTM_BOND_RX_QUEUE_LEN-1)
 
 typedef struct _XtmRtPtmBondRxQInfo {
    FkBuff_t               *rxFkb ;
    XtmRtPtmBondFragHdr    fragHdr ;
-   UINT16                 resv ;
+   UINT16                 rxdmaIndex ;
    PBCMXTMRT_DEV_CONTEXT  pDevCtx ;
    UINT16                 rxFkbStatus ;
    UINT8                  phyPort ;
@@ -402,8 +423,16 @@ typedef struct _XtmRtPtmBondRxQInfo {
 #define PACKET_BLOG           0
 #define PACKET_NORMAL         1
 
+#define MAX_WT_PORT_DIST      100
+
 typedef struct _XtmRtPtmBondInfo {
-   UINT32               resvDebug ;
+   UINT32               totalWtPortDist ;
+   UINT32               ulCurrWtPortDistStartIndex ;
+   UINT32               ulCurrWtPortDistRunIndex ;
+   UINT32               ulCurrWtTotalIterationsBeforeReset ;
+   UINT8                u8ConfWtPortDist [MAX_WT_PORT_DIST] ;
+   UINT32               ulLinkUsWt [MAX_BOND_PORTS] ;
+   UINT32               ulConfLinkUsWt [MAX_BOND_PORTS] ;
 	XtmRtPtmBondRxQInfo  rxq [XTMRT_PTM_BOND_RX_QUEUE_LEN] ;   /* reordering fkb buff queue */
 #define PTMBOND_FWD_BUF_INDEX             0
 #define PTMBOND_SCRATCHPAD_BUF_INDEX      1
@@ -454,7 +483,68 @@ typedef struct _XtmRtPtmBondInfo {
 #endif
 } XtmRtPtmBondInfo ;
 
+#define XTM_SW_SCHED_TIMER_INIT            1
+#define XTM_SW_SCHED_TIMER_REINIT          2
+
+#define XTM_HW_TIMER_USEC 50
+
+#define MAX_HW_TRANSMIT_QUEUE_SIZE         4
+#define MAX_HW_TRANSMIT_QUEUES             2 /* Per latency/priority, as in BCM6368 data sheet */
+                                             /* Only one latency supported due HW deficiency */
+#define XTM_SW_SCHED_KEY(channel,index)   ((channel<<16)|index)
+#define XTM_SW_CHANNEL(key)               (key>>16)
+#define XTM_SW_CHANNEL_INDEX(key)         (key&0xFFFF)
+
+#define XTM_SW_DMA_NO_COMMAND              0x0
+#define XTM_SW_DMA_FORCE_DELETE            0x1
+#define XTM_SW_DMA_DELETE                  0x2
+#define XTM_SW_DMA_FORCE_FLUSH             0x3
+#define XTM_SW_DMA_FLUSH                   0x4
+#define XTM_SW_DMA_FORCED                  0x1
+
+#define MIN_WFQ_ALLOWANCE                  1
+typedef struct _swSchedWfqInfo {
+   UINT32      prevMaxSC ;
+   UINT32      currMaxSC ;
+   UINT32      SC [MAX_SUB_PRIORITIES] ;
+   UINT32      allowanceQuantity [MAX_SUB_PRIORITIES] ;
+   UINT32      sentQuantity [MAX_SUB_PRIORITIES] ;
+} SwSchedWfqInfo ;
+
+typedef struct _XtmRtTxSchedContext
+{
+   UINT32     totalScheduled ;
+   UINT32     ulHwTxQInfosSize ;
+   BcmPktDma_XtmTxDma txHwdma[MAX_HW_TRANSMIT_QUEUES] ;
+   UINT32     ulSwTxQInfosSize ;
+   union {
+      volatile BcmPktDma_XtmTxDma *pTxPrioSwDmaL[MAX_PTM_PRIORITIES*MAX_SUB_PRIORITIES] ;  /* Linear */
+      volatile BcmPktDma_XtmTxDma *pTxPrioSwDmaD[MAX_PTM_PRIORITIES][MAX_SUB_PRIORITIES] ; /* Dimension */
+   } uSwDma ;
+   volatile UINT8      ulSubPrioBitMap [MAX_PTM_PRIORITIES] ;
+                                                     /* Priority Sorted Array */
+   UINT32             rrVisitCount [MAX_PTM_PRIORITIES] ;
+   /* WFQ specific information */
+   SwSchedWfqInfo     wfq [MAX_PTM_PRIORITIES] ;
+
+   UINT32      ulCommand ;
+   UINT32      ulCommandParam ;  /* Currently only for deletion of the tx queue. Write sets this and
+                                  * Reader resets this.
+                                  */
+} XtmRtTxSchedContext ;
+
 /* Information that is global to all network device instances. */
+#define SW_SCHED
+#ifdef SW_SCHED
+#define TXDMACTRL(pDevCtx)       ((pDevCtx->ulTrafficType!=TRAFFIC_TYPE_PTM_BONDED)?\
+                                  g_GlobalInfo.dmaCtrl:g_GlobalInfo.swDmaCtrl)
+#define TXDMATYPE(pDevCtx)       ((pDevCtx->ulTrafficType!=TRAFFIC_TYPE_PTM_BONDED)?\
+                                  XTM_HW_DMA:XTM_SW_DMA)
+#else
+#define TXDMACTRL(pDevCtx)       g_GlobalInfo.dmaCtrl
+#define TXDMATYPE(pDevCtx)       XTM_HW_DMA
+#endif
+
 typedef struct bcmxtmrt_global_info
 {
     /* Linux structures. */
@@ -471,6 +561,8 @@ typedef struct bcmxtmrt_global_info
     /* DMA, BD and buffer fields. */
     BcmXtm_RxDma       *rxdma[MAX_RECEIVE_QUEUES];
     volatile DmaRegs   *dmaCtrl;
+    volatile DmaRegs   *swDmaCtrlBase ;
+    volatile DmaRegs   *swDmaCtrl ;
     
     UINT32 ulIntEnableMask;
 
@@ -503,6 +595,9 @@ typedef struct bcmxtmrt_global_info
     UINT32 *pulMibRxPacketCount;
     UINT32 *pulRxCamBase;
 
+    /* SW Scheduler (Used in BCM6368) */
+    XtmRtTxSchedContext    txSchedCtxt ;
+
     /* Bonding information */
     UINT32                 bondVersionMajor ;
     UINT32                 bondVersionMinor ;
@@ -524,18 +619,19 @@ extern BCMXTMRT_GLOBAL_INFO g_GlobalInfo;
 void AssignRxBuffer(int channel, UINT8 *pucData);
 void FlushAssignRxBuffer(int channel, UINT8 *pucData, UINT8 *pucEnd);
 void bcmxtmrt_ptmbond_initialize (int) ;
+int bcmxtmrt_ptmbond_calculate_link_weights (PBCMXTMRT_DEV_CONTEXT pDevCtx) ;
 UINT32 bcmxtmrt_process_rx_pkt( PBCMXTMRT_DEV_CONTEXT pDevCtx, BcmXtm_RxDma *rxdma,
                               FkBuff_t *pFkb, UINT16 bufStatus, int delLen, int trailerDelLen);
-void bcmxtmrt_ptmbond_add_hdr (PBCMXTMRT_DEV_CONTEXT pDevCtx, UINT32 ulPtmPriority, pNBuff_t *ppNBuff,
+void bcmxtmrt_ptmbond_add_hdr (PBCMXTMRT_DEV_CONTEXT pDevCtx, UINT32 ulPtmPrioIdx, pNBuff_t *ppNBuff,
                                struct sk_buff **ppNBuffSkb, UINT8 **ppData, 
                                int *pLen) ;
 void bcmxtmrt_ptmbond_receive_rx_fragment (PBCMXTMRT_DEV_CONTEXT pDevCtx, FkBuff_t *pFkb,
-                                           UINT16 bufStatus) ;
+                                           UINT16 bufStatus, UINT16 rxdmaIndex) ;
 void bcmxtmrt_ptm_receive_and_drop (PBCMXTMRT_DEV_CONTEXT pDevCtx, FkBuff_t *fkb,
-                                    UINT16 bufStatus) ;
+                                    UINT16 bufStatus, UINT16 rxdmaIndex) ;
 void bcmxtmrt_ptmbond_handle_port_status_change (XtmRtPtmBondInfo *pBondInfo,
                                                  UINT32 ulLinkState, UINT32 ulPortMask) ;
-void bcmxtmrt_ptmbond_tick (XtmRtPtmBondInfo *pBondInfo) ;
+void bcmxtmrt_ptmbond_tick (XtmRtPtmBondInfo *pBondInfo, int timeCheck) ;
 void *bond_memcpy (void * dest, void const * src, size_t cnt) ;
 
 int ProcRxBondCtrs(char *page, char **start, off_t off, int cnt, int *eof, void *data);

@@ -899,9 +899,6 @@ int tftp_main(int argc, char **argv)
           * (But on the desktop, this call does return, so we still have to check the
           * return value.)
           */
-#if defined(CUSTOMER_ACTIONTEC)
-         system("echo 1 > /proc/tftpupgrade");
-#endif
          if ((ret = cmsImg_writeImage(glbImagePtr, glbUploadSize, msgHandle)) != CMSRET_SUCCESS)
          {
             printf("Tftp Image failed: Illegal image.\n");

@@ -48,7 +48,7 @@
  * C++ this pointer to a virtual class (vtable based virtual function thunks).
  *
  * Thunk functions to redirect the calls to the appropriate buffer type, e.g.
- * skb or fkb uses the Network Buffer Pointer type information.
+ * SKB or FKB uses the Network Buffer Pointer type information.
  *
  * This file also implements the Fast Kernel Buffer API. The fast kernel buffer
  * carries a minimal context of the received buffer and associated buffer
@@ -65,28 +65,41 @@
 
 /* Engineering Constants for Fast Kernel Buffer Global Pool (used for clones) */
 #define SUPPORT_FKB_EXTEND
-#define FKB_POOL_SIZE_ENGG          400
-#define FKB_EXTEND_SIZE_ENGG        32      /* Number of FkBuf_t per extension*/
-#define FKB_EXTEND_MAX_ENGG         16      /* Maximum extensions allowed     */
+#define FKBC_POOL_SIZE_ENGG         400
+#define FKBC_EXTEND_SIZE_ENGG       32      /* Number of FkBuf_t per extension*/
+#define FKBC_EXTEND_MAX_ENGG        16      /* Maximum extensions allowed     */
+
+#define FKBM_POOL_SIZE_ENGG         32
+#define FKBM_EXTEND_SIZE_ENGG       2
+#define FKBM_EXTEND_MAX_ENGG        200     /* Assuming one unshare           */
 
 /*
  * Network device drivers ported to NBUFF must ensure that the headroom is at
- * least 176 bytes in size.
+ * least 176 bytes in size. Remove this dependancy (TBD).
  */
 // #define CC_FKB_HEADROOM_AUDIT
 #define FKB_HEADROOM                ((176 + 0x0F) & ~0x0F)
 #define FKB_XLATE_SKB_HEADROOM      FKB_HEADROOM
 #define FKB_XLATE_SKB_TAILROOM      32
 
-/* Conditional compile of inline fkb functions */
+    /* FkBuff + headroom + buffer + tailroom */
+#define FKBM_BUFFER_SIZE            2048
+
+/* Conditional compile of FKB functional APIs as inlined or non-inlined */
 #define CC_CONFIG_FKB_FN_INLINE
 #ifdef CC_CONFIG_FKB_FN_INLINE
-#define DEFINE_FKB_FN(fn_signature, body)                                      \
-static inline fn_signature { body; }
+#define FKB_FN(fn_name, fn_signature, body)                                    \
+static inline fn_signature { body; }    /* APIs inlined in header file */
 #else
-#define DEFINE_FKB_FN(fn_signature, body)                                      \
+#ifdef FKB_IMPLEMENTATION_FILE
+#define FKB_FN(fn_name, fn_signature, body)                                    \
+fn_signature { body; }                                                         \
+EXPORT_SYMBOL(fn_name);                 /* APIs declared in implementation */
+#else
+#define FKB_FN(fn_name, fn_signature, body)                                    \
 extern fn_signature;
-#endif
+#endif  /* !defined(FKB_IMPLEMENTATION_FILE) */
+#endif  /* !defined(FKB_FN) */
 
 /* LAB ONLY: Design development */
 // #define CC_CONFIG_FKB_STATS
@@ -103,6 +116,96 @@ extern int nbuff_dbg;
 
 #define CC_NBUFF_FLUSH_OPTIMIZATION
 
+/* OS Specific Section Begin */
+#if defined(__KERNEL__)     /* Linux MIPS Cache Specific */
+/*
+ *------------------------------------------------------------------------------
+ * common cache operations:
+ *
+ * - addr is rounded down to the cache line
+ * - end is rounded up to cache line.
+ *
+ * - if ((addr == end) and (addr was cache aligned before rounding))
+ *       no operation is performed.
+ *   else
+ *       flush data cache line UPTO but NOT INCLUDING rounded up end.
+ *
+ * Note:
+ * if before rounding, (addr == end)  AND addr was not cache aligned,
+ *      we would flush at least one line.
+ *
+ * Uses: L1_CACHE_BYTES
+ *------------------------------------------------------------------------------
+ */
+#include <asm/cache.h>
+#include <asm/r4kcache.h>
+
+/*
+ * Macros to round down and up, an address to a cachealigned address
+ */
+#define ADDR_ALIGN_DN(addr, align)  ( (addr) & ~((align) - 1) )
+#define ADDR_ALIGN_UP(addr, align)  ( ((addr) + (align) - 1) & ~((align) - 1) )
+
+/*
+ *------------------------------------------------------------------------------
+ * Function   : cache_flush_region
+ * Description: 
+ * Writeback flush, then invalidate a region demarcated by addr to end.
+ * Cache line following rounded up end is not flushed.
+ *------------------------------------------------------------------------------
+ */
+static inline void cache_flush_region(void *addr, void *end)
+{
+    unsigned long a = ADDR_ALIGN_DN( (unsigned long)addr, L1_CACHE_BYTES );
+    unsigned long e = ADDR_ALIGN_UP( (unsigned long)end, L1_CACHE_BYTES );
+    while ( a < e )
+    {
+        flush_dcache_line(a);   /* Hit_Writeback_Inv_D */
+        a += L1_CACHE_BYTES;    /* next cache line base */
+    }
+}
+
+/*
+ *------------------------------------------------------------------------------
+ * Function   : cache_flush_len
+ * Description: 
+ * Writeback flush, then invalidate a region given an address and a length.
+ * The demarcation end is computed by applying length to address before
+ * rounding down address. End is rounded up.
+ * Cache line following rounded up end is not flushed.
+ *------------------------------------------------------------------------------
+ */
+static inline void cache_flush_len(void *addr, int len)
+{
+    unsigned long a = ADDR_ALIGN_DN( (unsigned long)addr, L1_CACHE_BYTES );
+    unsigned long e = ADDR_ALIGN_UP( ((unsigned long)addr + len),
+                                     L1_CACHE_BYTES );
+    while ( a < e )
+    {
+        flush_dcache_line(a);   /* Hit_Writeback_Inv_D */
+        a += L1_CACHE_BYTES;    /* next cache line base */
+    }
+}
+
+/*
+ *------------------------------------------------------------------------------
+ * Function   : _is_kptr_
+ * Description: Test whether a variable can be a pointer to a kernel space.
+ *              This form of variable overloading may only be used for denoting
+ *              pointers to kernel space or as a variable where the most
+ *              significant nibble is unused.
+ *              In 32bit Linux kernel, a pointer to a KSEG0, KSEG1, KSEG2 will
+ *              have 0x8, 0xA or 0xC in the most significant nibble.
+ *------------------------------------------------------------------------------
+ */
+static inline uint32_t _is_kptr_(const void * vptr)
+{
+    return ( (uint32_t)vptr > 0x0FFFFFFF );
+}
+#endif  /* defined(__KERNEL__) Linux MIPS Cache Specific */
+/* OS Specific Section End */
+
+
 /*
  * For BSD style mbuf with FKB : 
  * generate nbuff.h by replacing "SKBUFF" to "BCMMBUF", and,
@@ -118,14 +221,13 @@ typedef int (*HardStartXmitFuncP) (struct sk_buff *skb,
 struct fkbuff;
 typedef struct fkbuff FkBuff_t;
 
+#define FKB_NULL                    ((FkBuff_t *)NULL)
+
 /* virtual network buffer pointer to SKB|FPB|TGB|FKB  */
 typedef void * pNBuff_t;
-#define PNBUFF_NULL     ((pNBuff_t)NULL)
+#define PNBUFF_NULL                 ((pNBuff_t)NULL)
 
-/* Test if kernel pointer (i.e. in KSEG0|1|2) */
-#define _IS_KPTR_(v)                (((uint32_t)(v)) > 0x0FFFFFFF)
-
-#define MUST_BE_ZERO            0
+#define MUST_BE_ZERO                0
 typedef enum NBuffPtrType
 {
     SKBUFF_PTR = MUST_BE_ZERO,      /* Default Linux networking socket buffer */
@@ -210,20 +312,30 @@ typedef enum NBuffPtrType
 
 struct fkbuff
 {
+    /* List pointer must be the first field */
     union {
         FkBuff_t  * list;           /* SLL of free FKBs for cloning           */
         FkBuff_t  * master_p;       /* Clone FKB to point to master FKB       */
         atomic_t  users;            /* (private) # of references to FKB       */
     };
-    union {                         /* Use _IS_KPTR_ to determine if ptr      */
-        struct blog_t *blog_p;      /* Pointer to a blog                      */
-        uint8_t       *dirty_p;
+    union {                         /* Use _is_kptr_ to determine if ptr      */
         union {
-          struct {
-            uint32_t   ptr   : 8;   /* Identifies whether pointer             */
-            uint32_t   in_skb:24;   /* Member of skb : See FKB_IN_SKB         */
-          };
-          uint32_t     in_skb_tag;
+            void          *ptr;
+            struct blog_t *blog_p;  /* Pointer to a blog                      */
+            uint8_t       *dirty_p; /* Pointer to packet payload dirty incache*/
+            uint32_t       flags;   /* Access all flags                       */
+        };
+        /*
+         * First nibble denotes a pointer or flag usage.
+         * Lowest two significant bits denote the type of pinter
+         * Remaining 22 bits may be used as flags
+         */
+        struct {
+            uint32_t   ptr_type : 8;/* Identifies whether pointer             */
+            uint32_t   unused   :21;/* Future use for flags                   */
+            uint32_t   in_skb   : 1;/* flag: FKB passed inside a SKB          */
+            uint32_t   other_ptr: 1;/* future use, to override another pointer*/
+            uint32_t   dptr_tag : 1;/* Pointer type is a dirty pointer        */
         };
     };
     uint8_t       * data;           /* Pointer to packet data                 */
@@ -236,30 +348,217 @@ struct fkbuff
 
 } ____cacheline_aligned;   /* 2 cache lines wide */
 
-#define FKB_NULL                    ((FkBuff_t *)NULL)
-
-/* Verify whether there is a valid blog attached to Fkb */
-#define _IS_BPTR_(b)                ( _IS_KPTR_(b) && !((uint32_t)(b) & 0x1))
-
-/* Tag the pointer (and with 0x1) to signify a dirty pointer */
-#define _TO_DPTR_(d)                ((uint8_t*)((uint32_t)(d) | 0x1))
-
 /*
+ *------------------------------------------------------------------------------
  * An fkbuff may be referred to as a:
  *  master - a pre-allocated rxBuffer, inplaced ahead of the headroom.
  *  cloned - allocated from a free pool of fkbuff and points to a master.
- *  in_skb - member of a sk_buff structure.
+ *
+ *  in_skb - when a FKB is passed as a member of a SKB structure.
+ *------------------------------------------------------------------------------
  */
-#define FKB_IN_SKB                  (0x00FFFFFE)
+#define FKB_IN_SKB                  (1 << 2)    /* Bit#2 is in_skb */
+
+/* Return flags with the in_skb tag set */
+static inline uint32_t _set_in_skb_tag_(uint32_t flags)
+{
+    return (flags | FKB_IN_SKB);
+}
+
+/* Fetch the in_skb tag in flags */
+static inline uint32_t _get_in_skb_tag_(uint32_t flags)
+{
+    return (flags & FKB_IN_SKB);
+}
+
+/* Determine whether the in_skb tag is set in flags */
+static inline uint32_t _is_in_skb_tag_(uint32_t flags)
+{
+    return ( _get_in_skb_tag_(flags) ? 1 : 0 );
+}
 
 /*
- * fkbuff member master_p and users aliased to same storage. When a fkbuff is
- * cloned, the storage is used as a pointer to the master fkbuff which 
- * contains the users reference count. 
+ *------------------------------------------------------------------------------
+ * APIs to convert between a real kernel pointer and a dirty pointer.
+ *------------------------------------------------------------------------------
  */
-#define IS_FKB_POOL(fkb_p)          ( (uint32_t) _IS_KPTR_((fkb_p)->master_p) )
-#define IS_FKB_CLONE(fkb_p)         ( IS_FKB_POOL(fkb_p)                      \
-                                    || ( atomic_read(&((fkb_p)->users)) > 1 ))
+
+#define FKB_DPTR_TAG                (1 << 0)    /* Bit#0 is dptr_tag */
+
+/* Test whether a pointer is a dirty pointer type */
+static inline uint32_t is_dptr_tag_(uint8_t * ptr)
+{
+    return ( ( (uint32_t) ((uint32_t)ptr & FKB_DPTR_TAG) ) ? 1 : 0);
+}
+
+/* Encode a real kernel pointer to a dirty pointer type */
+static inline uint8_t * _to_dptr_from_kptr_(uint8_t * kernel_ptr)
+{
+    if((uint32_t)(kernel_ptr) & FKB_DPTR_TAG)
+        kernel_ptr++;
+    /* Tag a kernel pointer's dirty_ptr bit, to denote a FKB dirty pointer */
+    return ( (uint8_t*) ((uint32_t)(kernel_ptr) | FKB_DPTR_TAG) );
+}
+
+/* Decode a dirty pointer type into a real kernel pointer */
+static inline uint8_t * _to_kptr_from_dptr_(uint8_t * dirty_ptr)
+{
+#if defined(CC_CONFIG_FKB_DEBUG)
+    if ( dirty_ptr && !is_dptr_tag_(dirty_ptr) )
+        printk("FKB ASSERT %s !is_dptr_tag_(0x%08x)\n",
+                __FUNCTION__, (int)dirty_ptr );
+#endif
+    /* Fetch kernel pointer from encoded FKB dirty_ptr,
+       by clearing dirty_ptr bit */
+    return ( (uint8_t*) ((uint32_t)(dirty_ptr) & (~FKB_DPTR_TAG)) );
+}
+
+#define FKB_OPTR_TAG                (1<<1)      /* Bit#1 other_ptr tag */
+
+#define FKB_BLOG_TAG_MASK           (FKB_DPTR_TAG | FKB_OPTR_TAG)
+
+/* Verify whether a FKB pointer is pointing to a Blog */
+#define _IS_BPTR_(fkb_ptr) \
+         ( _is_kptr_(fkb_ptr) && ! ((uint32_t)(fkb_ptr) & FKB_BLOG_TAG_MASK) )
+
+
+/*
+ *------------------------------------------------------------------------------
+ *
+ *                  Types of preallocated FKB pools
+ * 
+ *  - A Master FKB object contains memory for the rx buffer, with a FkBuff_t
+ *    placed at the head of the buffer. A Master FKB object may serve to
+ *    replenish a network devices receive ring, when packet buffers are not
+ *    promptly recycled. A Master FKB may also be used for packet replication
+ *    where in one of the transmitted packet replicas may need a unique
+ *    modification distinct from other replicas. In such a case, the FKB must
+ *    be first "unshared" by a deep packet buffer copy into a Master Fkb.
+ *    A Free Pool of Master FKB objects is maintained. Master FKB may be
+ *    alocated and recycled from this Master FKB Pool.
+ *    The Master FKB Pool may also be used for replinishing a network device
+ *    driver's rx buffer ring.
+ *
+ *  - A Cloned FKB object does not contain memory for the rx buffer.
+ *    Used by fkb_clone, to create multiple references to a packet buffer.
+ *    Multiple references to a packet buffer may be used for packet replication.
+ *    A FKB allocated from the FKB Cloned Pool will have master_p pointing to
+ *    a Master FKB and the recycle_hook member set to NULL.
+ *
+ *------------------------------------------------------------------------------
+ */
+typedef enum {
+    FkbMasterPool_e = 0,
+    FkbClonedPool_e = 1,
+    FkbMaxPools_e
+} FkbObject_t;
+
+/*
+ * Function   : _get_master_users_
+ * Description: Given a pointer to a Master FKB, fetch the users count
+ * Caution    : Does not check whether the FKB is a Master or not!
+ */
+static inline uint32_t _get_master_users_(FkBuff_t * fkbM_p)
+{
+    uint32_t users;
+    users = atomic_read(&fkbM_p->users);
+#if defined(CC_CONFIG_FKB_DEBUG)
+    if ( users == 0 )
+        printk("FKB ASSERT %s _get_master_users_(0x%08x) users == 0\n",
+               __FUNCTION__, (int)fkbM_p);
+#endif
+    return users;
+}
+
+/*
+ * Function   : _is_fkb_cloned_pool_
+ * Description: Test whether an "allocated" FKB is from the FKB Cloned Pool.
+ */
+static inline uint32_t _is_fkb_cloned_pool_(FkBuff_t * fkb_p)
+{
+    if ( _is_kptr_(fkb_p->master_p)
+         && (fkb_p->recycle_hook == (RecycleFuncP)NULL) )
+    {
+#if defined(CC_CONFIG_FKB_DEBUG)
+        /* ASSERT if the FKB is actually linked in a FKB pool */
+        if ( _is_kptr_(fkb_p->master_p->list) )
+        {
+            printk("FKB ASSERT %s _is_fkb_cloned_pool_:"
+                   " _is_kptr_((0x%08x)->0x%08x->0x%08x)\n",
+                   __FUNCTION__, (int)fkb_p,
+                  (int)fkb_p->master_p, (int)fkb_p->master_p->list);
+        }
+        /* ASSERT that Master FKB users count is greater than 0 */
+        if ( _get_master_users_(fkb_p->master_p) == 0 )
+        {
+            printk("FKB ASSERT %s _is_fkb_cloned_pool_:"
+                   " _get_master_users_(0x%08x->0x%08x) == 0\n",
+                   __FUNCTION__, (int)fkb_p, (int)fkb_p->master_p );
+            return 0;
+        }
+#endif
+        return 1;   /* Allocated FKB is from the FKB Cloned Pool */
+    }
+    else
+        return 0;
+}
+
+/*
+ * Function   : _get_fkb_users_
+ * Description: Given a pointer to a FKB (Master or Cloned), fetch users count
+ */
+static inline uint32_t _get_fkb_users_(FkBuff_t * fkb_p)
+{
+    if ( _is_kptr_(fkb_p->master_p) )       /* Cloned FKB */
+    {
+#if defined(CC_CONFIG_FKB_DEBUG)
+        if ( !_is_fkb_cloned_pool_(fkb_p) ) /* double check Cloned FKB */
+        {
+            printk("FKB ASSERT %s _get_fkb_users_:"
+                   " !_is_fkb_cloned_pool_(0x%08x)\n",
+                   __FUNCTION__, (int)fkb_p );
+            return 0;
+        }
+#endif
+        return _get_master_users_(fkb_p->master_p);
+    }
+    else                                    /* Master FKB */
+        return _get_master_users_(fkb_p);
+}
+
+/*
+ * Function   : _get_fkb_master_ptr_
+ * Description: Fetch the pointer to the Master FKB.
+ */
+static inline FkBuff_t * _get_fkb_master_ptr_(FkBuff_t * fkb_p)
+{
+    if ( _is_kptr_(fkb_p->master_p) )       /* Cloned FKB */
+    {
+#if defined(CC_CONFIG_FKB_DEBUG)
+        if ( !_is_fkb_cloned_pool_(fkb_p) ) /* double check Cloned FKB */
+        {
+            printk("FKB ASSERT %s _get_fkb_master_ptr_"
+                   " !_is_fkb_cloned_pool_(0x%08x)\n",
+                   __FUNCTION__, (int)fkb_p );
+            return FKB_NULL;
+        }
+#endif
+        return fkb_p->master_p;
+    }
+    else                                    /* Master FKB */
+    {
+#if defined(CC_CONFIG_FKB_DEBUG)
+        if ( _get_master_users_(fkb_p) == 0 )   /* assert Master FKB users */
+        {
+            printk("FKB ASSERT %s _get_fkb_master_ptr_"
+                   " _get_master_users_(0x%08x) == 0\n",
+                   __FUNCTION__, (int)fkb_p );
+            return FKB_NULL;
+        }
+#endif
+        return fkb_p;
+    }
+}
 
 /*
  *------------------------------------------------------------------------------
@@ -279,58 +578,119 @@ struct fkbuff
 #define PFKBUFF_TO_PDATA(pFkb,headroom)     \
             (uint8_t*)((uint8_t*)(pFkb) + PFKBUFF_PHEAD_OFFSET + (headroom))
 
-/*
- * fkb_construct() validates that the layout of fkbuff members in sk_buff
- * is the same. An sk_buff contains an fkbuff and permits a quick translation
- * to and from a fkbuff. It also preallocates the pool of fkbs for fkb_clone()
- */
-extern int fkb_in_skb_test( int fkb_in_skb_offset,
-                            int list_offset, int blog_p_offset,
-                            int data_offset, int len_offset, int mark_offset,
-                            int priority_offset, int recycle_hook_offset,
-                            int recycle_context_offset );
-extern int fkb_construct(int fkb_in_skb_offset);
-
-extern void fkb_stats(void);    /* allocator statistics : CC_CONFIG_FKB_STATS */
-
-extern FkBuff_t * fkb_alloc(void);
-extern void fkb_free(FkBuff_t * fkb_p);
-
-extern int skb_layout_test(int tail_offset, int end_offset, int head_offset);
-
-extern struct sk_buff * nbuff_xlate( pNBuff_t pNBuff );
 
 #define NBUFF_ALIGN_MASK_8   0x07
 pNBuff_t nbuff_align_data(pNBuff_t pNBuff, uint8_t **data_pp,
                           uint32_t len, uint32_t alignMask);
 
+/*
+ *------------------------------------------------------------------------------
+ *  FKB Functional Interfaces
+ *------------------------------------------------------------------------------
+ */
 
-/* Set reference count to an FKB */
+/*
+ * Function   : fkb_in_skb_test
+ * Description: Verifies that the layout of SKB member fields corresponding to
+ *              a FKB have the same layout. This allows a FKB to be passed via
+ *              a SKB.
+ */
+
+extern int fkb_in_skb_test( int fkb_in_skb_offset,
+                            int list_offset, int blog_p_offset,
+                            int data_offset, int len_offset, int mark_offset,
+                            int priority_offset, int recycle_hook_offset,
+                            int recycle_context_offset );
+
+/*
+ * Global FKB Subsystem Constructor
+ * fkb_construct() validates that the layout of fkbuff members in sk_buff
+ * is the same. An sk_buff contains an fkbuff and permits a quick translation
+ * to and from a fkbuff. It also preallocates the pools of FKBs.
+ */
+extern int fkb_construct(int fkb_in_skb_offset);
+
+/*
+ * Function   : fkb_stats
+ * Description: Report FKB Pool statistics, see CC_CONFIG_FKB_STATS
+ */
+extern void fkb_stats(void);
+
+/*
+ * Function   : fkb_alloc
+ * Description: Allocate a Cloned/Master FKB object from preallocated pool
+ */
+extern FkBuff_t * fkb_alloc( FkbObject_t object );
+
+/*
+ * Function   : fkb_free
+ * Description: Free a FKB object to its respective preallocated pool.
+ */
+extern void fkb_free(FkBuff_t * fkb_p);
+
+/*
+ * Function   : fkb_unshare
+ * Description: If a FKB is pointing to a buffer with multiple references
+ * to this buffer, then create a copy of the buffer and return a FKB with a
+ * single reference to this buffer.
+ */
+extern FkBuff_t * fkb_unshare(FkBuff_t * fkb_p);
+
+/*
+ * Function   : fkbM_borrow
+ * Description: Allocate a Master FKB object from the pre-allocated pool.
+ */
+extern FkBuff_t * fkbM_borrow(void);
+
+/*
+ * Function   : fkbM_return
+ * Description: Return a Master FKB object to a pre-allocated pool.
+ */
+extern void fkbM_return(FkBuff_t * fkbM_p);
+
+/*
+ * Function   : fkb_set_ref
+ * Description: Set reference count to an FKB.
+ */
 static inline void _fkb_set_ref(FkBuff_t * fkb_p, const int count)
 {
     atomic_set(&fkb_p->users, count);
 }
-DEFINE_FKB_FN( void fkb_set_ref(FkBuff_t * fkb_p, const int count),
-               _fkb_set_ref(fkb_p, count) )
+FKB_FN( fkb_set_ref,
+        void fkb_set_ref(FkBuff_t * fkb_p, const int count),
+        _fkb_set_ref(fkb_p, count) )
 
-/* Increment references to an FKB */
+/*
+ * Function   : fkb_inc_ref
+ * Description: Increment reference count to an FKB.
+ */
 static inline void _fkb_inc_ref(FkBuff_t * fkb_p)
 {
     atomic_inc(&fkb_p->users);
 }
-DEFINE_FKB_FN( void fkb_inc_ref(FkBuff_t * fkb_p), _fkb_inc_ref(fkb_p) )
+FKB_FN( fkb_inc_ref,
+        void fkb_inc_ref(FkBuff_t * fkb_p),
+        _fkb_inc_ref(fkb_p) )
 
-/* Decrement references to an FKB */
+/*
+ * Function   : fkb_dec_ref
+ * Description: Decrement reference count to an FKB.
+ */
 static inline void _fkb_dec_ref(FkBuff_t * fkb_p)
 {
     atomic_dec(&fkb_p->users);
+    /* For debug, may want to assert that users does not become negative */
 }
-DEFINE_FKB_FN( void fkb_dec_ref(FkBuff_t * fkb_p), _fkb_dec_ref(fkb_p) )
+FKB_FN( fkb_dec_ref,
+        void fkb_dec_ref(FkBuff_t * fkb_p),
+        _fkb_dec_ref(fkb_p) )
 
 
 /*
- * Pre-initialization of FKB object that is placed into rx buffer descriptors
- * when they are created. FKB objects preceeds the reserved headroom.
+ * Function   : fkb_preinit
+ * Description: A network device driver may use this function to place a
+ * FKB object into rx buffers, when they are created. FKB objects preceeds
+ * the reserved headroom.
  */
 static inline void fkb_preinit(uint8_t * pBuf, RecycleFuncP recycle_hook,
                                uint32_t recycle_context)
@@ -339,13 +699,18 @@ static inline void fkb_preinit(uint8_t * pBuf, RecycleFuncP recycle_hook,
     fkb_p->recycle_hook = recycle_hook;         /* never modified */
     fkb_p->recycle_context = recycle_context;   /* never modified */
 
-    fkb_p->blog_p = BLOG_NULL;
+    fkb_p->ptr  = (void*)NULL;                  /* resets dirty_p, blog_p */
     fkb_p->data = (uint8_t*)NULL;
     fkb_p->len  = fkb_p->mark  = fkb_p->priority = 0;
     fkb_set_ref( fkb_p, 0 );
 }
 
-/* Initialize the FKB context for a received packet */
+/*
+ * Function   : fkb_init
+ * Description: Initialize the FKB context for a received packet. Invoked by a
+ * network device on extract the packet from a buffer descriptor and associating
+ * a FKB context to the received packet.
+ */
 static inline FkBuff_t * _fkb_init(uint8_t * pBuf, uint32_t headroom,
                                    uint8_t * pData, uint32_t len)
 {
@@ -360,145 +725,241 @@ static inline FkBuff_t * _fkb_init(uint8_t * pBuf, uint32_t headroom,
                headroom, FKB_HEADROOM, __FUNCTION__ );
 #endif
 
-    fkb_p->data      = pData;
-    fkb_p->len       = len;
-    fkb_p->blog_p    = BLOG_NULL;   /* resets in_skb_tag */
+    fkb_p->data = pData;
+    fkb_p->len  = len;
+    fkb_p->ptr  = (void*)NULL;   /* resets dirty_p, blog_p */
 
     fkb_set_ref( fkb_p, 1 );
 
     return fkb_p;
 }
-DEFINE_FKB_FN( 
-    FkBuff_t * fkb_init(uint8_t * pBuf, uint32_t headroom,
-                        uint8_t * pData, uint32_t len),
-    return _fkb_init(pBuf, headroom, pData, len) )
+FKB_FN( fkb_init,
+        FkBuff_t * fkb_init(uint8_t * pBuf, uint32_t headroom,
+                            uint8_t * pData, uint32_t len),
+        return _fkb_init(pBuf, headroom, pData, len) )
 
-/* Initialize the FKB context for a received packet, specifying recycle queue */
+/*
+ * Function   : fkb_qinit
+ * Description: Same as fkb_init, with the exception that a recycle queue
+ * context is associated with the FKB, each time the packet is receieved.
+ */
 static inline FkBuff_t * _fkb_qinit(uint8_t * pBuf, uint32_t headroom,
                     uint8_t * pData, uint32_t len, uint32_t qcontext)
 {
     FkBuff_t * fkb_p = PDATA_TO_PFKBUFF(pBuf, headroom);
-    fkb_dbg(1, "fkb_p<0x%08x> pBuf<0x%08x> headroom<%u>"
-            " pData<0x%08x> len<%d> context<0x%08x>",
-            (int)fkb_p, (int)pBuf, headroom, (int)pData, len, qcontext );
+    fkb_dbg(1, "fkb_p<0x%08x> qcontext<0x%08x>", (int)fkb_p, qcontext );
     fkb_p->recycle_context = qcontext;
-    fkb_p = _fkb_init(pBuf, headroom, pData, len);
 
-    return fkb_p;
+    return _fkb_init(pBuf, headroom, pData, len);
 }
-DEFINE_FKB_FN(
-    FkBuff_t * fkb_qinit(uint8_t * pBuf, uint32_t headroom,
-                         uint8_t * pData, uint32_t len, uint32_t qcontext),
-    return _fkb_qinit(pBuf, headroom, pData, len, qcontext) )
+FKB_FN( fkb_qinit,
+        FkBuff_t * fkb_qinit(uint8_t * pBuf, uint32_t headroom,
+                             uint8_t * pData, uint32_t len, uint32_t qcontext),
+        return _fkb_qinit(pBuf, headroom, pData, len, qcontext) )
 
-/* Release any associated blog and set ref count to 0 */
+/*
+ * Function   : fkb_release
+ * Description: Release any associated blog and set ref count to 0. A fkb
+ * may be released multiple times (not decrement reference count).
+ */
 void blog_put(struct blog_t * blog_p);
 static inline void _fkb_release(FkBuff_t * fkb_p)
 {
     fkb_dbg(1, "fkb_p<0x%08x> fkb_p->blog_p<0x%08x>",
             (int)fkb_p, (int)fkb_p->blog_p );
-    if ( _IS_KPTR_( fkb_p->blog_p ) )
+    if ( _IS_BPTR_( fkb_p->blog_p ) )
         blog_put(fkb_p->blog_p);
-    fkb_p->blog_p = BLOG_NULL;  /* resets in_skb_tag */
+    fkb_p->ptr = (void*)NULL;   /* reset dirty_p, blog_p */
 
-    fkb_set_ref( fkb_p, 0 );
+    fkb_set_ref( fkb_p, 0 );    /* fkb_release may be invoked multiple times */
 }
-DEFINE_FKB_FN( void fkb_release(FkBuff_t * fkb_p), _fkb_release(fkb_p) )
+FKB_FN( fkb_release,
+        void fkb_release(FkBuff_t * fkb_p),
+        _fkb_release(fkb_p) )
 
+/*
+ * Function   : fkb_headroom
+ * Description: Determine available headroom for the packet in the buffer.
+ */
 static inline int _fkb_headroom(const FkBuff_t *fkb_p)
 {
     return (int)( (uint32_t)(fkb_p->data) - (uint32_t)(fkb_p+1) );
 }
-DEFINE_FKB_FN( int fkb_headroom(const FkBuff_t *fkb_p),
-               return _fkb_headroom(fkb_p) )
+FKB_FN( fkb_headroom,
+        int fkb_headroom(const FkBuff_t *fkb_p),
+        return _fkb_headroom(fkb_p) )
 
-/* Prepare space for data at head of buffer pointed by FKB */
+/*
+ * Function   : fkb_push
+ * Description: Prepare space for data at head of the packet buffer.
+ */
 static inline uint8_t * _fkb_push(FkBuff_t * fkb_p, uint32_t len)
 {
     fkb_p->len  += len;
     fkb_p->data -= len;
     return fkb_p->data;
 }
-DEFINE_FKB_FN( uint8_t * fkb_push(FkBuff_t * fkb_p, uint32_t len),
-               return _fkb_push(fkb_p, len) )
+FKB_FN( fkb_push,
+        uint8_t * fkb_push(FkBuff_t * fkb_p, uint32_t len),
+        return _fkb_push(fkb_p, len) )
 
-/* Delete data from head of buffer pointed by FKB */
+/*
+ * Function   : fkb_pull
+ * Description: Delete data from the head of packet buffer.
+ */
 static inline uint8_t * _fkb_pull(FkBuff_t * fkb_p, uint32_t len)
 {
     fkb_p->len  -= len;
     fkb_p->data += len;
     return fkb_p->data;
 }
-DEFINE_FKB_FN( uint8_t * fkb_pull(FkBuff_t * fkb_p, uint32_t len),
-               return _fkb_pull(fkb_p, len) )
+FKB_FN( fkb_pull,
+        uint8_t * fkb_pull(FkBuff_t * fkb_p, uint32_t len),
+        return _fkb_pull(fkb_p, len) )
 
-/* Prepare space for data at tail of buffer pointed by FKB */
+/*
+ * Function   : fkb_put
+ * Description: Prepare space for data at tail of the packet buffer.
+ */
 static inline uint8_t * _fkb_put(FkBuff_t * fkb_p, uint32_t len)
 {
     uint8_t * tail_p = fkb_p->data + fkb_p->len; 
     fkb_p->len  += len;
 #if defined(CC_NBUFF_FLUSH_OPTIMIZATION)
-    fkb_p->dirty_p = _TO_DPTR_(tail_p + len);
+    fkb_p->dirty_p = _to_dptr_from_kptr_(tail_p + len); /* sets dptr_tag */
 #endif
     return tail_p;
 }
-DEFINE_FKB_FN( uint8_t * fkb_put(FkBuff_t * fkb_p, uint32_t len),
-               return _fkb_put(fkb_p, len) )
+FKB_FN( fkb_put,
+        uint8_t * fkb_put(FkBuff_t * fkb_p, uint32_t len),
+        return _fkb_put(fkb_p, len) )
 
-/* Pad the packet */
+/*
+ * Function   : fkb_pad
+ * Description: Pad the packet by requested number of bytes.
+ */
 static inline uint32_t _fkb_pad(FkBuff_t * fkb_p, uint32_t padding)
 {
     fkb_p->len  += padding;
     return fkb_p->len;
 }
-DEFINE_FKB_FN( uint32_t fkb_pad(FkBuff_t * fkb_p, uint32_t padding),
-               return _fkb_pad(fkb_p, padding) )
+FKB_FN( fkb_pad,
+        uint32_t fkb_pad(FkBuff_t * fkb_p, uint32_t padding),
+        return _fkb_pad(fkb_p, padding) )
 
-
+/*
+ * Function   : fkb_len
+ * Description: Determine the length of the packet.
+ */
 static inline uint32_t _fkb_len(FkBuff_t * fkb_p)
 {
     return fkb_p->len;
 }
-DEFINE_FKB_FN( uint32_t fkb_len(FkBuff_t * fkb_p),
-               return _fkb_len(fkb_p) )
+FKB_FN( fkb_len,
+        uint32_t fkb_len(FkBuff_t * fkb_p),
+        return _fkb_len(fkb_p) )
 
+/*
+ * Function   : fkb_data
+ * Description: Fetch the start of the packet.
+ */
 static inline uint8_t * _fkb_data(FkBuff_t * fkb_p)
 {
     return fkb_p->data;
 }
-DEFINE_FKB_FN( uint8_t * fkb_data(FkBuff_t * fkb_p),
-               return _fkb_data(fkb_p) )
+FKB_FN( fkb_data,
+        uint8_t * fkb_data(FkBuff_t * fkb_p),
+        return _fkb_data(fkb_p) )
 
+/*
+ * Function   : fkb_blog
+ * Description: Fetch the associated blog.
+ */
 static inline struct blog_t * _fkb_blog(FkBuff_t * fkb_p)
 {
     return fkb_p->blog_p;
 }
-DEFINE_FKB_FN( struct blog_t * fkb_blog(FkBuff_t * fkb_p),
-               return _fkb_blog(fkb_p) )
+FKB_FN( fkb_blog,
+        struct blog_t * fkb_blog(FkBuff_t * fkb_p),
+        return _fkb_blog(fkb_p) )
 
-/* Clone a Master FKB into a fkb from a pool */
+/*
+ * Function   : fkb_clone
+ * Description: Allocate a FKB from the Cloned Pool and make it reference the
+ * same packet.
+ */
 static inline FkBuff_t * _fkb_clone(FkBuff_t * fkbM_p)
 {
     FkBuff_t * fkbC_p;
 
-    fkbC_p = fkb_alloc();         /* Allocate an FKB */
+    /* Fetch a pointer to the Master FKB */
+    fkbM_p = _get_fkb_master_ptr_( fkbM_p );
+
+    fkbC_p = fkb_alloc( FkbClonedPool_e );  /* Allocate FKB from Cloned pool */
 
     if ( unlikely(fkbC_p != FKB_NULL) )
     {
         fkb_inc_ref( fkbM_p );
         fkbC_p->master_p   = fkbM_p;
+        fkbC_p->ptr   = fkbM_p->ptr;
 
         fkbC_p->data       = fkbM_p->data;
         fkbC_p->len        = fkbM_p->len;
+        fkbC_p->mark        = fkbM_p->mark;
+        fkbC_p->priority        = fkbM_p->priority;
     }
 
-    fkb_dbg(1, "fkbM_p<0x%08x> fkbC_p<0x%08x>", (int)fkbM_p, (int)fkbC_p );
+    fkb_dbg(1, "fkbC_p<0x%08x> ---> fkbM_p<0x%08x>", (int)fkbC_p, (int)fkbM_p );
 
     return fkbC_p;       /* May be null */
 }
-DEFINE_FKB_FN( FkBuff_t * fkb_clone(FkBuff_t * fkbM_p),
-               return _fkb_clone(fkbM_p) )
+FKB_FN( fkb_clone,
+        FkBuff_t * fkb_clone(FkBuff_t * fkbM_p),
+        return _fkb_clone(fkbM_p) )
 
+/*
+ * Function   : fkb_flush
+ * Description: Flush a FKB from current data or received packet data upto
+ * the dirty_p. When Flush Optimization is disabled, the entire length.
+ */
+static inline void _fkb_flush(FkBuff_t * fkb_p, uint8_t * data_p, int len)
+{
+    uint8_t * fkb_data_p;
+
+    if ( _is_fkb_cloned_pool_(fkb_p) )
+        fkb_data_p = PFKBUFF_TO_PDATA(fkb_p->master_p, FKB_HEADROOM);
+    else
+        fkb_data_p = PFKBUFF_TO_PDATA(fkb_p, FKB_HEADROOM);
+
+    /* headers may have been popped */
+    if ( (uint32_t)data_p < (uint32_t)fkb_data_p )
+        fkb_data_p = data_p;
+
+    {
+#if defined(CC_NBUFF_FLUSH_OPTIMIZATION)
+    uint8_t * dirty_p;  /* Flush only L1 dirty cache lines */
+    dirty_p = _to_kptr_from_dptr_(fkb_p->dirty_p);  /* extract kernel pointer */
+
+    fkb_dbg(1, "fkb_p<0x%08x> fkb_data<0x%08x> dirty_p<0x%08x> len<%d>",
+            (int)fkb_p, (int)fkb_data_p, (int)dirty_p, len);
+
+    cache_flush_region(fkb_data_p, dirty_p);
+#else
+    uint32_t data_offset;
+    data_offset = (uint32_t)data_p - (uint32_t)fkb_data_p;
+
+    fkb_dbg(1, "fkb_p<0x%08x> fkb_data<0x%08x> data_offset<%d> len<%d>",
+            (int)fkb_p, (int)fkb_data_p, data_offset, len);
+
+    cache_flush_len(fkb_data_p, data_offset + len);
+#endif
+    }
+
+    fkb_p->dirty_p = (uint8_t*)NULL;
+}
+FKB_FN( fkb_flush,
+        void fkb_flush(FkBuff_t * fkb_p, uint8_t * data, int len),
+        _fkb_flush(fkb_p, data, len) )
 
 /*
  *------------------------------------------------------------------------------
@@ -506,6 +967,7 @@ DEFINE_FKB_FN( FkBuff_t * fkb_clone(FkBuff_t * fkbM_p),
  *------------------------------------------------------------------------------
  */
 
+/* __BUILD_NBUFF_SET_ACCESSOR: generates function nbuff_set_MEMBER() */
 #define __BUILD_NBUFF_SET_ACCESSOR( TYPE, MEMBER )                             \
 static inline void nbuff_set_##MEMBER(pNBuff_t pNBuff, TYPE MEMBER) \
 {                                                                              \
@@ -517,6 +979,7 @@ static inline void nbuff_set_##MEMBER(pNBuff_t pNBuff, TYPE MEMBER) \
         ((FkBuff_t *)pBuf)->MEMBER = MEMBER;                                   \
 }
 
+/* __BUILD_NBUFF_GET_ACCESSOR: generates function nbuff_get_MEMBER() */
 #define __BUILD_NBUFF_GET_ACCESSOR( TYPE, MEMBER )                             \
 static inline TYPE nbuff_get_##MEMBER(pNBuff_t pNBuff)                         \
 {                                                                              \
@@ -528,7 +991,11 @@ static inline TYPE nbuff_get_##MEMBER(pNBuff_t pNBuff)                         \
         return (TYPE)(((FkBuff_t *)pBuf)->MEMBER);                             \
 }
 
-/* Common accessor of base network buffer: */
+/*
+ * Common set/get accessor of base network buffer fields:
+ * nbuff_set_data(), nbuff_set_len(), nbuff_set_mark(), nbuff_set_priority()
+ * nbuff_get_data(), nbuff_get_len(), nbuff_get_mark(), nbuff_get_priority()
+ */
 __BUILD_NBUFF_SET_ACCESSOR(uint8_t *, data) 
 __BUILD_NBUFF_SET_ACCESSOR(uint32_t, len) 
 __BUILD_NBUFF_SET_ACCESSOR(uint32_t, mark)      /* Custom network buffer arg1 */
@@ -539,6 +1006,10 @@ __BUILD_NBUFF_GET_ACCESSOR(uint32_t, len)
 __BUILD_NBUFF_GET_ACCESSOR(uint32_t, mark)      /* Custom network buffer arg1 */
 __BUILD_NBUFF_GET_ACCESSOR(uint32_t, priority)  /* Custom network buffer arg2 */
 
+/*
+ * Function   : nbuff_get_context
+ * Description: Extracts the data and len fields from a pNBuff_t.
+ */
 static inline void * nbuff_get_context(pNBuff_t pNBuff,
                                      uint8_t ** data_p, uint32_t *len_p)
 {
@@ -560,6 +1031,11 @@ static inline void * nbuff_get_context(pNBuff_t pNBuff,
     return pBuf;
 }
 
+/*
+ * Function   : nbuff_get_params
+ * Description: Extracts the data, len, mark and priority field from a network
+ * buffer.
+ */
 static inline void * nbuff_get_params(pNBuff_t pNBuff,
                                      uint8_t ** data_p, uint32_t *len_p,
                                      uint32_t * mark_p, uint32_t *priority_p)
@@ -585,8 +1061,13 @@ static inline void * nbuff_get_params(pNBuff_t pNBuff,
             (int)pNBuff, (int)pBuf, (int)*data_p );
     return pBuf;
 }
-
+    
 /* adds recycle flags/context to nbuff_get_params used in impl4 enet */
+/*
+ * Function   : nbuff_get_params_ext
+ * Description: Extracts the data, len, mark, priority and 
+ * recycle flags/context field from a network buffer.
+ */
 static inline void * nbuff_get_params_ext(pNBuff_t pNBuff, uint8_t **data_p, 
                                           uint32_t *len_p, uint32_t *mark_p, 
                                           uint32_t *priority_p, 
@@ -615,14 +1096,18 @@ static inline void * nbuff_get_params_ext(pNBuff_t pNBuff, uint8_t **data_p,
             (int)pNBuff, (int)pBuf, (int)*data_p );
     return pBuf;
 }
-    
+
 /*
  *------------------------------------------------------------------------------
  * Virtual common functional apis of a network kernel buffer
  *------------------------------------------------------------------------------
  */
 
-/* Make space at the start of a network buffer */
+/*
+ * Function   : nbuff_push
+ * Description: Make space at the start of a network buffer.
+ * CAUTION    : In the case of a FKB, no check for headroom is done.
+ */
 static inline uint8_t * nbuff_push(pNBuff_t pNBuff, uint32_t len)
 {
     uint8_t * data;
@@ -637,7 +1122,10 @@ static inline uint8_t * nbuff_push(pNBuff_t pNBuff, uint32_t len)
     return data;
 }
 
-/* Delete data from start of a network buffer */
+/*
+ * Function   : nbuff_pull
+ * Description: Delete data from start of a network buffer.
+ */
 static inline uint8_t * nbuff_pull(pNBuff_t pNBuff, uint32_t len)
 {
     uint8_t * data;
@@ -652,6 +1140,11 @@ static inline uint8_t * nbuff_pull(pNBuff_t pNBuff, uint32_t len)
     return data;
 }
 
+/*
+ * Function   : nbuff_put
+ * Description: Make space at the tail of a network buffer.
+ * CAUTION: In the case of a FKB, no check for tailroom is done.
+ */
 static inline uint8_t * nbuff_put(pNBuff_t pNBuff, uint32_t len)
 {
     uint8_t * tail;
@@ -666,8 +1159,18 @@ static inline uint8_t * nbuff_put(pNBuff_t pNBuff, uint32_t len)
     return tail;
 }
 
-/* Free|Recycle a network buffer and associated data */
+/*
+ * Function   : nbuff_free
+ * Description: Free/recycle a network buffer and associated data
+ *
+ * Freeing may involve a recyling of the network buffer into its respective
+ * pool (per network device driver pool, kernel cache or FKB pool). Likewise
+ * the associated buffer may be recycled if there are no other network buffers
+ * referencing it.
+ */
+
 extern void dev_kfree_skb_any(struct sk_buff *skb);
+
 static inline void nbuff_free(pNBuff_t pNBuff)
 {
     void * pBuf = PNBUFF_2_PBUF(pNBuff);
@@ -680,108 +1183,62 @@ static inline void nbuff_free(pNBuff_t pNBuff)
     fkb_dbg(2, "<<");
 }
 
-/* OS Specific Section Begin */
-#if defined(__KERNEL__)     /* Linux MIPS Cache Specific */
 /*
- *------------------------------------------------------------------------------
- * common cache operations:
+ * Function   : nbuff_unshare
+ * Description: If there are more than one references to the data buffer
+ * associated with the network buffer, create a deep copy of the data buffer
+ * and return a network buffer context to it. The returned network buffer
+ * may be then used to modify the data packet without impacting the original
+ * network buffer and its data buffer.
  *
- * - addr is rounded down to the cache line
- * - end is rounded up to cache line.
- *
- * - if ((addr == end) and (addr was cache aligned before rounding))
- *       no operation is performed.
- *   else
- *       flush data cache line UPTO but NOT INCLUDING rounded up end.
- *
- * Note:
- * if before rounding, (addr == end)  AND addr was not cache aligned,
- *      we would flush at least one line.
- *
- * Uses: L1_CACHE_BYTES
- *------------------------------------------------------------------------------
+ * If the data packet had a single network buffer referencing it, then the
+ * original network buffer is returned.
  */
-#include <asm/cache.h>
-#include <asm/r4kcache.h>
-
-/*
- * Macros to round down and up, an address to a cachealigned address
- */
-#define ADDR_ALIGN_DN(addr, align)  ( (addr) & ~((align) - 1) )
-#define ADDR_ALIGN_UP(addr, align)  ( ((addr) + (align) - 1) & ~((align) - 1) )
-
-/*
- *------------------------------------------------------------------------------
- * Writeback flush, then invalidate a region demarcated by addr to end.
- * Cache line following rounded up end is not flushed.
- *------------------------------------------------------------------------------
- */
-static inline void cache_flush_region(void *addr, void *end)
+static inline pNBuff_t nbuff_unshare(pNBuff_t pNBuff)
 {
-    unsigned long a = ADDR_ALIGN_DN( (unsigned long)addr, L1_CACHE_BYTES );
-    unsigned long e = ADDR_ALIGN_UP( (unsigned long)end, L1_CACHE_BYTES );
-    while ( a < e )
-    {
-        flush_dcache_line(a);   /* Hit_Writeback_Inv_D */
-        a += L1_CACHE_BYTES;    /* next cache line base */
-    }
-}
-
-/*
- *------------------------------------------------------------------------------
- * Writeback flush, then invalidate a region given an address and a length.
- * The demarcation end is computed by applying length to address before
- * rounding down address. End is rounded up.
- * Cache line following rounded up end is not flushed.
- *------------------------------------------------------------------------------
- */
-static inline void cache_flush_len(void *addr, int len)
-{
-    unsigned long a = ADDR_ALIGN_DN( (unsigned long)addr, L1_CACHE_BYTES );
-    unsigned long e = ADDR_ALIGN_UP( ((unsigned long)addr + len),
-                                     L1_CACHE_BYTES );
-    while ( a < e )
-    {
-        flush_dcache_line(a);   /* Hit_Writeback_Inv_D */
-        a += L1_CACHE_BYTES;    /* next cache line base */
-    }
-}
-
-#endif  /* defined(__KERNEL__) Linux MIPS Cache Specific */
-/* OS Specific Section End */
-
-/* Write flush packet */
-static inline void nbuff_flush(pNBuff_t pNBuff, uint8_t * data_p, int len)
-{
-    fkb_dbg(1, "pNBuff<0x%08x> data<0x%08x> len<%d>",
-            (int)pNBuff, (int)data_p, len);
+    void * pBuf = PNBUFF_2_PBUF(pNBuff);
+    fkb_dbg(1, "pNBuff<0x%08x> pBuf<0x%08x>", (int)pNBuff,(int)pBuf);
     if ( IS_SKBUFF_PTR(pNBuff) )
-        cache_flush_len(data_p, len);
+    {
+        struct sk_buff *skb_p;
+        skb_p = skb_unshare( (struct sk_buff *)pBuf, GFP_ATOMIC);
+        pNBuff = SKBUFF_2_PNBUFF(skb_p);
+    }
     else
     {
-        uint8_t * fdata_p;
+        FkBuff_t * fkb_p;
+        fkb_p = fkb_unshare( (FkBuff_t *)pBuf );
+        pNBuff = FKBUFF_2_PNBUFF(fkb_p);
+    }
+
+    fkb_dbg(2, "<<");
+    return pNBuff;
+}
+
+/*
+ * Function   : nbuff_flush
+ * Description: Flush (Hit_Writeback_Inv_D) a network buffer's packet data.
+ */
+static inline void nbuff_flush(pNBuff_t pNBuff, uint8_t * data, int len)
+{
+    fkb_dbg(1, "pNBuff<0x%08x> data<0x%08x> len<%d>",
+            (int)pNBuff, (int)data, len);
+    if ( IS_SKBUFF_PTR(pNBuff) )
+        cache_flush_len(data, len);
+    else
+    {
         FkBuff_t * fkb_p = (FkBuff_t *)PNBUFF_2_PBUF(pNBuff);
-        fdata_p = PFKBUFF_TO_PDATA(fkb_p, FKB_HEADROOM);
-
-        /* headers may have been popped */
-        if ( (uint32_t)data_p < (uint32_t)fdata_p )
-            fdata_p = data_p;
-
-#if defined(CC_NBUFF_FLUSH_OPTIMIZATION)
-        {
-            uint32_t dirty_p;
-            /* Flush only L1 dirty cache lines */
-            dirty_p = (uint32_t)(fkb_p->dirty_p) & ~1U;
-            cache_flush_region(fdata_p, (uint8_t*)dirty_p);
-        }
-#else
-        cache_flush_len(fdata_p, len);
-#endif
+        fkb_flush(fkb_p, data, len); 
     }
     fkb_dbg(2, "<<");
 }
 
-/* Flush and free a pNBuff, for error paths. */
+/*
+ * Function   : nbuff_flushfree
+ * Description: Flush (Hit_Writeback_Inv_D) and free/recycle a network buffer.
+ * If the data buffer was referenced by a single network buffer, then the data
+ * buffer will also be freed/recycled. 
+ */
 static inline void nbuff_flushfree(pNBuff_t pNBuff)
 {
     void * pBuf = PNBUFF_2_PBUF(pNBuff);
@@ -795,21 +1252,41 @@ static inline void nbuff_flushfree(pNBuff_t pNBuff)
     /* else if IS_FPBUFF_PTR, else if IS_TGBUFF_PTR */
     else
     {
-        uint8_t * fdata_p;
         FkBuff_t * fkb_p = (FkBuff_t *)pBuf;
-        fdata_p = PFKBUFF_TO_PDATA(fkb_p, FKB_HEADROOM);
-
-        /* headers may have been popped */
-        if ( (uint32_t)fkb_p->data < (uint32_t)fdata_p )
-            fdata_p = fkb_p->data;
-
-        /* Did not optimize error path: see CC_NBUFF_FLUSH_OPTIMIZATION */
-        cache_flush_len(fdata_p, fkb_p->len);
+        fkb_flush(fkb_p, fkb_p->data, fkb_p->len);
         fkb_free(fkb_p);
     }
     fkb_dbg(2, "<<");
 }
 
+/*
+ * Function   : nbuff_xlate
+ * Description: Convert a FKB to a SKB. The SKB is data filled with the
+ * data, len, mark, priority, and recycle hook and context. 
+ *
+ * Other SKB fields for SKB API manipulation are also initialized.
+ * SKB fields for network stack manipulation are NOT initialized.
+ *
+ * This function is typically used only in a network device drivers' hard
+ * start xmit function handler. A hard start xmit function handler may receive
+ * a network buffer of a FKB type and may not wish to rework the implementation
+ * to use nbuff APIs. In such an event, a nbuff may be translated to a skbuff.
+ */
+struct sk_buff * fkb_xlate(FkBuff_t * fkb_p);
+static inline struct sk_buff * nbuff_xlate( pNBuff_t pNBuff )
+{
+    void * pBuf = PNBUFF_2_PBUF(pNBuff);
+    fkb_dbg(1, "pNBuff<0x%08x> pBuf<0x%08x>", (int)pNBuff,(int)pBuf);
+
+    if ( IS_SKBUFF_PTR(pNBuff) )
+        return (struct sk_buff *)pBuf;
+    /* else if IS_FPBUFF_PTR, else if IS_TGBUFF_PTR */
+    else
+        return fkb_xlate( (FkBuff_t *)pBuf );
+}
+
+
+/* Miscellaneous helper routines */
 static inline void u16cpy( void * dst_p, const void * src_p, uint32_t bytes )
 {
     uint16_t * dst16_p = (uint16_t*)dst_p;

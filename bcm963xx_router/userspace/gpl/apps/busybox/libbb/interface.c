@@ -15,7 +15,7 @@
  *              that either displays or sets the characteristics of
  *              one or more of the system's networking interfaces.
  *
- * Version:     $Id: interface.c,v 1.1.1.1 2010/06/24 19:07:16 denny Exp $
+ * Version:     $Id: interface.c,v 1.1.1.1 2010/06/14 22:47:25 tliu Exp $
  *
  * Author:      Fred N. van Kempen, <waltje@uwalt.nl.mugnet.org>
  *              and others.  Copyright 1993 MicroWalt Corporation

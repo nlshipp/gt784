@@ -92,3 +92,24 @@ CmsRet oalTms_getXSIDateTime(UINT32 t, char *buf, UINT32 bufLen)
    return CMSRET_SUCCESS;
 }
 
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+CmsRet oalTms_getGUIDateTime(char *buf, UINT32 bufLen)
+{
+    int c;
+    time_t now;
+    struct tm *tmp;
+
+    now = time(NULL);
+
+    tmp = localtime(&now);
+    memset(buf, 0, bufLen);
+    //c = strftime(buf, bufLen, "%a,%b %d,%Y-%I:%M%p", tmp);
+    c = strftime(buf, bufLen, "%A, %B %d, %Y - %I:%M %p", tmp);
+    if ((c == 0) || (c+1 > bufLen))
+    {
+        /* buf was not long enough */
+	return CMSRET_RESOURCE_EXCEEDED;
+    }
+    return CMSRET_SUCCESS;
+}
+#endif

@@ -491,9 +491,8 @@ int verify_packet( struct session *ses, struct pppoe_packet *p){
     else
 	poe_info(ses,"HOST_UNIQ successful match\n");
 
-
-#ifdef FOLLOW_TR098
-	if (ses->state != PADS_CODE) //PADS packet may not have AC_NAME tag
+#if defined (AEI_VDSL_CUSTOMER_QWEST)||defined(AEI_VDSL_CUSTOMER_CENTURYLINK)
+	if (ses->state != PADS_CODE)
 #endif
     if(ses->filt->ntag &&
        !verify_tag(ses,p,TAG_AC_NAME,ses->filt->ntag->tag_data,(int)ntohs(ses->filt->ntag->tag_len))){

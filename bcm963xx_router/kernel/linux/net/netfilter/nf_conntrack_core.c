@@ -191,17 +191,30 @@ destroy_conntrack(struct nf_conntrack *nfct)
 	struct nf_conntrack_l4proto *l4proto;
 
 
-#if defined(CONFIG_MIPS_BRCM)
-#if defined(CONFIG_BLOG)
+#if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
 	pr_debug("destroy_conntrack(%p) blog keys[0x%08x,0x%08x]\n",
 		ct, ct->blog_key[IP_CT_DIR_ORIGINAL], ct->blog_key[IP_CT_DIR_REPLY]);
 
-	clear_bit(IPS_BLOG_BIT, &ct->status);   /* Disable further blogging */
-	if ( (ct->blog_key[IP_CT_DIR_ORIGINAL] != 0) || 
-			(ct->blog_key[IP_CT_DIR_REPLY] != 0) )
-		/* Conntrack going away, stop associated flows */
-		blog_notify(NULL, ct, BLOG_EVENT_STOP);
-#endif
+
+	/* Conntrack going away, notify blog client */
+	if ( (ct->blog_key[IP_CT_DIR_ORIGINAL] != BLOG_KEY_NONE) || 
+			(ct->blog_key[IP_CT_DIR_REPLY] != BLOG_KEY_NONE) )
+	{
+		/*
+		 *  Blog client may perform the following blog requests:
+		 *	- FLOWTRACK_KEY_SET BLOG_PARAM1_DIR_ORIG 0
+		 *	- FLOWTRACK_KEY_SET BLOG_PARAM1_DIR_REPLY 0
+		 *	- FLOWTRACK_EXCLUDE
+		 */
+		blog_notify(DESTROY_FLOWTRACK, (void*)ct,
+					(uint32_t)ct->blog_key[IP_CT_DIR_ORIGINAL],
+					(uint32_t)ct->blog_key[IP_CT_DIR_REPLY]);
+
+		/* Safe: In case blog client does not set key to 0 explicilty */
+		ct->blog_key[IP_CT_DIR_ORIGINAL] = BLOG_KEY_NONE;
+		ct->blog_key[IP_CT_DIR_REPLY]    = BLOG_KEY_NONE;
+	}
+	clear_bit(IPS_BLOG_BIT, &ct->status);	/* Disable further blogging */
 #else
 	pr_debug("destroy_conntrack(%p)\n", ct);
 #endif
@@ -625,10 +638,16 @@ struct nf_conn *nf_conntrack_alloc(struct net *net,
 #ifdef CONFIG_MIPS_BRCM
 	INIT_LIST_HEAD(&ct->derived_connections);
 #endif
+
 #if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
 	pr_debug("nf_conntrack_alloc: ct<%p> BLOGible\n", ct );
 	set_bit(IPS_BLOG_BIT, &ct->status);  /* Enable conntrack blogging */
+
+	/* new conntrack: reset blog keys */
+	ct->blog_key[IP_CT_DIR_ORIGINAL] = BLOG_KEY_NONE;
+	ct->blog_key[IP_CT_DIR_REPLY]    = BLOG_KEY_NONE;
 #endif
+
 	ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple = *orig;
 	ct->tuplehash[IP_CT_DIR_REPLY].tuple = *repl;
 	/* Don't set timer yet: wait for confirmation */
@@ -816,14 +835,15 @@ resolve_normal_ct(struct net *net,
 		if (test_bit(IPS_BLOG_BIT, &ct->status))    /* OK to blog ? */
 		{
 			pr_debug("nf_conntrack_in: skb<%p> blog<%p> ct<%p>\n",
-						skb, skb->blog_p, ct );
-			blog_nfct(skb, ct);                     /* Blog conntrack */
+						skb, blog_ptr(skb), ct );
+			blog_link(FLOWTRACK, blog_ptr(skb),
+					  (void*)ct, CTINFO2DIR(skb->nfctinfo), 0);
 		}
 		else
 		{
 			pr_debug("nf_conntrack_in: skb<%p> ct<%p> NOT BLOGible<%p>\n",
-						skb, ct, skb->blog_p );
-			blog_free(skb);                         /* No blogging */
+						skb, ct, blog_ptr(skb));
+			blog_skip(skb);                         /* No blogging */
 		}
 	}
 #endif

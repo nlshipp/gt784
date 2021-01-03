@@ -80,6 +80,14 @@ typedef struct BcmPktDma_LocalXtmTxDma
 
     /* Field added for xtmrt dmaStatus field generation for xtm flows - Apr 2010 */
     uint32                  baseDmaStatus;
+
+    /* Field added for SW Scheduler in BCM6368. Only Manipulted/controlled by
+     * SW Scheduler that runs in BCM6368 PTM bonded mode.
+     */
+    int                     txSchedHeadIndex ;
+    /* For SW WFQ implementation */
+    UINT16 ulAlg;
+    UINT16 ulWeightValue;
 } BcmPktDma_LocalXtmTxDma;
 
 

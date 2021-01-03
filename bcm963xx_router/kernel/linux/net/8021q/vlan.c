@@ -37,6 +37,10 @@
 #include "vlan.h"
 #include "vlanproc.h"
 
+#if defined(CONFIG_MIPS_BRCM)
+#include <linux/blog.h>
+#endif
+
 #define DRV_VERSION "1.8"
 
 /* Global VLAN variables */
@@ -236,15 +240,14 @@ struct net_device_stats * vlan_dev_collect_stats(struct net_device * dev_p)
 	if ( dev_p == (struct net_device *)NULL )
 		return (struct net_device_stats *)NULL;
 
-    /* JU: TBD: I have a pretty bad cold when I'm doing this port, and I can't think
-       straight, so I'll have to revisit this when I'm a bit more clear.  I need to
-       submit it though as it breaks the compile otherwise */
 	dStats_p = vlan_dev_get_stats(dev_p);
 	cStats_p = vlan_dev_get_cstats(dev_p);
 	bStats_p = vlan_dev_get_bstats(dev_p);
 
 	memset(&bStats, 0, sizeof(BlogStats_t));
-	blog_gstats(dev_p, &bStats, BSTATS_NOCLR);
+
+	blog_notify(FETCH_NETIF_STATS, (void*)dev_p,
+				(uint32_t)&bStats, BLOG_PARAM1_NO_CLEAR);
 
 	memcpy( cStats_p, dStats_p, sizeof(struct net_device_stats) );
 	cStats_p->rx_packets += ( bStats.rx_packets + bStats_p->rx_packets );
@@ -285,7 +288,8 @@ void vlan_dev_clear_stats(struct net_device * dev_p)
 	cStats_p = vlan_dev_get_cstats(dev_p); 
 	bStats_p = vlan_dev_get_bstats(dev_p);
 
-	blog_gstats(dev_p, NULL, BSTATS_CLR);
+	blog_notify(FETCH_NETIF_STATS, (void*)dev_p, 0, BLOG_PARAM1_DO_CLEAR);
+
 	memset(bStats_p, 0, sizeof(BlogStats_t));
 	memset(dStats_p, 0, sizeof(struct net_device_stats));
 	memset(cStats_p, 0, sizeof(struct net_device_stats));

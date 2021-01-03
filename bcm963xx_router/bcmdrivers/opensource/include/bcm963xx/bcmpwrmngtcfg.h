@@ -64,30 +64,20 @@ typedef struct _PwrMngtConfigParams {
    ui32                  cpur4kwait;
 #define PWRMNGT_CFG_PARAM_MEM_SELF_REFRESH_MASK    0x00000004
    ui32                  dramSelfRefresh;
-#define PWRMNGT_CFG_PARAM_LED_MASK                 0x00000040
-   ui32                  led;
-#define PWRMNGT_CFG_PARAM_SPU_MASK                 0x00000400
-   ui32                  spu;
-#define PWRMNGT_CFG_PARAM_NAND_MASK                0x00000800
-   ui32                  nand;
-
-#define PWRMNGT_CFG_PARAM_ETHPHY0_MASK             0x00001000
-   ui32                  phy0;
-#define PWRMNGT_CFG_PARAM_ETHPHY1_MASK             0x00002000
-   ui32                  phy1;
-#define PWRMNGT_CFG_PARAM_ETHPHY2_MASK             0x00004000
-   ui32                  phy2;
-#define PWRMNGT_CFG_PARAM_ETHPHY3_MASK             0x00008000
-   ui32                  phy3;
-
-#if defined(CHIP_6816) || defined(CONFIG_BCM96816)
-#define PWRMNGT_CFG_PARAM_MOCA_MASK                0x00010000
-   ui32                  moca;
-#define PWRMNGT_CFG_PARAM_GPON_MASK                0x00020000
-   ui32                  gpon;
-#endif /* CHIP_6816 */
-
+#define PWRMNGT_CFG_PARAM_MEM_ETH_APD_MASK 0x00000008
+   ui32                  ethAutoPwrDwn;
 } PWRMNGT_CONFIG_PARAMS, *PPWRMNGT_CONFIG_PARAMS ;
+
+
+typedef struct
+{
+   ui32                     ethRegisteredCnt;
+   ui32                     ethConnectedCnt;
+   ui32                     USBRegisteredCnt;
+   ui32                     USBConnectedCnt;
+   PWRMNGT_STATUS           status; 
+}PWRMNGT_IF_STATUS, *PPWRMNGT_IF_STATUS ;
+
 
 /***************************************************************************
  * Function Prototypes

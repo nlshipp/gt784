@@ -608,6 +608,19 @@ struct net_device_ops {
 #endif
 };
 
+#if defined(CONFIG_MIPS_BRCM)
+struct netdev_path
+{
+        /* this pointer is used to create lists of interfaces that belong
+           to the same interface path in Linux. It points to the next
+           interface towards the physical interface (the root interface) */
+        struct net_device *next_dev;
+        /* this reference counter indicates the number of interfaces
+           referencing this interface */
+        int refcount;
+};
+#endif
+
 /*
  *	The DEVICE structure.
  *	Actually, this whole structure is a big mistake.  It mixes I/O
@@ -716,6 +729,9 @@ struct net_device
 	void (*clr_stats)(struct net_device *dev_p);
 #endif
 
+#if defined(CONFIG_MIPS_BRCM)
+        struct netdev_path path;
+#endif
 
 #ifdef CONFIG_WIRELESS_EXT
 	/* List of functions to handle Wireless Extensions (instead of ioctl).
@@ -1925,6 +1941,31 @@ static inline int skb_bond_should_drop(struct sk_buff *skb)
 }
 
 extern struct pernet_operations __net_initdata loopback_net_ops;
+
+#if defined(CONFIG_MIPS_BRCM)
+
+/* Returns TRUE when _dev is a member of a path, otherwise FALSE */
+#define netdev_path_is_linked(_dev) ( (_dev)->path.next_dev != NULL )
+
+/* Returns TRUE when _dev is the leaf in a path, otherwise FALSE */
+#define netdev_path_is_leaf(_dev) ( (_dev)->path.refcount == 0 )
+
+/* Returns TRUE when _dev is the root of a path, otherwise FALSE. The root
+   device is the physical device */
+#define netdev_path_is_root(_dev) ( (_dev)->path.next_dev == NULL )
+
+/* Returns a pointer to the next device in a path, towards the root
+   (physical) device */
+#define netdev_path_next_dev(_dev) ( (_dev)->path.next_dev )
+
+int netdev_path_add(struct net_device *new_dev, struct net_device *next_dev);
+
+int netdev_path_remove(struct net_device *dev);
+
+void netdev_path_dump(struct net_device *dev);
+
+#endif /* CONFIG_MIPS_BRCM */
+
 #endif /* __KERNEL__ */
 
 #endif	/* _LINUX_DEV_H */

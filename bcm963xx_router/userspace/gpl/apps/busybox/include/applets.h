@@ -14,6 +14,7 @@
 #undef APPLET_ODDNAME
 #undef APPLET_NOUSAGE
 
+#define IF_TRACEROUTE6(...) __VA_ARGS__
 
 #if defined(PROTOTYPES)
   #define APPLET(a,b,c,d) extern int b(int argc, char **argv);
@@ -607,6 +608,9 @@
 #endif
 #ifdef CONFIG_TRACEROUTE
 	APPLET(traceroute, traceroute_main, _BB_DIR_USR_BIN, _BB_SUID_MAYBE)
+#endif
+#ifdef CONFIG_TRACEROUTE6
+	APPLET(traceroute6, traceroute6_main, _BB_DIR_USR_BIN, _BB_SUID_MAYBE)
 #endif
 #ifdef CONFIG_TRUE
 	APPLET(true, true_main, _BB_DIR_BIN, _BB_SUID_NEVER)

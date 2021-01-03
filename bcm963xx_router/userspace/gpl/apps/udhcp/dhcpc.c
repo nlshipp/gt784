@@ -88,7 +88,12 @@ static int listen_mode = LISTEN_RAW;
 // brcm
 static int old_mode = LISTEN_RAW;
 #define INIT_TIMEOUT 5
+#if defined(AEI_CUSTOMER_VDSL_MTS)
+//In MTS's lab,CPE can get IP address by increasing timeout
+#define REQ_TIMEOUT 8
+#else
 #define REQ_TIMEOUT 4
+#endif
 
 #define DEFAULT_SCRIPT	"/etc/dhcp/dhcp_getdata"
 
@@ -204,7 +209,11 @@ int ipv6rdipv4masklen,const char *ipv6rdbripv4addr,int ipv6rdprefixlen,const cha
 
 // brcm
 
+#if defined(AEI_VDSL_CUSTOMER_TELUS)
+void sendEventMessage(UBOOL8 assigned, const char *ip, const char *mask, const char *gateway, const char *nameserver, unsigned int lease_time)
+#else
 void sendEventMessage(UBOOL8 assigned, const char *ip, const char *mask, const char *gateway, const char *nameserver)
+#endif
 {
    char buf[sizeof(CmsMsgHeader) + sizeof(DhcpcStateChangedMsgBody)]={0};
    CmsMsgHeader *msg=(CmsMsgHeader *) buf;
@@ -225,6 +234,10 @@ void sendEventMessage(UBOOL8 assigned, const char *ip, const char *mask, const c
       sprintf(dhcpcBody->mask, mask);
       sprintf(dhcpcBody->gateway, gateway);
       sprintf(dhcpcBody->nameserver, nameserver);
+#if defined(AEI_VDSL_CUSTOMER_TELUS)
+	  dhcpcBody->lease_time = lease_time;
+#endif
+
    }
 
    if ((ret = cmsMsg_send(msgHandle, msg)) != CMSRET_SUCCESS)
@@ -261,7 +274,11 @@ void setStatus(int status)
       if (wasAssigned == 1)
       {
          wasAssigned = 0;
+#if defined(AEI_VDSL_CUSTOMER_TELUS)
+	     sendEventMessage(FALSE, NULL, NULL, NULL, NULL, 0);
+#else
          sendEventMessage(FALSE, NULL, NULL, NULL, NULL);
+#endif
       }
    }
 
@@ -299,18 +316,13 @@ static void print_usage(void)
 static void renew_requested(int sig)
 {
 	sig = 0;
-	LOG(LOG_INFO, "Received SIGUSR1");
+	LOG(LOG_INFO, "Received SIGUSR1");	
 	if (state == BOUND || state == RENEWING || state == REBINDING ||
 	    state == RELEASED) {
 	    	listen_mode = LISTEN_KERNEL;
-		server_addr = 0;
-		packet_num = 0;
-		state = RENEW_REQUESTED;
-	}
-
-	if (state == RELEASED) {
-		listen_mode = LISTEN_RAW;
-		state = INIT_SELECTING;
+			server_addr = 0;
+			packet_num = 0;
+			state = RENEW_REQUESTED;
 	}
 
 	/* Kill any timeouts because the user wants this to hurry along */
@@ -322,16 +334,21 @@ static void renew_requested(int sig)
 static void release_requested(int sig)
 {
 	sig = 0;
-	LOG(LOG_INFO, "Received SIGUSR2");
+	LOG(LOG_INFO, "Received SIGUSR2");	
 	/* send release packet */
 	if (state == BOUND || state == RENEWING || state == REBINDING) {
 		send_release(server_addr, requested_ip); /* unicast */
 		run_script(NULL, "deconfig");
+
+#if defined(AEI_VDSL_CUSTOMER_TELUS)
+		sendEventMessage(TRUE,"0.0.0.0","0.0.0.0","0.0.0.0","0.0.0.0",0);
+#endif
+
 	}
 
-	listen_mode = 0;
+	listen_mode = LISTEN_NONE;
 	state = RELEASED;
-	timeout = 0xffffffff;
+	timeout = 0x7fffffff;		
 }
 
 
@@ -390,7 +407,6 @@ int udhcpc(int argc, char *argv[])
 int main(int argc, char *argv[])
 #endif
 {
-	printf("debug:start dhcpc\n");
 	char *temp, *message;
 	unsigned long t1 = 0, t2 = 0, xid = 0;
 	unsigned long start = 0, lease;
@@ -608,7 +624,12 @@ int main(int argc, char *argv[])
 					/* send discover packet */
 					send_discover(xid, requested_ip); /* broadcast */
 					
+	                #if defined(AEI_VDSL_CUSTOMER_MTS)
+                    //In MTS's lab,CPE can get IP address by increasing timeout
+					timeout = time(0) + ((packet_num == 2) ? REQ_TIMEOUT : 4);
+                    #else                
 					timeout = time(0) + ((packet_num == 2) ? REQ_TIMEOUT : 2);
+                    #endif
 					packet_num++;
 				} else {
 					if (client_config.abort_if_no_lease) {
@@ -628,8 +649,12 @@ int main(int argc, char *argv[])
 					if (state == RENEW_REQUESTED)
 						send_renew(xid, server_addr, requested_ip); /* unicast */
 					else send_selecting(xid, server_addr, requested_ip); /* broadcast */
-					
+	                #if defined(AEI_VDSL_CUSTOMER_MTS)
+                    //In MTS's lab,CPE can get IP address by increasing timeout
+					timeout = time(0) + ((packet_num == 2) ? REQ_TIMEOUT : 4);
+                    #else                
 					timeout = time(0) + ((packet_num == 2) ? REQ_TIMEOUT : 2);
+                    #endif
 					packet_num++;
 				} else {
 					/* timed out, go back to init state */
@@ -655,8 +680,7 @@ int main(int argc, char *argv[])
 					DEBUG(LOG_INFO, "Entering rebinding state");
 				} else {
 					/* send a request packet */
-					send_renew(xid, server_addr, requested_ip); /* unicast */
-					
+					send_renew(xid, server_addr, requested_ip); /* unicast */		
 					t1 = (t2 - t1) / 2 + t1;
 					timeout = t1 + start;
 				}
@@ -674,7 +698,9 @@ int main(int argc, char *argv[])
 				} else {
 					/* send a request packet */
 					send_renew(xid, 0, requested_ip); /* broadcast */
-
+#if defined(AEI_VDSL_CUSTOMER_NCS)	
+					listen_mode = LISTEN_RAW; //ken fixed Sasktel DHCP T1/T2 issue
+#endif
 					t2 = (lease - t2) / 2 + t2;
 					timeout = t2 + start;
 				}
@@ -691,19 +717,34 @@ int main(int argc, char *argv[])
 				if (get_packet(&packet, fd) < 0) continue;
 			} else {
 				if (get_raw_packet(&packet, fd) < 0) continue;
-			} 
-
-			if (packet.xid != xid) {
-				DEBUG(LOG_INFO, "Ignoring XID %lx (our xid is %lx)",
-					(unsigned long) packet.xid, xid);
-				continue;
 			}
-			
-			if ((message = get_option(&packet, DHCP_MESSAGE_TYPE)) == NULL) {
+
+#if defined(AEI_VDSL_CUSTOMER_DHCPFORCERENEW) //add william 2011-11-22
+			if ((message = get_option(&packet, DHCP_MESSAGE_TYPE)) == NULL) 
+			{
 				DEBUG(LOG_ERR, "couldnt get option from packet -- ignoring");
 				continue;
 			}
 
+			if (packet.xid != xid && *message != DHCPFORCERENEW ) 
+			{
+				DEBUG(LOG_INFO, "Ignoring XID %lx (our xid is %lx)", (unsigned long)packet.xid, xid);
+				continue;
+			}
+
+
+#else
+			if (packet.xid != xid) {
+				DEBUG(LOG_INFO, "Ignoring XID %lx (our xid is %lx)", (unsigned long)packet.xid, xid);
+				continue;
+			}
+
+			if ((message = get_option(&packet, DHCP_MESSAGE_TYPE)) == NULL) {
+				DEBUG(LOG_ERR, "couldnt get option from packet -- ignoring");
+				continue;
+			}
+			
+#endif
 			switch (state) {
 			case INIT_SELECTING:
 				/* Must be a DHCPOFFER to one of our xid's */
@@ -750,8 +791,11 @@ int main(int argc, char *argv[])
 						   ((state == RENEWING || state == REBINDING) ? "renew" : "bound"));
 
 					state = BOUND;
+#if defined(AEI_VDSL_CUSTOMER_DHCPFORCERENEW) //add william 2011-11-22
+					listen_mode = LISTEN_KERNEL;
+#else
 					listen_mode = LISTEN_NONE;
-					
+#endif
 					// brcm
                     close(fd);
                     fd = -1;
@@ -774,6 +818,15 @@ int main(int argc, char *argv[])
 				}
 				break;
 			case BOUND:
+#if defined(AEI_VDSL_CUSTOMER_DHCPFORCERENEW)	//add william 2011-11-22			
+				if(*message == DHCPFORCERENEW)
+				{
+					state = RENEWING;
+					packet_num = 0;
+					timeout=0;
+				}
+				break;
+#endif
 			case RELEASED:
 				/* ignore all packets */
 				break;

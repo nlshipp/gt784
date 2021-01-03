@@ -66,7 +66,7 @@ cms_version.h: $(BUILD_DIR)/version.make
 	@echo -n $(BRCM_VERSION) >> $(VERSION_FILE)
 	@echo -n "." >> $(VERSION_FILE)
 	@echo -n $(BRCM_RELEASE) >> $(VERSION_FILE)
-	@echo -n "." >> $(VERSION_FILE)
+	@echo -n "L." >> $(VERSION_FILE)
 	@echo -n $(BRCM_EXTRAVERSION) >> $(VERSION_FILE)
 	@echo "\"" >> $(VERSION_FILE)
 	@echo "#endif" >> $(VERSION_FILE)

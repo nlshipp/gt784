@@ -95,6 +95,10 @@ extern "C" {
 #define BC_PTM_BONDING_ENABLE           0x01
 #define BC_PTM_BONDING_DISABLE          0x00
 
+#if defined(AEI_VDSL_BONDING_NONBONDING_AUTOSWITCH) || defined(AEI_ADSL_BONDING_NONBONDING_AUTOSWITCH)
+#define BC_BONDING_AUTODETECT_ENABLE    0x01
+#endif
+
 #define BC_ATM_BONDING_ENABLE           0x01
 #define BC_ATM_BONDING_DISABLE          0x00
 
@@ -233,7 +237,8 @@ typedef enum BcmXtmStatus
     XTMSTS_IN_USE,
     XTMSTS_NOT_FOUND,
     XTMSTS_NOT_SUPPORTED,
-    XTMSTS_TIMEOUT
+    XTMSTS_TIMEOUT,
+    XTMSTS_PROTO_ERROR
 } BCMXTM_STATUS;
 
 typedef struct AtmAddr
@@ -273,7 +278,12 @@ typedef union _XtmBondConfig {
       UINT32 bondProto     :  1 ;    /* For PTM, BACP (Bonding Aggr Cont Protocol)
                                         For ATM, ASM based (as defined in G998.1) */
       UINT32 dualLat       :  1 ;
+#if defined(AEI_VDSL_BONDING_NONBONDING_AUTOSWITCH) || defined(AEI_ADSL_BONDING_NONBONDING_AUTOSWITCH)
+      UINT32 resv          : 27 ;
+      UINT32 bondAutoDetect   :  1 ;
+#else
       UINT32 resv          : 28 ;
+#endif
    } sConfig ;
    UINT32 uConfig ;
 } XtmBondConfig ;
@@ -402,7 +412,9 @@ BCMXTM_STATUS BcmXtm_SendOamCell( PXTM_ADDR pConnAddr,
 BCMXTM_STATUS BcmXtm_CreateNetworkDevice( PXTM_ADDR pConnAddr,
     char *pszNetworkDeviceName );
 BCMXTM_STATUS BcmXtm_DeleteNetworkDevice( PXTM_ADDR pConnAddr );
+BCMXTM_STATUS BcmXtm_ReInitialize( void );
 
+#define XTM_USE_DSL_MIB       /* needed for dsl line monitoring */
 
 #if defined(__cplusplus)
 }

@@ -83,8 +83,8 @@ static char *bad_options[] = {
 
 bool	pppoe_server=0;
 char	pppoe_srv_name[MAXSRVNAMELEN]="";
-#ifdef FOLLOW_TR098
-char	pppoe_ac_name[MAXSRVNAMELEN]="";
+#ifdef AEI_VDSL_CUSTOMER_NCS
+char	pppoe_ac_name[MAXACNAMELEN]="";
 #else
 char	*pppoe_ac_name=NULL;
 #endif
@@ -100,10 +100,8 @@ static option_t pppoe_options[] = {
 	  devnam},
 //	{ "pppoe_srv_name", o_string, &pppoe_srv_name,
 //	  "PPPoE service name"},
-#ifndef FOLLOW_TR098
 	{ "pppoe_ac_name", o_string, &pppoe_ac_name,
 	  "PPPoE access concentrator name"},
-#endif
 	{ "pppoe_hostuniq", o_string, &hostuniq,
 	  "PPPoE client uniq hostid "},
 	{ "pppoe_retransmit", o_int, &retries,
@@ -222,8 +220,8 @@ static void init_device_pppoe(void)
     filt=ses->filt;  /* makes the code more readable */
     memset(filt,0,sizeof(struct filter));
 
-#ifdef FOLLOW_TR098
-	if (strlen (pppoe_ac_name)) {
+#ifdef AEI_VDSL_CUSTOMER_NCS
+    if (strlen(pppoe_ac_name)) {
 #else
     if (pppoe_ac_name !=NULL) {
 #endif

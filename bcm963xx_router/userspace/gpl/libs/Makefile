@@ -2,7 +2,7 @@
 # To add a lib, add it to LIB_DIRS, and write the target rule in the
 # last section of this Makefile
 #
-LIB_DIRS = ffmpeg-0.5
+LIB_DIRS = sqlite 
 
 #
 # We need to declare these directory names as phony targets,
@@ -54,14 +54,9 @@ export BUILD_DIR
 ##############################################################
 
 ifneq ($(strip $(BUILD_DLNA)),)
-ffmpeg-0.5: sanity_check
-	(tar xkfj ffmpeg-0.5.tar.bz2 2> /dev/null || true)
-	cd ffmpeg-0.5; ./configure --prefix=$(CURR_DIR)/ffmpeg-0.5 --arch=mips --enable-cross-compile --cross-prefix=$(CROSS_COMPILE) \
-	--enable-shared	--enable-gpl --disable-network --enable-small --disable-debug --sysroot=$(TOOLCHAIN_TOP) --sysinclude=$(TOOLCHAIN)/include \
-	--disable-encoders --disable-ffserver --disable-mmx --disable-ffplay  --disable-ffmpeg --disable-muxers --disable-vhook --disable-bsfs \
-	--disable-protocol=http --disable-protocol=pipe --disable-protocol=rtp --disable-protocol=tcp --disable-protocol=udp
-	$(MAKE) -C ffmpeg-0.5 install
+sqlite: sanity_check
+	$(MAKE) -C sqlite dynamic
 else
-ffmpeg-0.5: sanity_check
-	@echo "skipping ffmpeg-0.5 (not configured)"
+sqlite: sanity_check
+	@echo "skipping SQLite (not configured)"
 endif

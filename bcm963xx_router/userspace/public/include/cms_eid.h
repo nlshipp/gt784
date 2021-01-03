@@ -117,16 +117,57 @@ typedef enum {
    EID_DMSD=98,
    EID_DECTDBGD=99,
    EID_SWMDK=100,
-#ifdef CUSTOMER_ACTIONTEC
-   EID_MYNETWORK=101,
-   EID_ATMDETECTD=102,
-#ifdef SUPPORT_HTTPD_SSL
-   EID_HTTPSD=103,
+#if defined(DMP_TRACEROUTE_1)
+   EID_TRACEROUTE=101,
+#endif
+#if defined(AEI_VDSL_SMARTLED)
+	EID_NSLOOKUP=107,
+#endif
+#ifdef DMP_DOWNLOAD_1
+   EID_TR143_DLD=110,
+#endif
+#ifdef DMP_UPLOAD_1
+   EID_TR143_UPLD=111,
+#endif
+#ifdef DMP_UDPECHO_1
+   EID_TR143_ECHO=112,
+#endif
+
+#ifdef AEI_VDSL_CUSTOMER_NCS
+   EID_MYNETWORK=113,
+#endif
+
+#if defined(AEI_VDSL_TR098_QWEST) //hk_tr098_q2000
+	EID_INET_LED=108,
+#endif
+
+#ifdef AEI_VDSL_HPNA
+   EID_INHPNA=114,
+#ifdef AEI_VDSL_WT107
+   EID_HPNA_NODESTATS=115,
 #endif
 #endif
 
+#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef SUPPORT_HTTPD_SSL
+   EID_HTTPSD = 116,
+#endif
+#endif
+#if defined (AEI_VDSL_SMARTDMZ)
+   EID_ARPING = 117,
+#endif
 #ifdef AEI_CONTROL_LAYER
    EID_AEI_RTD = 14,
+#endif
+#if defined (AEI_VDSL_DETECT_WAN_SERVICE)
+   EID_DETECT_WAN_SERVICE= 118,
+#endif
+#if defined (AEI_VDSL_CUSTOMER_VIDEO_GUARANTEE)
+   EID_CPU_MONITOR= 119,
+   EID_STATD=120,
+#endif
+#ifdef AEI_VDSL_CUSTOMER_QWEST
+   EID_TSTATS=121,
 #endif
    EID_LAST=65535
 } CmsEntityId;
@@ -176,7 +217,6 @@ typedef enum {
 
 /** Param accessible by SWMDK;  Used in MdmNodeAttributes.accessBitMask. */
 #define NDA_ACCESS_SWMDK              0x4000
-
 #ifdef AEI_CONTROL_LAYER
 #define NDA_ACCESS_RTD 			0x0001
 #endif
@@ -190,7 +230,7 @@ typedef enum {
  *
  */
 #ifdef AEI_CONTROL_LAYER
-#define NDA_ACCESS_SUBSCRIBER  (NDA_ACCESS_RTD | NDA_ACCESS_TR64C | \
+#define NDA_ACCESS_SUBSCRIBER  (NDA_ACCESS_RTD |NDA_ACCESS_TR64C | \
                                 NDA_ACCESS_HTTPD | NDA_ACCESS_SNMPD | \
                                 NDA_ACCESS_CONSOLED | NDA_ACCESS_TELNETD | \
                                 NDA_ACCESS_SSHD | NDA_ACCESS_UPNP | \

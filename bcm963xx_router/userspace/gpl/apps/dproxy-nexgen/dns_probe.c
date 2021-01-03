@@ -15,23 +15,25 @@
 
 extern int dns_wanup;
 extern int dns_querysock;
-#ifdef CUSTOMER_VERIZON
-char primary_ns[CMS_IPADDR_LENGTH];
-char secondary_ns[CMS_IPADDR_LENGTH];
-#else
 static char primary_ns[CMS_IPADDR_LENGTH];
 static char secondary_ns[CMS_IPADDR_LENGTH];
-#endif
 static struct sockaddr_in probe_addr;
 #ifdef DNS_PROBE
 static time_t probe_next_time;
 static int probe_tried;
 static time_t probe_timeout;
 static uint16_t probe_id;
+#ifdef AEI_VDSL_CUSTOMER_NCS
+static char probe_pkt[35] =
+	{0x0, 0x0, 0x1, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+	 0x3, 'w','w','w', 0x9, 'm', 'i', 'c', 'r', 'o', 's','o','f','t', 0x3, 'c', 'o',
+	 'm',  0x0, 0x0, 0x1, 0x0, 0x1, };
+#else
 static char probe_pkt[36] =
 	{0x0, 0x0, 0x1, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
 	 0x1, 'a', 0xc, 'r', 'o', 'o', 't', '-', 's', 'e', 'r', 'v',
 	 'e', 'r', 's', 0x3, 'n', 'e', 't', 0x0, 0x0, 0x1, 0x0, 0x1, };
+#endif
 #else
 time_t dns_recover_time;
 #endif
@@ -57,7 +59,7 @@ static int load_brcm_name_servers(void)
 			} else if (secondary_ns[0] == 0) {
 				strncpy(secondary_ns, addr, sizeof(secondary_ns)-1);
 			} else {
-            debug("dnsproxy supports a max of two name servers.  "
+            printf("dnsproxy supports a max of two name servers.  "
                    "Additional name servers are ignored.\n");
 			}
 		} else if (sscanf(line, "domain %s", domain) == 1) {
@@ -76,6 +78,7 @@ static int load_brcm_name_servers(void)
 	return 1;
 }
 
+		
 /* Initialization before probing */
 int dns_probe_init(void)
 {
@@ -91,9 +94,9 @@ int dns_probe_init(void)
        * ret == 0 means wan is not up. 
        * BRCM: Use the magic ppp on demand address.
        */
-      debug("wan is not up, set name_server to 128.9.0.107");
-		strcpy(config.name_server, "128.9.0.107");
-   }
+//     printf("wan is not up, set name_server to 128.9.0.107");
+     strcpy(config.name_server, "128.9.0.107");
+     }
 
 	/* Set primary server as the probing address */
 	memset(&probe_addr, 0, sizeof(probe_addr));
@@ -130,14 +133,34 @@ int dns_probe(void)
 			if (probe_tried >= DNS_PROBE_MAX_TRY) {
 				/* Probe failed */
 				debug("dproxy: probing failed\n");
-				if (secondary_ns[0] &&
-				    strcmp(config.name_server, secondary_ns)) {
+ 
+                              //
+                              // if the dns server address is 127.0.0.1/0.0.0.0/gw addr, then
+                              // it will cause flood broadcast packets because these address are
+                              // itself, so ignore it otherwise this can lead consuming huge CPU 
+                              // performance! now do the sanity check by below code and HTML page! 
+                              // Linx 2011/01/26
+                              //
+                              //if (secondary_ns[0]&& // if secondary_dn[0] is '0' returns true! Linx 2011/01/26
+				if ('0' != secondary_ns[0] 
+                                    && (0 != strcmp("127.0.0.1", secondary_ns))
+				    && strcmp(config.name_server, secondary_ns)) {
 					printf("Primary DNS server Is Down... "
 					       "Switching To Secondary DNS "
 					       "server \n");
 					strcpy(config.name_server,
 					       secondary_ns);
 				}
+
+
+                                //
+                                // If reached the maximum retry times and got failed, then the current  
+                                // DNS address must not be reachabled at present! So wait a minute here 
+                                // in order to consume much CPU performance when received a lot of LAN
+                                // DNS query packets! Linx 2011/01/26
+                                //
+                                //  sleep(1);
+
 				probe_tried = 0;
 				probe_next_time = now + DNS_PROBE_INTERVAL;
 				ret = DNS_PROBE_INTERVAL;
@@ -183,17 +206,15 @@ void dns_probe_set_recover_time(void)
    if (dns_recover_time)
       return;
 
-#ifdef CUSTOMER_VERIZON
-  if (strcmp(config.name_server, secondary_ns) == 0)
-      return;
-#endif
-
-    printf("Primary DNS server (%s) Is Down..."
+   printf("Primary DNS server (%s) Is Down..."
           "Switching To Secondary DNS server (%s) "
           "for %d seconds.  \n",
           primary_ns, secondary_ns, DNS_RECOVER_TIMEOUT);
+#ifdef AEI_VDSL_CUSTOMER_TELUS
+syslog(LOG_CRIT,"Primary DNS server (%s) Is Down...,Switching To Secondary DNS server (%s)",primary_ns, secondary_ns);
+#endif
+   strncpy(config.name_server, secondary_ns, sizeof(config.name_server)-1);
 
-    strncpy(config.name_server, secondary_ns, sizeof(config.name_server)-1);
 	dns_recover_time = time(NULL) + DNS_RECOVER_TIMEOUT;
 }
 #endif
@@ -218,8 +239,10 @@ void dns_probe_switchback(void)
 	else
 #endif
 
-   	printf("Switching back to primary dns server (%s).\n", primary_ns);
-
+   printf("Switching back to primary dns server (%s).\n", primary_ns);
+#ifdef AEI_VDSL_CUSTOMER_TELUS
+syslog(LOG_CRIT,"Switching back to primary DNS server (%s).\n", primary_ns);
+#endif
 	strncpy(config.name_server, primary_ns, sizeof(config.name_server)-1);
 }
 

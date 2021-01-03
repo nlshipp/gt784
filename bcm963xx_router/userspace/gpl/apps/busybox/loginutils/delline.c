@@ -110,4 +110,4 @@ int del_line_matching(const char *login, const char *filename)
 }
 
 
-/* $Id: delline.c,v 1.1.1.1 2010/06/24 19:07:16 denny Exp $ */
+/* $Id: delline.c,v 1.1.1.1 2010/06/14 22:47:25 tliu Exp $ */

@@ -49,6 +49,16 @@ struct client_config_t {
 	unsigned char arp[6];		/* Our arp address */
 };
 
+#if defined(AEI_VDSL_CUSTOMER_TELUS)
+typedef struct route_info{
+	struct route_info_t *next;
+	char desIP[16];
+	char netmask[16];
+	char gateway[16];
+}route_info_t;
+#endif
+
+
 extern struct client_config_t client_config;
 
 // brcm

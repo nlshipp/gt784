@@ -175,9 +175,13 @@ static void del_br(struct net_bridge *br)
 
 #if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BR_IGMP_SNOOP)
 	br_igmp_mc_fdb_cleanup(br);
+	if (br->start_timer)
+        del_timer_sync(&br->igmp_timer);
 #endif
 #if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BR_MLD_SNOOP)
 	br_mld_mc_fdb_cleanup(br);
+	if (br->mld_start_timer)
+        del_timer_sync(&br->mld_timer);
 #endif
 
 	del_timer_sync(&br->gc_timer);

@@ -165,13 +165,13 @@ int br_mld_mc_fdb_add(struct net_bridge *br,
 	list_add_tail_rcu(&mc_fdb->list, &br->mld_mc_list);
 	spin_unlock_bh(&br->mld_mcl_lock);
 
-	if (!br->start_timer) {
+	if (!br->mld_start_timer) {
     	    init_timer(&br->mld_timer);
 	    br->mld_timer.expires = jiffies + TIMER_CHECK_TIMEOUT*HZ;
 	    br->mld_timer.function = mld_query_timeout;
 	    br->mld_timer.data = (unsigned long) br;
 	    add_timer(&br->mld_timer);
-	    br->start_timer = 1;
+	    br->mld_start_timer = 1;
 	}
 
 	return 1;

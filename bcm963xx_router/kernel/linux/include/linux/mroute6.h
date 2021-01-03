@@ -230,6 +230,12 @@ void mfc6_net_set(struct mfc6_cache *mfc, struct net *net)
 
 #define MFC6_LINES		64
 
+#if defined(CONFIG_MIPS_BRCM)
+#define MFC6_HASH(a, g) (((__force u32)(a)->s6_addr32[0] ^ \
+			  (__force u32)(a)->s6_addr32[1] ^ \
+			  (__force u32)(a)->s6_addr32[2] ^ \
+			  (__force u32)(a)->s6_addr32[3]) % MFC6_LINES)
+#else
 #define MFC6_HASH(a, g) (((__force u32)(a)->s6_addr32[0] ^ \
 			  (__force u32)(a)->s6_addr32[1] ^ \
 			  (__force u32)(a)->s6_addr32[2] ^ \
@@ -238,6 +244,8 @@ void mfc6_net_set(struct mfc6_cache *mfc, struct net *net)
 			  (__force u32)(g)->s6_addr32[1] ^ \
 			  (__force u32)(g)->s6_addr32[2] ^ \
 			  (__force u32)(g)->s6_addr32[3]) % MFC6_LINES)
+
+#endif
 
 #define MFC_ASSERT_THRESH (3*HZ)		/* Maximal freq. of asserts */
 

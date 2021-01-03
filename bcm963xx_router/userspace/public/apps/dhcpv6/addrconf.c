@@ -59,17 +59,10 @@
 #include "timer.h"
 #include "dhcp6c_ia.h"
 #include "prefixconf.h"
-#ifndef AEI_CONTROL_LAYER
 #if 1 //brcm
 #include "cms_msg.h"
 extern void *msgHandle;
 extern Dhcp6cStateChangedMsgBody dhcp6cMsgBody;
-#endif
-#else
-#include "ctl_msg.h"
-#include "dbussend_msg.h"
-extern void *ctlMsgHandle;
-extern CtlDhcp6cStateChangedMsgBody ctldhcp6cMsgBody;
 #endif
 
 TAILQ_HEAD(statefuladdr_list, statefuladdr);
@@ -606,7 +599,7 @@ int updateIp6AddrFile(ifaddrconf_cmd_t cmd, char *ifname, struct sockaddr_in6 *a
    return -1;
 
 }  /* End of updateIp6AddrFile() */
-#ifndef AEI_CONTROL_LAYER
+
 void sendAddrEventMessage(ifaddrconf_cmd_t cmd, const char *ifname, const char *addr)
 {
    /* TODO: Currently, we always assume br0 as the  PD interface */
@@ -627,26 +620,5 @@ void sendAddrEventMessage(ifaddrconf_cmd_t cmd, const char *ifname, const char *
    return;
 
 }  /* End of sendAddrEventMessage() */
-#else
-void sendAddrEventMessage(ifaddrconf_cmd_t cmd, const char *ifname, const char *addr)
-{
-   /* TODO: Currently, we always assume br0 as the  PD interface */
-   if ( strncmp(ifname, "br0", sizeof(ifname)) == 0 )  /* address of the PD interface */
-   {
-      snprintf(ctldhcp6cMsgBody.pdIfAddress, sizeof(ctldhcp6cMsgBody.pdIfAddress), "%s", addr);
-   }
-   else  /* address of the WAN interface */
-   {
-      ctldhcp6cMsgBody.addrAssigned = TRUE;
-      ctldhcp6cMsgBody.addrCmd      = cmd;
-      snprintf(ctldhcp6cMsgBody.ifname, sizeof(ctldhcp6cMsgBody.ifname), "%s", ifname);
-      snprintf(ctldhcp6cMsgBody.address, sizeof(ctldhcp6cMsgBody.address), "%s", addr);
-   }
 
-   dprintf(LOG_NOTICE, FNAME, "DHCP6C_ADDR_CHANGED");
-
-   return;
-
-}  /* End of sendAddrEventMessage() */
-#endif
 #endif

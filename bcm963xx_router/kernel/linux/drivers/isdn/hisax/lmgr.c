@@ -1,4 +1,4 @@
-/* $Id: lmgr.c,v 1.7.6.2 2001/09/23 22:24:50 kai Exp $
+/* $Id: lmgr.c,v 1.1.1.1 2010/06/14 22:49:11 tliu Exp $
  *
  * Layermanagement module
  *

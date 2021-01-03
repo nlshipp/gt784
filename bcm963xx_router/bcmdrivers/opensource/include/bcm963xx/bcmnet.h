@@ -71,6 +71,17 @@ enum {
     SIOCGPONIF,
     SIOCETHSWCTLOPS,
     SIOCGSWITCHPORT,
+#ifdef AEI_VDSL_HPNA
+    SIOCSHPNAVLANID,
+    SIOCSHPNAADMSTATE, /* adminstate and mode (LAN only , LAN+WAN) */
+    SIOCGHPNAADMSTATE,
+#endif
+#ifdef AEI_VDSL_SMARTLED
+    SIOCINETTRAFFICBLINK,
+#endif
+#ifdef AEI_VDSL_CUSTOMER_QWEST
+    SIOCGETMULTICASTSTATS,
+#endif
     SIOCLAST,
 };
 
@@ -137,6 +148,9 @@ struct interface_data{
 
 #define SPEED_10MBIT        10000000
 #define SPEED_100MBIT       100000000
+#ifdef AEI_VDSL_CUSTOMER_NCS
+#define SPEED_1000MBIT       1000000000
+#endif
 
 typedef struct IoctlMibInfo
 {

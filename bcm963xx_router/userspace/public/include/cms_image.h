@@ -58,10 +58,6 @@ typedef enum
     CMS_IMAGE_FORMAT_BROADCOM=1,  /**< broadcom image (with our header) */
     CMS_IMAGE_FORMAT_FLASH=2,     /**< raw flash image */
     CMS_IMAGE_FORMAT_XML_CFG=3    /**< CMS XML config file */
-#ifdef CUSTOMER_QNCS_DEFSETTING
-    ,
-    CMS_IMAGE_FORMAT_CUSTOMER_XML_CFG=4    /**< customer's XML config file */
-#endif
 } CmsImageFormat;
 
 

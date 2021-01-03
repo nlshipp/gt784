@@ -72,6 +72,15 @@ static FLASH_ADDR_INFO fInfo = {0, 0, 0, 0, \
 
 
 /* All the devctl functions are probably OS dependent, so they would go here */
+void devCtl_getSerialNum( char* serialnum )
+{
+   return (devCtl_boardIoctl(BOARD_IOCTL_GET_SN, 
+				0, 
+                                serialnum,
+				BUFLEN_32, 
+				0,
+				NULL));
+}
 
 CmsRet devCtl_getBaseMacAddress(UINT8 *macAddrNum)
 {
@@ -154,6 +163,15 @@ CmsRet devCtl_boardIoctl(UINT32 boardIoctl,
         ioctlParms.offset = offset;
         ioctlParms.action = action;
         ioctlParms.buf    = data;
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+        if(boardIoctl == BOARD_IOCTL_FLASH_WRITE && (action ==PERSISTENT))
+        {
+            FILE *fp = NULL;
+            if((fp=fopen("/var/write_psi_lock", "w")) != NULL)
+            fclose(fp);
+        }
+#endif
+        
         ioctlParms.result = -1;
 
 #ifdef DESKTOP_LINUX
@@ -161,6 +179,10 @@ CmsRet devCtl_boardIoctl(UINT32 boardIoctl,
 #else
         rc = ioctl(boardFd, boardIoctl, &ioctlParms);
         close(boardFd);
+#endif
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+        if(boardIoctl == BOARD_IOCTL_FLASH_WRITE && (action ==PERSISTENT))
+            unlink("/var/write_psi_lock");
 #endif
 
 
@@ -196,7 +218,7 @@ CmsRet devCtl_boardIoctl(UINT32 boardIoctl,
                   (boardIoctl == BOARD_IOCTL_GET_CHIP_ID) ||
                   (boardIoctl == BOARD_IOCTL_GET_NUM_ENET_MACS) ||
                   (boardIoctl == BOARD_IOCTL_GET_NUM_ENET_PORTS) ||
-                  (boardIoctl == BOARD_IOCTL_GET_SDRAM_SIZE) ||               
+                  (boardIoctl == BOARD_IOCTL_GET_SDRAM_SIZE) ||  
                   (boardIoctl == BOARD_IOCTL_FLASH_READ && action == FLASH_SIZE))
               {
                  if (data != NULL)
@@ -204,6 +226,16 @@ CmsRet devCtl_boardIoctl(UINT32 boardIoctl,
                     *((UINT32 *)data) = (UINT32) ioctlParms.result;
                  }
               }
+#ifdef AEI_VDSL_SIGNED_FIRMWARE
+              else if(boardIoctl == BOARD_IOCTL_GET_FS_OFFSET)
+              {
+                 if (data != NULL)
+                 {
+                    *((unsigned long *)data) = (unsigned long) ioctlParms.result;
+                 }
+
+              }
+#endif                
            }
         }
     }

@@ -110,40 +110,39 @@ struct nf_conn {
            plus 1 for any connection(s) we are `master' for */
 	struct nf_conntrack ct_general;
 
-	/* XXX should I move this to the tail ? - Y.K */
-	/* These are my tuples; original and reply */
-	struct nf_conntrack_tuple_hash tuplehash[IP_CT_DIR_MAX];
-
 #if defined(CONFIG_MIPS_BRCM) 
 #if defined(CONFIG_BLOG)
-    unsigned int blog_key[IP_CT_DIR_MAX];   /* Associating blogged flows */
+	unsigned int blog_key[2];	/* Associating 2=IP_CT_DIR_MAX blogged flows */
 #endif
-   struct list_head safe_list; /* bugfix for lost connections */
-#endif //defined(CONFIG_MIPS_BRCM)
+	struct list_head safe_list; /* bugfix for lost connections */
+	struct list_head derived_connections; /* Used by master connection */
+	struct list_head derived_list; /* Used by child connection */
+	unsigned derived_timeout;	/* 0 means no derived_timeout, 0xFFFFFFFF
+								 * means never timeout until master ct is
+								 * disconnected, others means timeout secs */
 
 	/* Have we seen traffic both ways yet? (bitset) */
 	unsigned long status;
 
+#if defined(CONFIG_NF_DYNTOS) || defined(CONFIG_NF_DYNTOS_MODULE)
+	struct nf_tos_inheritance {
+		u_int16_t status;
+		u_int8_t dscp[2];		/* IP_CT_DIR_MAX */
+	}dyntos; 
+#endif
+#endif //defined(CONFIG_MIPS_BRCM)
+	/*---------- Add any custom fields below this line ----------*/
+
 	/* If we were expected by an expectation, this will be it */
 	struct nf_conn *master;
+
+	/* XXX should I move this to the tail ? - Y.K */
+	/* These are my tuples; original and reply */
+	struct nf_conntrack_tuple_hash tuplehash[IP_CT_DIR_MAX];
 
 	/* Timer function; drops refcnt when it goes off. */
 	struct timer_list timeout;
 
-#if defined(CONFIG_MIPS_BRCM)
-	struct list_head derived_connections; /* Used by master connection */
-	struct list_head derived_list; /* Used by child connection */
-	unsigned derived_timeout; /* 0 means no derived_timeout, 0xFFFFFFFF
-				   * means never timeout until master ct is
-				   * disconnected, others means timeout secs */
-
-#if defined(CONFIG_NF_DYNTOS) || defined(CONFIG_NF_DYNTOS_MODULE)
-	struct nf_tos_inheritance {
-		u_int16_t status;
-		u_int8_t dscp[IP_CT_DIR_MAX];
-	}dyntos; 
-#endif
-#endif//defined(CONFIG_MIPS_BRCM)
 #if defined(CONFIG_NF_CONNTRACK_MARK)
 	u_int32_t mark;
 #endif

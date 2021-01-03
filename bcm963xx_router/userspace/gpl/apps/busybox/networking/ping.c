@@ -1,6 +1,6 @@
 /* vi: set sw=4 ts=4: */
 /*
- * $Id: ping.c,v 1.2 2010/10/22 04:42:26 jma Exp $
+ * $Id: ping.c,v 1.4 2011/02/22 05:43:42 azhang Exp $
  * Mini ping implementation for busybox
  *
  * Copyright (C) 1999 by Randolph Chung <tausq@debian.org>
@@ -64,9 +64,6 @@ static const int MAXPACKET = 65468;
 #define	MAX_DUP_CHK	(8 * 128)
 static const int MAXWAIT = 10;
 static const int PINGINTERVAL = 1;		/* second */
-#if defined (CUSTOMER_VERIZON)
-	int trDSCP = 0;
-#endif
 
 #define O_QUIET         (1 << 0)
 #define O_LOG           2
@@ -89,6 +86,7 @@ FILE *pingPid=NULL;
 #ifdef BRCM_CMS_BUILD
 static void *msgHandle=NULL;
 static CmsEntityId requesterId=0;
+static char *pingHost=NULL;
 
 // brcm
 /* this is call to send message back to SMD to relay to interested party about the
@@ -118,7 +116,7 @@ void sendEventMessage(int finish, char *host, int ntransmitted, int nreceived, i
    {
       sprintf(pingBody->diagnosticsState,MDMVS_PING_INPROGRESS); 
    }
-   else if (finish == PING_ERROR)
+   else if (finish == PING_ERROR || finish == PING_UNKNOWN_HOST)
    {
       /* none, no status to report because ping process has error and die */
       sprintf(pingBody->diagnosticsState,MDMVS_ERROR_CANNOTRESOLVEHOSTNAME); 
@@ -172,7 +170,7 @@ void sendEventMessage(int finish, char *host, int ntransmitted, int nreceived, i
 #endif  /* BRCM_CMS_BUILD */
 
 
-static void ping(const char *host);
+//static void ping(const char *host);
 
 /* common routines */
 static int in_cksum(unsigned short *buf, int sz)
@@ -301,11 +299,14 @@ static void unpack(char *, int, struct sockaddr_in *);
 
 static void logStat(int finish)
 {
-  char ip[16];
-  struct in_addr addr;
 
-  memcpy(&addr, hostent->h_addr, sizeof(addr));
-  strncpy(ip,inet_ntoa(addr),16);
+   if (hostent != NULL) {
+   	char ip[16];
+   	struct in_addr addr;
+ 
+        memcpy(&addr, hostent->h_addr, sizeof(addr));
+        strncpy(ip,inet_ntoa(addr),16);
+   }
 
 #ifdef BRCM_CMS_BUILD
    /* 
@@ -313,7 +314,10 @@ static void logStat(int finish)
     */
    if (msgHandle != NULL)
    {
-      sendEventMessage(finish,hostent->h_name,ntransmitted,nreceived,tmin,tmax,tsum);
+      if (hostent != NULL)
+         sendEventMessage(finish,hostent->h_name,ntransmitted,nreceived,tmin,tmax,tsum);
+      else 
+         sendEventMessage(finish,pingHost,ntransmitted,nreceived,tmin,tmax,tsum);
    }
 #endif
 }
@@ -345,12 +349,12 @@ static void pingstats(int junk)
 
    //BRCM begin
 #ifdef BRCM_CMS_BUILD
-   logStat(PING_FINISHED);
+	logStat(PING_FINISHED);
 #else
-   if (options & O_LOG) {
-      logStat(PING_FINISHED);
-      remove_file(PING_PID_FILE,FILEUTILS_FORCE);
-   }
+	if (options & O_LOG) {
+		logStat(PING_FINISHED);
+		remove_file(PING_PID_FILE,FILEUTILS_FORCE);
+	}
 #endif /* BRCM_CMS_BUILD */
 	exit(status);
    //BRCM end
@@ -378,16 +382,17 @@ static void sendping(int junk)
 			   (struct sockaddr *) &pingaddr, sizeof(struct sockaddr_in));
 
 	if (i < 0)
-   {
-      logStat(PING_ERROR);
+	{
+		logStat(PING_ERROR);
 		bb_perror_msg_and_die("sendto");
-   }
+	}
 	else if ((size_t)i != sizeof(packet))
-   {
-      logStat(PING_ERROR);
+	{
+		logStat(PING_ERROR);
 		bb_error_msg_and_die("ping wrote %d chars; %d expected", i,
 			   (int)sizeof(packet));
-   }
+	}
+
 	signal(SIGALRM, sendping);
 	if (pingcount == 0 || ntransmitted < pingcount) {	/* schedule next in 1s */
 		alarm(PINGINTERVAL);
@@ -432,8 +437,13 @@ static void unpack(char *buf, int sz, struct sockaddr_in *from)
 	iphdr = (struct iphdr *) buf;
 	hlen = iphdr->ihl << 2;
 	/* discard if too short */
+#ifdef AEI_VDSL_CUSTOMER_NCS
+	if (sz < 28) // ip head (20) + icmp payload (8)
+		return; 
+#else
 	if (sz < (datalen + ICMP_MINLEN))
 		return;
+#endif
 
 	sz -= hlen;
 	icmppkt = (struct icmp *) (buf + hlen);
@@ -503,23 +513,24 @@ static void unpack(char *buf, int sz, struct sockaddr_in *from)
    }
 }
 
-static void ping(const char *host)
+static void ping(const char *host,unsigned int dscp)
 {
 	char packet[datalen + MAXIPLEN + MAXICMPLEN];
 	int sockopt;
-
+	unsigned int val;
 	pingsock = create_icmp_socket();
 
 	memset(&pingaddr, 0, sizeof(struct sockaddr_in));
-
+  
 	pingaddr.sin_family = AF_INET;
-	hostent = xgethostbyname(host);
+	hostent = gethostbyname(host);
 
-	if (hostent->h_addrtype != AF_INET)
-   {
-      logStat(PING_UNKNOWN_HOST);
+	if (hostent == NULL || (hostent != NULL && hostent->h_addrtype != AF_INET))
+	{
+		logStat(PING_UNKNOWN_HOST);
 		bb_error_msg_and_die("unknown address type; only AF_INET is currently supported.");
-   }
+	}
+
 	memcpy(&pingaddr.sin_addr, hostent->h_addr, sizeof(pingaddr.sin_addr));
 
 	/* enable broadcast pings */
@@ -532,29 +543,20 @@ static void ping(const char *host)
 	setsockopt(pingsock, SOL_SOCKET, SO_RCVBUF, (char *) &sockopt,
 			   sizeof(sockopt));
 
-
-#if defined(CUSTOMER_VERIZON)
-	int ipTos;
-	if (trDSCP>0)
+	if (dscp > 0)
 	{
-		ipTos = trDSCP<<2;
+		val = dscp << 2;
+		if (setsockopt(pingsock, IPPROTO_IP, IP_TOS, 
+				(char *)&val, sizeof(val)) < 0)
+		{
+			bb_perror_msg("set Qos parameter DSCP %u failed", dscp);
+		}
 	}
-	if (setsockopt(pingsock, IPPROTO_IP, IP_TOS, (char *)&ipTos, sizeof(ipTos)) < 0)
-	{
-		printf("ping diagnostic set dscp error\n");
-	}
-	printf("PING %s (%s): %d data bytes %d DSCP\n",
-	           hostent->h_name,
-		   inet_ntoa(*(struct in_addr *) &pingaddr.sin_addr.s_addr),
-		   datalen, trDSCP);
-
-#else
 	printf("PING %s (%s): %d data bytes\n",
 	           hostent->h_name,
 		   inet_ntoa(*(struct in_addr *) &pingaddr.sin_addr.s_addr),
 		   datalen);
 
-#endif
 	signal(SIGINT, pingstats);
 
 	/* start the ping's going ... */
@@ -585,7 +587,7 @@ extern int ping_main(int argc, char **argv)
 {
   //        FILE *fd;
 	char *thisarg;
-
+	unsigned int dscp;
 	datalen = DEFDATALEN; /* initialized here rather than in global scope to work around gcc bug */
 
 	argc--;
@@ -599,14 +601,6 @@ extern int ping_main(int argc, char **argv)
 		case 'q':
 			options |= O_QUIET;
 			break;
-#if defined (CUSTOMER_VERIZON)
-		case 'Q':
-			if (--argc <= 0)
-			        bb_show_usage();
-			argv++;
-			trDSCP = atoi(*argv);
-			break;
-#endif
 		case 'c':
 			if (--argc <= 0)
 			        bb_show_usage();
@@ -637,6 +631,12 @@ extern int ping_main(int argc, char **argv)
 			break;
 #endif
 		//BRCM end
+		case 'Q':
+			if (--argc <= 0)
+			        bb_show_usage();
+			argv++;
+			dscp = atoi(*argv);
+			break;
 		default:
 			bb_show_usage();
 		}
@@ -655,7 +655,8 @@ extern int ping_main(int argc, char **argv)
 #endif
 
 	myid = getpid() & 0xFFFF;
-	ping(*argv);
+	pingHost = *argv;
+	ping(*argv,dscp);
 
    if (options & O_LOG) {
       remove_file(PING_PID_FILE,FILEUTILS_FORCE);

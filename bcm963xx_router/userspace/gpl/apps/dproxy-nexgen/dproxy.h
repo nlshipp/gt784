@@ -16,7 +16,11 @@ typedef u_int32_t uint32;
 #include "dns.h"
 
 #ifndef DNS_TIMEOUT 
+#ifdef AEI_VDSL_CUSTOMER_TELUS
+#define DNS_TIMEOUT 7
+#else
 #define DNS_TIMEOUT 240
+#endif
 #endif
 #ifndef NAME_SERVER_DEFAULT
 #define NAME_SERVER_DEFAULT "0.0.0.0"
@@ -59,10 +63,6 @@ typedef u_int32_t uint32;
 
 //BRCM
 #define STATIC_DNS_FILE_DEFAULT "/var/fyi/sys/dns"
-
-#ifdef CUSTOMER_VERIZON
-#define DNS_SERVER_TIMEOUT 2
-#endif
 
 #if 0
 #ifdef DPROXY_DEBUG

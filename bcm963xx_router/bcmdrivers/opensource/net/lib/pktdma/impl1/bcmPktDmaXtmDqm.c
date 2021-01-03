@@ -42,8 +42,6 @@
 #include "fap4ke_msg.h"
 #include "fap4ke_irq.h"
 
-/* Globals initialized in the XTM Driver */
-fapTasklet_handler_t g_pXtmDqmHandler;
 #endif
 
 /* --------------------------------------------------------------------------
@@ -140,7 +138,37 @@ void bcmPktDma_XtmFreeRecvBuf_Dqm(int channel, unsigned char * pBuf)
    Notes: Params pTxSource and pTxAddr not used in DQM implementation
 -------------------------------------------------------------------------- */
 BOOL bcmPktDma_XtmFreeXmitBufGet_Dqm(int channel, uint32 *pKey, uint32 *pTxSource,
-                                     uint32 *pTxAddr, uint32 *rxChannel)
+                                     uint32 *pTxAddr, uint32 *rxChannel,
+                                     uint32 dmaType, uint32 noGlobalBufAccount)
+{
+    BOOL ret = FALSE;
+    DQMQueueDataReg_S msg;
+
+    //BCM_LOG_DEBUG(BCM_LOG_ID_FAP, "channel: %d", channel);
+
+    /* Reclaim transmitted buffers for any queue */
+    if (dqmRecvAvailableHost(DQM_FAP2HOST_XTM_FREE_TXBUF_Q))
+    {
+        /* Channel and index for bcmPktDma_EthFreeXmitBuf don't matter */
+        /* Just take skb ptrs off the DQM queue til done */
+        dqmRecvMsgHost(DQM_FAP2HOST_XTM_FREE_TXBUF_Q, 
+                          DQM_FAP2HOST_XTM_FREE_TXBUF_Q_SIZE, &msg);
+         
+         *pKey     = (uint32) msg.word0;
+         ret = TRUE;
+    }
+    
+    return ret;
+}
+
+/* --------------------------------------------------------------------------
+    Name: bcmPktDma_XtmForceFreeXmitBufGet_Dqm
+ Purpose: Free all possible TX buffers forcefully.
+   Notes: Params pTxSource and pTxAddr not used in DQM implementation
+-------------------------------------------------------------------------- */
+BOOL bcmPktDma_XtmForceFreeXmitBufGet_Dqm(int channel, uint32 *pKey, uint32 *pTxSource,
+                                     uint32 *pTxAddr, uint32 *rxChannel,
+                                     uint32 dmaType, uint32 noGlobalBufAccount)
 {
     BOOL ret = FALSE;
     DQMQueueDataReg_S msg;
@@ -166,7 +194,7 @@ BOOL bcmPktDma_XtmFreeXmitBufGet_Dqm(int channel, uint32 *pKey, uint32 *pTxSourc
     Name: bcmPktDma_XtmXmitAvailable
  Purpose: Determine if there are free resources for the xmit
 -------------------------------------------------------------------------- */
-int bcmPktDma_XtmXmitAvailable_Dqm(int channel) 
+int bcmPktDma_XtmXmitAvailable_Dqm(int channel, uint32 dmaTypeUnUsed) 
 {
     return (dqmXmitAvailableHost(DQM_HOST2FAP_XTM_XMIT_Q));
 }
@@ -179,7 +207,8 @@ int bcmPktDma_XtmXmitAvailable_Dqm(int channel)
   Return: 1 on success; 0 otherwise
 -------------------------------------------------------------------------- */
 int bcmPktDma_XtmXmit_Dqm(int channel, uint8 *pBuf, uint16 len, int bufSource,
-                          uint16 dmaStatus, uint32 key,int param1)
+                          uint16 dmaStatus, uint32 key,int param1,
+                          uint32 dmaTypeUsUsed, uint32 noGlobalBufAccount)
 {
     fapDqm_XtmTx_t tx;
 
@@ -218,7 +247,7 @@ int bcmPktDma_XtmXmit_Dqm(int channel, uint8 *pBuf, uint16 len, int bufSource,
  Purpose: Coordinate with FAP to enable tx channel 
   Return: 1 on success; 0 otherwise
 -------------------------------------------------------------------------- */
-int bcmPktDma_XtmTxEnable_Dqm( int channel, PDEV_PARAMS pDevParams )
+int bcmPktDma_XtmTxEnable_Dqm( int channel, PDEV_PARAMS pDevParams, uint32 dmaTypeUnUsed )
 {
     xmit2FapMsg_t fapMsg;
     int           retVal;
@@ -247,7 +276,8 @@ int bcmPktDma_XtmTxEnable_Dqm( int channel, PDEV_PARAMS pDevParams )
  Purpose: Coordinate with FAP to disable tx channel
   Return: 1 on success; 0 otherwise
 -------------------------------------------------------------------------- */
-int bcmPktDma_XtmTxDisable_Dqm( int channel )
+int  bcmPktDma_XtmTxDisable_Dqm(int channel, uint32 dmaTypeUnused, void (*func)(uint32 param1, 
+            BcmPktDma_XtmTxDma *txdma), uint32 param1)
 {
     xmit2FapMsg_t fapMsg;
     int           retVal;
@@ -350,7 +380,8 @@ int	bcmPktDma_XtmInitRxChan_Dqm( uint32 channel,
 
 int	bcmPktDma_XtmInitTxChan_Dqm( uint32 channel,
                                  uint32 bufDescrs,
-                                 BcmPktDma_LocalXtmTxDma *pXtmTxDma)
+                                 BcmPktDma_LocalXtmTxDma *pXtmTxDma,
+                                 uint32 dmaTypeUnUsed)
 {
     xmit2FapMsg_t fapMsg;
 
@@ -378,12 +409,13 @@ int	bcmPktDma_XtmInitTxChan_Dqm( uint32 channel,
 
 }
 
-int bcmPktDma_XtmCreateDevice_Dqm(uint32 devId, uint32 encapType)
+int bcmPktDma_XtmCreateDevice_Dqm(uint32 devId, uint32 encapType, uint32 headerLen)
 {
     xmit2FapMsg_t fapMsg;
 
     fapMsg.xtmCreateDevice.devId = devId;
     fapMsg.xtmCreateDevice.encapType = encapType;
+    fapMsg.xtmCreateDevice.headerLen = headerLen;
 
     bcmPktDma_xmit2Fap(FAP_MSG_DRV_XTM_CREATE_DEVICE, &fapMsg);
 

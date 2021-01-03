@@ -23,11 +23,15 @@
  *	Description:
  *		Diag definitions
  *
- * $Revision: 1.35 $
+ * $Revision: 1.3 $
  *
- * $Id: DiagDef.h,v 1.35 2009/01/08 23:54:48 tonytran Exp $
+ * $Id: DiagDef.h,v 1.3 2011/05/11 08:30:09 ydu Exp $
  *
  * $Log: DiagDef.h,v $
+ * Revision 1.3  2011/05/11 08:30:09  ydu
+ * update dsl driver to A2x023i, VDSL2 Bonding datapump to Av4bC035b
+ * ADSL2 Bonding datapump to A2pbC033a, VDSL2 datapump to A2pv6C035b
+ *
  * Revision 1.35  2009/01/08 23:54:48  tonytran
  * Added filters to Status Window and Proxy Client; Added options for Parser to parse a certain statuses; Added an option to download the binary status file from the Proxy Server; Fixed a reconnecting problem b/w the Proxy Client and Server which occur sometimes when the Client got timeout from getting chipId
  *
@@ -253,6 +257,7 @@ typedef struct {
 #define DIAG_DEBUG_CMD_SET_RAW_DATA_MODE		32
 #define DIAG_DEBUG_CMD_SET_REGRESSION_LOCK	33
 #define DIAG_DEBUG_CMD_CLR_REGRESSION_LOCK	34
+#define DIAG_DEBUG_CMD_SYNC_CPE_TIME		35
 
 typedef struct {
 	unsigned short	cmd;

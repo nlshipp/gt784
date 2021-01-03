@@ -226,15 +226,11 @@ static inline int ip_skb_dst_mtu(struct sk_buff *skb)
 
 static int ip_finish_output(struct sk_buff *skb)
 {
-#if defined(CONFIG_MIPS_BRCM)
-#if defined(CONFIG_BLOG)
-	uint32_t mtu;
-
-	mtu = dst_mtu(skb->dst);
-	if (skb->blog_p && skb->blog_p->minMtu > mtu)
-		skb->blog_p->minMtu = mtu;
-
-#endif
+#if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
+	uint32_t mtu = dst_mtu(skb->dst);
+	Blog_t * blog_p = blog_ptr(skb);
+	if (blog_p && blog_p->minMtu > mtu)
+		blog_p->minMtu = mtu;
 #endif
 
 #if defined(CONFIG_NETFILTER) && defined(CONFIG_XFRM)

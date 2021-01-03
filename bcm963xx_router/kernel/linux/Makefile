@@ -348,6 +348,15 @@ LINUXINCLUDE    := -Iinclude \
                    -I$(srctree)/arch/$(hdr-arch)/include               \
                    -include include/linux/autoconf.h
 
+ifneq ($(strip $(AEI_VDSL_CUSTOMER_NCS)),)
+ifneq ($(INC_BRCMDRIVER_PUB_PATH),)
+LINUXINCLUDE += -I$(INC_BRCMDRIVER_PUB_PATH)/bcm963xx
+endif
+ifneq ($(INC_BRCMSHARED_PUB_PATH),)
+LINUXINCLUDE += -I$(INC_BRCMSHARED_PUB_PATH)/bcm963xx
+endif
+endif
+
 KBUILD_CPPFLAGS := -D__KERNEL__
 
 KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
@@ -567,6 +576,11 @@ endif
 
 ifdef CONFIG_FUNCTION_TRACER
 KBUILD_CFLAGS	+= -pg
+endif
+
+# use actiontec macro in kernel
+ifneq ($(strip $(AEI_VDSL_CUSTOMER_NCS)),)
+KBUILD_CFLAGS	+= $(ACTION_TEC_DFLAGS)
 endif
 
 # We trigger additional mismatches with less inlining
@@ -976,7 +990,7 @@ endif
 localver-full = $(localver)$(localver-auto)
 
 # Store (new) KERNELRELASE string in include/config/kernel.release
-kernelrelease = $(KERNELVERSION)$(localver-full)
+kernelrelease = $(KERNELVERSION)#$(localver-full)
 include/config/kernel.release: include/config/auto.conf FORCE
 	$(Q)rm -f $@
 	$(Q)echo $(kernelrelease) > $@

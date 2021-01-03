@@ -91,13 +91,33 @@ extern "C" {
     _IOR(ADSLDRV_MAJOR, 21, ADSLDRV_STATUS_ONLY)
 #define ADSLIOCTL_SET_OBJ_VALUE \
     _IOR(ADSLDRV_MAJOR, 22, ADSLDRV_GET_OBJ)
+
+
+#ifdef AEI_VDSL_CUSTOMER_NCS
+/* Since the ioctl number is defined only in this file and used both in kernel and userspace,
+   Don't do any macro especially macro within a macro for IOCTL number since that makes adding a new one hard and messy...
+   Add IOCTL without macro and increment MAX_ADSLDRV_IOCTL_COMMANDS here 
+   and modify adsldrv.c to match the IOCTL with correct or DoEmpty dummy handler.
+ */
+#define ADSLIOCTL_HMI_COMMAND \
+    _IOR(ADSLDRV_MAJOR, 23, ADSLDRV_HMI)
+#define ADSLIOCTL_SET_DSL_WAN_STATUS \
+    _IOW(ADSLDRV_MAJOR,24,int)
+#define ADSLIOCTL_SET_DSL_DATAPUMP \
+    _IOW(ADSLDRV_MAJOR,25,int)
+#define MAX_ADSLDRV_IOCTL_COMMANDS   26
+
+#else /* AEI_VDSL_CUSTOMER_NCS */
+
 #ifdef HMI_QA_SUPPORT    
 #define ADSLIOCTL_HMI_COMMAND \
     _IOR(ADSLDRV_MAJOR, 23, ADSLDRV_HMI)    
 #define MAX_ADSLDRV_IOCTL_COMMANDS   24
 #else
 #define MAX_ADSLDRV_IOCTL_COMMANDS   23
-#endif
+#endif 
+
+#endif /* AEI_VDSL_CUSTOMER_NCS */
 
 /* Typedefs. */
 typedef struct

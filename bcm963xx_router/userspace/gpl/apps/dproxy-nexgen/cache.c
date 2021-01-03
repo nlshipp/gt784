@@ -241,6 +241,11 @@ void cache_add_hosts_entries(FILE *cache_file)
 	 if( ip[0] == '#' )continue; /* ignore comments */
 	 while( (name = strtok( NULL, " \t" )) ){
 	   if(name[0] == '#')break;
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+       if(strstr(name,config.domain_name)==NULL)
+                fprintf( cache_file, "%s.%s %s %ld\n", name,config.domain_name, ip, 0L );
+       else
+#endif
 		fprintf( cache_file, "%s %s %ld\n", name, ip, 0L );
 	 }
 	 

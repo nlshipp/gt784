@@ -133,13 +133,6 @@
 #include "skb_defines.h"
 #endif
 
-#if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BCM_SMUX)
-extern int smux_pkt_recv(   struct sk_buff *skb, 
-                            struct net_device *dev,
-                            struct net_device *rdev);
-
-#endif
-
 
 /* Instead of increasing this, you should create a hash table. */
 #define MAX_GRO_SKBS 8
@@ -363,6 +356,67 @@ void *netdev_priv(const struct net_device *dev)
 }
 EXPORT_SYMBOL(netdev_priv);
 #endif
+
+#if defined(CONFIG_MIPS_BRCM)
+/* Adds a NON-ROOT device to a path. A Root device is indirectly
+   added to a path once another device points to it */
+int netdev_path_add(struct net_device *new_dev, struct net_device *next_dev)
+{
+    if(netdev_path_is_linked(new_dev))
+    {
+        /* new device already in a path, fail */
+        return -EBUSY;
+    }
+
+    netdev_path_next_dev(new_dev) = next_dev;
+
+    next_dev->path.refcount++;
+
+    return 0;
+}
+
+/* Removes a device from a path */
+int netdev_path_remove(struct net_device *dev)
+{
+    if(!netdev_path_is_leaf(dev))
+    {
+        /* device referenced by one or more interfaces, fail */
+        return -EBUSY;
+    }
+
+    netdev_path_next_dev(dev)->path.refcount--;
+
+    netdev_path_next_dev(dev) = NULL;
+
+    return 0;
+}
+
+/* Prints all devices in a path */
+void netdev_path_dump(struct net_device *dev)
+{
+    printk("netdev path : ");
+
+    while(1)
+    {
+        printk("%s", dev->name);
+
+        if(netdev_path_is_root(dev))
+        {
+            break;
+        }
+
+        printk(" -> ");
+
+        dev = netdev_path_next_dev(dev);
+    }
+
+    printk("\n");
+}
+
+EXPORT_SYMBOL(netdev_path_add);
+EXPORT_SYMBOL(netdev_path_remove);
+EXPORT_SYMBOL(netdev_path_dump);
+#endif /* CONFIG_MIPS_BRCM */
 
 
 /*******************************************************************************
@@ -1871,7 +1925,13 @@ gso:
 #ifdef CONFIG_NET_CLS_ACT
 	skb->tc_verd = SET_TC_AT(skb->tc_verd,AT_EGRESS);
 #endif
+#ifdef AEI_VDSL_CUSTOMER_NCS
+	if (q->enqueue && 
+	    (skb->protocol != ETH_P_MIRROR) &&
+	    (skb->protocol != ETH_P_MIRROR_WLAN)) {
+#else
 	if (q->enqueue) {
+#endif
 		spinlock_t *root_lock = qdisc_lock(q);
 
 		spin_lock(root_lock);
@@ -1887,6 +1947,10 @@ gso:
 
 		goto out;
 	}
+#ifdef AEI_VDSL_CUSTOMER_NCS
+	if (skb->protocol == ETH_P_MIRROR)
+	    skb->protocol = ETH_P_802_3;
+#endif
 
 	/* The device has no queue. Common case for software devices:
 	   loopback, all the sorts of tunnels...
@@ -2261,7 +2325,7 @@ void netif_nit_deliver(struct sk_buff *skb)
 }
 
 #if defined (CONFIG_MIPS_BRCM) && (defined(CONFIG_BCM_VLAN) || defined(CONFIG_BCM_VLAN_MODULE))
-int (*bcm_vlan_handle_frame_hook)(struct sk_buff *, struct net_device *) = NULL;
+int (*bcm_vlan_handle_frame_hook)(struct sk_buff **) = NULL;
 #endif
 
 
@@ -2334,7 +2398,7 @@ int netif_receive_skb(struct sk_buff *skb)
 	rcu_read_lock();
 
 #if defined(CONFIG_MIPS_BRCM) && (defined(CONFIG_BCM_VLAN) || defined(CONFIG_BCM_VLAN_MODULE))
-        if(bcm_vlan_handle_frame_hook && (ret = bcm_vlan_handle_frame_hook(skb, skb->dev)) != 0)
+        if(bcm_vlan_handle_frame_hook && (ret = bcm_vlan_handle_frame_hook(&skb)) != 0)
             goto out;
 #endif
 
@@ -2379,31 +2443,17 @@ ncls:
 
 	skb_orphan(skb);
 
-#if defined(CONFIG_BCM_SMUX)
-        /* 
-         * ServiceMUX/MSC interface has to get all packets. 
-         * Packet handler does not work in this case
-         */
-        if(orig_dev->priv_flags & IFF_RSMUX) {
-                atomic_inc(&skb->users);
-                ret = smux_pkt_recv(skb, skb->dev, orig_dev);
-        }
-        else {
-#endif /* CONFIG_BCM_SMUX */
-			type = skb->protocol;
-			list_for_each_entry_rcu(ptype,
-					&ptype_base[ntohs(type) & PTYPE_HASH_MASK], list) {
-				if (ptype->type == type &&
-				    (ptype->dev == null_or_orig || ptype->dev == skb->dev ||
-				     ptype->dev == orig_dev)) {
-					if (pt_prev)
-						ret = deliver_skb(skb, pt_prev, orig_dev);
-					pt_prev = ptype;
-				}
-			}
-#if defined(CONFIG_BCM_SMUX)
-        }
-#endif /* CONFIG_BCM_SMUX */
+	type = skb->protocol;
+	list_for_each_entry_rcu(ptype,
+			&ptype_base[ntohs(type) & PTYPE_HASH_MASK], list) {
+		if (ptype->type == type &&
+			 (ptype->dev == null_or_orig || ptype->dev == skb->dev ||
+			  ptype->dev == orig_dev)) {
+			if (pt_prev)
+				ret = deliver_skb(skb, pt_prev, orig_dev);
+			pt_prev = ptype;
+		}
+	}
 
 	if (pt_prev) {
 		ret = pt_prev->func(skb, skb->dev, pt_prev, orig_dev);
@@ -4127,7 +4177,11 @@ static int dev_ifsioc(struct net *net, struct ifreq *ifr, unsigned int cmd)
 
 		default:
 			if ((cmd >= SIOCDEVPRIVATE &&
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+			    cmd <= SIOCDEVPRIVATE + 22) ||
+#else
 			    cmd <= SIOCDEVPRIVATE + 15) ||
+#endif
 			    cmd == SIOCBONDENSLAVE ||
 			    cmd == SIOCBONDRELEASE ||
 			    cmd == SIOCBONDSETHWADDR ||
@@ -4327,7 +4381,11 @@ int dev_ioctl(struct net *net, unsigned int cmd, void __user *arg)
                             cmd == SIOCCIFSTATS ||
 #endif                
 			    (cmd >= SIOCDEVPRIVATE &&
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+			     cmd <= SIOCDEVPRIVATE + 22)) {
+#else
 			     cmd <= SIOCDEVPRIVATE + 15)) {
+#endif
 				dev_load(net, ifr.ifr_name);
 				rtnl_lock();
 				ret = dev_ifsioc(net, &ifr, cmd);
@@ -4356,6 +4414,19 @@ int dev_ioctl(struct net *net, unsigned int cmd, void __user *arg)
 static int dev_new_index(struct net *net)
 {
 	static int ifindex;
+#ifdef AEI_VDSL_CUSTOMER_NCS
+	/* For xtm interfaces, code can unregister device and subsequent registers push ifindex up.
+	   This will exhaust the multificast vif index beyond 32 (bitmap) with repetition.
+	   But this change below is not standard linux way of doing things...
+	*/
+	int i=0;
+	for (i=1;i<ifindex && i<32;i++) {
+		if (!__dev_get_by_index(net,i)) {
+			return i;
+                }
+	}
+#endif
+
 	for (;;) {
 		if (++ifindex <= 0)
 			ifindex = 1;

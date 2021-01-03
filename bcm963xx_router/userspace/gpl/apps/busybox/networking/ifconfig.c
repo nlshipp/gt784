@@ -15,7 +15,7 @@
  * Foundation;  either  version 2 of the License, or  (at
  * your option) any later version.
  *
- * $Id: ifconfig.c,v 1.1.1.1 2010/06/24 19:07:16 denny Exp $
+ * $Id: ifconfig.c,v 1.1.1.1 2010/06/14 22:47:25 tliu Exp $
  *
  */
 

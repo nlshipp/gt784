@@ -171,5 +171,11 @@ UBOOL8 cmsTmr_isEventPresent(const void *tmrHandle, CmsEventHandler func, void *
  */   
 void cmsTmr_dumpEvents(const void *tmrHandle);
 
+#ifdef DMP_PERIODICSTATSBASE_1
+void cmsTmr_cancel2(void *handle, CmsEventHandler func, void *ctxData);
+UBOOL8 cmsTmr_isEventPresent2(const void *handle, CmsEventHandler func, void *ctxData);
+CmsRet cmsTmr_set2(void *handle, CmsEventHandler func, void *ctxData, UINT32 ms, const char *name);
+UINT32 cmsTmr_Event_TimeRemaining(const void *handle, CmsEventHandler func, void *ctxData);
+#endif
 
 #endif  /* __CMS_TMR_H__ */

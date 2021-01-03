@@ -74,6 +74,7 @@
 #define IFF_OSMUX      0x1000             /* smux overlay interface       */
 #define IFF_WANDEV     0x2000             /* avoid WAN bridge traffic leaking */
 #define IFF_BCM_VLAN   0x4000            /* Broadcom VLAN Interface */
+#define IFF_PPP        0x8000            /* PPP Interface */
 #endif
 
 

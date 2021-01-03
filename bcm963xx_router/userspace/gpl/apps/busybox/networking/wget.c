@@ -854,7 +854,7 @@ progressmeter(int flag)
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- *	$Id: wget.c,v 1.1.1.1 2010/06/24 19:07:16 denny Exp $
+ *	$Id: wget.c,v 1.1.1.1 2010/06/14 22:47:25 tliu Exp $
  */
 
 

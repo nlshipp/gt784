@@ -22,29 +22,29 @@
     Alain.Durand@imag.fr, IMAG,
     Jean-Luc.Richier@imag.fr, IMAG-LSR.
 
-    Ce travail a ét?fait au sein du GIE DYADE (Groupement d'Intérêt
+    Ce travail a été fait au sein du GIE DYADE (Groupement d'Intérêt
     Économique ayant pour membres BULL S.A. et l'INRIA).
 
     Ce logiciel informatique est disponible aux conditions
-    usuelles dans la recherche, c'est-?dire qu'il peut
-    être utilis? copi? modifi? distribu??l'unique
-    condition que ce texte soit conserv?afin que
+    usuelles dans la recherche, c'est-à-dire qu'il peut
+    être utilisé, copié, modifié, distribué à l'unique
+    condition que ce texte soit conservé afin que
     l'origine de ce logiciel soit reconnue.
 
     Le nom de l'Institut National de Recherche en Informatique
     et en Automatique (INRIA), de l'IMAG, ou d'une personne morale
-    ou physique ayant particip??l'élaboration de ce logiciel ne peut
-    être utilis?sans son accord préalable explicite.
+    ou physique ayant participé à l'élaboration de ce logiciel ne peut
+    être utilisé sans son accord préalable explicite.
 
     Ce logiciel est fourni tel quel sans aucune garantie,
-    support ou responsabilit?d'aucune sorte.
-    Ce logiciel est dériv?de sources d'origine
+    support ou responsabilité d'aucune sorte.
+    Ce logiciel est dérivé de sources d'origine
     "University of California at Berkeley" et
     "Digital Equipment Corporation" couvertes par des copyrights.
 
     L'Institut d'Informatique et de Mathématiques Appliquées de Grenoble (IMAG)
     est une fédération d'unités mixtes de recherche du CNRS, de l'Institut National
-    Polytechnique de Grenoble et de l'Universit?Joseph Fourier regroupant
+    Polytechnique de Grenoble et de l'Université Joseph Fourier regroupant
     sept laboratoires dont le laboratoire Logiciels, Systèmes, Réseaux (LSR).
 
     This work has been done in the context of GIE DYADE (joint R & D venture
@@ -90,10 +90,10 @@
  * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * $Id: ipv6cp.c,v 1.1.1.1.2.1 2011/02/25 16:58:04 yzhang Exp $ 
+ * $Id: ipv6cp.c,v 1.2 2011/03/17 13:39:55 lzhang Exp $ 
  */
 
-#define RCSID	"$Id: ipv6cp.c,v 1.1.1.1.2.1 2011/02/25 16:58:04 yzhang Exp $"
+#define RCSID	"$Id: ipv6cp.c,v 1.2 2011/03/17 13:39:55 lzhang Exp $"
 
 /*
  * TODO: 
@@ -1232,11 +1232,12 @@ ipv6cp_up(f)
 
     np_up(f->unit, PPP_IPV6);
     ipv6cp_is_up = 1;
-
+	fprintf(stderr, "%s@%d ===>>> BCM_PPPOE_CLIENT_IPV6_STATE_UP <<<=== \n", __FUNCTION__, __LINE__);
+    
 #ifdef AEI_CONTROL_LAYER    
 	sendCtlPppEventMessage(BCM_PPPOE_CLIENT_IPV6_STATE_UP, NULL, NULL, NULL, NULL, MDMVS_ERROR_NONE);
 #else
-    create_msg(BCM_PPPOE_CLIENT_IPV6_STATE_UP, MDMVS_ERROR_NONE);
+	create_msg(BCM_PPPOE_CLIENT_IPV6_STATE_UP, MDMVS_ERROR_NONE);
 #endif
 
     /*
@@ -1262,10 +1263,12 @@ ipv6cp_down(f)
 {
     IPV6CPDEBUG(("ipv6cp: down"));
 
+	fprintf(stderr, "%s@%d ===>>> BCM_PPPOE_CLIENT_IPV6_STATE_DOWN <<<=== \n", __FUNCTION__, __LINE__);
+    
 #ifdef AEI_CONTROL_LAYER 
 	sendCtlPppEventMessage(BCM_PPPOE_CLIENT_IPV6_STATE_DOWN, NULL, NULL, NULL, NULL, MDMVS_ERROR_NONE);
 #else
-    create_msg(BCM_PPPOE_CLIENT_IPV6_STATE_DOWN, MDMVS_ERROR_UNKNOWN);
+	create_msg(BCM_PPPOE_CLIENT_IPV6_STATE_DOWN, MDMVS_ERROR_UNKNOWN);
 #endif
 
     update_link_stats(f->unit);

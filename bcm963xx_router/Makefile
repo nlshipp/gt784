@@ -23,7 +23,7 @@
 #
 ############################################
 
-all: make_version_check kernel_version_check all_postcheck1
+all: make_version_check all_postcheck1
 
 all_postcheck1: profile_saved_check sanity_check \
      create_install kernelbuild modbuild kernelbuildlite fapbuild\
@@ -147,6 +147,11 @@ menuconfig:
 	$(MAKE) -C $(HOSTTOOLS_DIR)/scripts/lxdialog HOSTCC=gcc
 	$(CONFIG_SHELL) $(HOSTTOOLS_DIR)/scripts/Menuconfig $(TARGETS_DIR)/config.in
 
+ifneq ($(strip $(AEI_VDSL_CUSTOMER_NCS)),)
+memleak: make_version_check sanity_check \
+     create_install kernelbuild modbuild kernelbuildlite \
+     userspace vodsl hosttools buildimage
+endif
 
 #
 # the userspace apps and libs make their own directories before
@@ -158,8 +163,6 @@ create_install:
 		mkdir -p $(INSTALL_DIR)/bin
 		mkdir -p $(INSTALL_DIR)/lib
 
-
-
 $(KERNEL_DIR)/vmlinux:
 	$(GENDEFCONFIG_CMD) $(PROFILE_PATH) ${MAKEFLAGS}
 	cd $(KERNEL_DIR); \
@@ -168,13 +171,13 @@ $(KERNEL_DIR)/vmlinux:
 
 kernelbuild:
 ifeq ($(wildcard $(KERNEL_DIR)/vmlinux),)
-	echo starting kernel build at $(INC_KERNEL_BASE)
+	echo starting kernel build at $(INC_KERNEL_BASE) ACT_OPTIONS $(ACT_OPTIONS)
 	@cd $(INC_KERNEL_BASE); \
 	if [ ! -e linux/CREDITS ]; then \
 	  echo Untarring original Linux kernel source...; \
 	  (tar xkfj $(ORIGINAL_KERNEL) 2> /dev/null || true); \
 	fi
-	$(GENDEFCONFIG_CMD) $(PROFILE_PATH) ${MAKEFLAGS}
+	$(GENDEFCONFIG_CMD) $(PROFILE_PATH) ${MAKEFLAGS} $(ACT_OPTIONS) ${GENDEFFLAG}
 	cd $(KERNEL_DIR); \
 	cp -f $(KERNEL_DIR)/arch/mips/defconfig $(KERNEL_DIR)/.config; \
 	$(MAKE) oldconfig; $(MAKE) $(KERNEL_JOBS_OPT)
@@ -644,7 +647,7 @@ ikoscfe:
 buildimage: $(KERNEL_DIR)/vmlinux libcreduction
 	cd $(TARGETS_DIR); ./buildFS;
 ifeq ($(strip $(BRCM_KERNEL_ROOTFS)),squashfs)
-	cd $(TARGETS_DIR); fakeroot ./buildFS2
+	cd $(TARGETS_DIR); $(HOSTTOOLS_DIR)/fakeroot/fakeroot ./buildFS2
 else
 ifeq ($(strip $(BRCM_KERNEL_ROOTFS)),jffs2)
 	cd $(TARGETS_DIR); $(HOSTTOOLS_DIR)/fakeroot/fakeroot ./buildFS2
@@ -708,8 +711,8 @@ else
 	$(STRIP) --remove-section=.note --remove-section=.comment vmlinux; \
 	$(OBJCOPY) -O binary vmlinux vmlinux.bin; \
 	$(HOSTTOOLS_DIR)/cmplzma -k -2 vmlinux vmlinux.bin vmlinux.lz;\
-	$(HOSTTOOLS_DIR)/bcmImageBuilder --output $(FS_KERNEL_IMAGE_NAME) --chip $(BRCM_CHIP) --board $(BRCM_BOARD_ID) --blocksize $(BRCM_FLASHBLK_SIZE) --cfefile $(CFE_FILE) --rootfsfile rootfs.img --kernelfile vmlinux.lz; \
-	$(HOSTTOOLS_DIR)/bcmImageBuilder --output $(CFE_FS_KERNEL_IMAGE_NAME) --chip $(BRCM_CHIP) --board $(BRCM_BOARD_ID) --blocksize $(BRCM_FLASHBLK_SIZE) --cfefile $(CFE_FILE) --rootfsfile rootfs.img --kernelfile vmlinux.lz --include-cfe; \
+	$(HOSTTOOLS_DIR)/bcmImageBuilder --output $(FS_KERNEL_IMAGE_NAME) --release $(BRCM_RELEASETAG) --chip $(BRCM_CHIP) --board $(BRCM_BOARD_ID) --blocksize $(BRCM_FLASHBLK_SIZE) --cfefile $(CFE_FILE) --rootfsfile rootfs.img --kernelfile vmlinux.lz; \
+	$(HOSTTOOLS_DIR)/bcmImageBuilder --output $(CFE_FS_KERNEL_IMAGE_NAME) --release $(BRCM_RELEASETAG) --chip $(BRCM_CHIP) --board $(BRCM_BOARD_ID) --blocksize $(BRCM_FLASHBLK_SIZE) --cfefile $(CFE_FILE) --rootfsfile rootfs.img --kernelfile vmlinux.lz --include-cfe; \
 	$(HOSTTOOLS_DIR)/createimg --boardid=$(BRCM_BOARD_ID) --voiceboardid $(BRCM_VOICE_BOARD_ID) --numbermac=$(BRCM_NUM_MAC_ADDRESSES) --macaddr=$(BRCM_BASE_MAC_ADDRESS) --tp=$(BRCM_MAIN_TP_NUM) --psisize=$(BRCM_PSI_SIZE) --gponsn=$(BRCM_GPON_SERIAL_NUMBER) --gponpw=$(BRCM_GPON_PASSWORD) --inputfile=$(CFE_FS_KERNEL_IMAGE_NAME) --outputfile=$(FLASH_IMAGE_NAME); \
 	$(HOSTTOOLS_DIR)/addvtoken --chip $(BRCM_CHIP) --flashtype NOR $(FLASH_IMAGE_NAME) $(FLASH_IMAGE_NAME).w
 	@mkdir -p $(IMAGES_DIR)
@@ -737,10 +740,11 @@ endif
 #	$(MAKE) -C $(patsubst _dir_%, %, $@) $(TGT)
 
 clean: target_clean bcmdrivers_clean data-model_clean userspace_clean kernel_clean \
-       hosttools_clean voice_clean xchange_clean wlan_clean
+       hosttools_clean voice_clean xchange_clean wlan_clean  memleak_clean
 	rm -f $(HOSTTOOLS_DIR)/scripts/lxdialog/*.o
 	rm -f .tmpconfig*
 	rm -f $(LAST_PROFILE_COOKIE)
+
 
 fssrc_clean:
 	rm -fr $(FSSRC_DIR)/bin
@@ -781,6 +785,15 @@ unittests_clean:
 	$(MAKE) -C unittests clean
 
 target_clean: sanity_check
+ifeq ($(strip $(BRCM_6368)),y)
+	if test -d $(BRCMDRIVERS_DIR)/broadcom/char/adsl/impl1/adslcore6368_orig; then \
+		echo "####################################"; \
+		echo "Restoring old adslcore6368 directory"; \
+		echo "####################################"; \
+		rm -rf $(BRCMDRIVERS_DIR)/broadcom/char/adsl/impl1/adslcore6368; \
+		mv $(BRCMDRIVERS_DIR)/broadcom/char/adsl/impl1/adslcore6368_orig $(BRCMDRIVERS_DIR)/broadcom/char/adsl/impl1/adslcore6368; \
+	fi
+endif
 	rm -f $(PROFILE_DIR)/rootfs*.img
 	rm -f $(PROFILE_DIR)/vmlinux
 	rm -f $(PROFILE_DIR)/vmlinux.bin
@@ -869,6 +882,11 @@ wlan_clean:
 		rm -rf $$x;\
 	done
 
+ifneq ($(strip $(AEI_VDSL_CUSTOMER_NCS)),)
+memleak_clean:
+#	cd $(HOSTTOOLS_DIR)/memleak/; \
+#	sh bcm_del.sh $(USERSPACE_PUBLIC_LIBS_DIR)/cms_util/
+endif
 ###########################################
 #
 # Temporary kernel patching mechanism

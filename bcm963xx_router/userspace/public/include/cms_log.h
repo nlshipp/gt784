@@ -116,10 +116,8 @@ typedef enum
 #define cmsLog_debug(args...)  log_log(LOG_DEBUG, __FUNCTION__, __LINE__, args)
 #endif
 
-#if defined(CUSTOMER_QNCS) || defined (CUSTOMER_VERIZON)
-
 #define LOG_CATEGORY_PREFIX "category:"
-
+#define LOG_MAX_APPNAME		5
 /* Log categories */
 typedef enum
 {
@@ -140,6 +138,8 @@ typedef enum
    LOG_CATE_WMM,
    LOG_CATE_REBOOT,
    LOG_CATE_RESTORE,
+   LOG_CATE_UPNP,
+   LOG_CATE_HPNA,
    LOG_CATE_NUM
 } CmsLogCategory;
 
@@ -147,34 +147,11 @@ typedef struct
 {
    CmsLogCategory eCate;
    char *name;
-   char *apps;
+   char *apps[LOG_MAX_APPNAME];
 } LogCategory;
 
 extern LogCategory categories[];
-
-#ifdef CMS_LOG0
-#define cmsSyslog_error(args...)
-#define cmsSyslog_notice(args...)
-#define cmsSyslog_debug(args...)
-#endif
-
-#ifdef CMS_LOG2
-#define cmsSyslog_error(logCategory, args...)  log_syslog(LOG_ERR, logCategory, args)
-#define cmsSyslog_notice(logCategory, args...) log_syslog(LOG_NOTICE, logCategory, args)
-#define cmsSyslog_debug(logCategory, args...)
-#endif
-
-#ifdef CMS_LOG3
-#define cmsSyslog_error(logCategory, args...)  log_syslog(LOG_ERR, logCategory, args)
-#define cmsSyslog_notice(logCategory, args...) log_syslog(LOG_NOTICE, logCategory, args)
-#define cmsSyslog_debug(logCategory, args...)  log_syslog(LOG_DEBUG, logCategory, args)
-#endif
-
 void log_syslog(CmsLogLevel level, CmsLogCategory logCategory, const char *pFmt, ... );
-
-#endif /* CUSTOMER_QNCS || CUSTOMER_VERIZON */
-
-
 /** Internal message log function; do not call this function directly.
  *
  * NOTE: Applications should NOT call this function directly from code.

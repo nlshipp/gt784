@@ -152,6 +152,10 @@ static void inet6_prefix_notify(int event, struct inet6_dev *idev,
 static int ipv6_chk_same_addr(struct net *net, const struct in6_addr *addr,
 			      struct net_device *dev);
 
+#if defined(CONFIG_MIPS_BRCM)
+static struct inet6_dev * ipv6_find_idev(struct net_device *dev);
+#endif
+
 static ATOMIC_NOTIFIER_HEAD(inet6addr_chain);
 
 static struct ipv6_devconf ipv6_devconf __read_mostly = {
@@ -186,7 +190,11 @@ static struct ipv6_devconf ipv6_devconf __read_mostly = {
 	.proxy_ndp		= 0,
 	.accept_source_route	= 0,	/* we do not accept RH0 by default. */
 	.disable_ipv6		= 0,
+#if defined(CONFIG_MIPS_BRCM)
+	.accept_dad		= 2,
+#else
 	.accept_dad		= 1,
+#endif
 };
 
 static struct ipv6_devconf ipv6_devconf_dflt __read_mostly = {
@@ -220,7 +228,11 @@ static struct ipv6_devconf ipv6_devconf_dflt __read_mostly = {
 	.proxy_ndp		= 0,
 	.accept_source_route	= 0,	/* we do not accept RH0 by default. */
 	.disable_ipv6		= 0,
+#if defined(CONFIG_MIPS_BRCM)
+	.accept_dad		= 2,
+#else
 	.accept_dad		= 1,
+#endif
 };
 
 /* IPv6 Wildcard Address and Loopback Address defined by RFC2553 */
@@ -228,6 +240,79 @@ const struct in6_addr in6addr_any = IN6ADDR_ANY_INIT;
 const struct in6_addr in6addr_loopback = IN6ADDR_LOOPBACK_INIT;
 const struct in6_addr in6addr_linklocal_allnodes = IN6ADDR_LINKLOCAL_ALLNODES_INIT;
 const struct in6_addr in6addr_linklocal_allrouters = IN6ADDR_LINKLOCAL_ALLROUTERS_INIT;
+
+#ifdef ACTION_TEC_IPV6_CODE_FOR_IOT
+struct dad_failed_msg_t{
+    struct in6_addr addr;
+	int prefix_len;
+    char name[32];
+};
+
+static struct sock *addrconf_nl_sk = NULL;
+static void skb_addrconf_rcv(struct sk_buff *skb)
+{
+	printk(KERN_DEBUG "received sth in skb_addr_conf_rcv\n");
+	return;
+}
+static int addconf_broadcast_dad_failed(struct inet6_ifaddr *ifp) {
+    struct nlmsghdr *nlh;
+	int ret=0;
+	struct sk_buff *skb = NULL;
+	struct dad_failed_msg_t *msg;
+
+	if (!addrconf_nl_sk) {
+		addrconf_nl_sk = netlink_kernel_create(&init_net,NETLINK_DAD, 0, skb_addrconf_rcv,NULL,THIS_MODULE);
+		if (!addrconf_nl_sk) {
+			printk(KERN_ERR "Create netlink addrconf_nl_sk error\n");
+			return -1;
+		}
+	}
+
+	skb=alloc_skb(NLMSG_SPACE(sizeof(struct dad_failed_msg_t)),GFP_KERNEL);
+	if (!skb) {
+		printk(KERN_ERR "alloc skb error\n");
+		return -1;   
+	}
+
+    printk(KERN_NOTICE "DAD failed on %s,%04X:%04X:%04X:%04X:%04X:%04X:%04X:%04X\n",
+           ifp->idev->dev->name,
+           ifp->addr.s6_addr16[0],
+           ifp->addr.s6_addr16[1],
+           ifp->addr.s6_addr16[2],
+           ifp->addr.s6_addr16[3],
+           ifp->addr.s6_addr16[4],
+           ifp->addr.s6_addr16[5],
+           ifp->addr.s6_addr16[6],
+           ifp->addr.s6_addr16[7]);
+
+	nlh = NLMSG_PUT(skb, 0, 0, NLMSG_DONE, sizeof(struct dad_failed_msg_t));
+	msg = (struct dad_failed_msg_t *)NLMSG_DATA(nlh);
+	
+    ipv6_addr_copy(&msg->addr,&ifp->addr);
+    strncpy(msg->name,ifp->idev->dev->name,sizeof(msg->name));
+	msg->prefix_len = ifp->prefix_len;
+
+    nlh->nlmsg_pid = 0;  /* from kernel */
+    nlh->nlmsg_flags = 0;
+
+	/* sender is in group 1<<0 */
+
+    NETLINK_CB(skb).pid = 0;  		/* from kernel */
+    //NETLINK_CB(skb).dst_pid = 0;  	/* multicast */
+    /* to mcast group 1<<0 */
+    NETLINK_CB(skb).dst_group = 1;
+
+    /*multicast the message to all listening processes*/
+    ret = netlink_broadcast(addrconf_nl_sk, skb, 0, 1, GFP_KERNEL);
+
+	printk(KERN_NOTICE "Broadcast DAD failed msg ,ret is %d\n",ret);
+
+	return ret;
+nlmsg_failure:
+	kfree_skb(skb);
+    return -EINVAL; 
+}
+#endif
 
 /* Check if a valid qdisc is available */
 static inline bool addrconf_qdisc_ok(const struct net_device *dev)
@@ -349,8 +434,50 @@ static struct inet6_dev * ipv6_add_dev(struct net_device *dev)
 	rwlock_init(&ndev->lock);
 	ndev->dev = dev;
 	memcpy(&ndev->cnf, dev_net(dev)->ipv6.devconf_dflt, sizeof(ndev->cnf));
+
+#ifdef ACTION_TEC_IPV6_CODE_FOR_IOT
+#if 0
+	if(dev->name)
+	{
+		if (!strncmp(dev->name,"ewan",4)) {
+			printk(KERN_ERR"ipv6_add_dev on %s,forwarding set to 0 for IOT\n",dev->name);
+			ndev->cnf.forwarding = 0;
+		}/*
+		else if (!strcmp(dev->name,"ewan0.1")) {
+			printk("ipv6_add_dev on %s,forwarding set to 0 for IOT\n",dev->name);
+			ndev->cnf.forwarding = 0;
+		}*/
+		else if (!strncmp(dev->name,"ptm",3)) {
+			printk(KERN_ERR"ipv6_add_dev on %s,forwarding set to 0 for IOT\n",dev->name);
+			ndev->cnf.forwarding = 0;
+		}
+		else if (!strncmp(dev->name,"atm",3)) {
+			printk(KERN_ERR"ipv6_add_dev on %s,forwarding set to 0 for IOT\n",dev->name);
+			ndev->cnf.forwarding = 0;
+		}
+                else if (!strncmp(dev->name,"ppp",3)) {
+                        printk(KERN_ERR"ipv6_add_dev on %s,forwarding set to 0 for IOT\n",dev->name);
+                        ndev->cnf.forwarding = 0;
+                }		
+	}
+#endif
+#endif
+
 	ndev->cnf.mtu6 = dev->mtu;
 	ndev->cnf.sysctl = NULL;
+
+#if defined(CONFIG_MIPS_BRCM)
+	/* 
+	* At bootup time, there is no interfaces attached to brX. Therefore, DAD of
+	* brX cannot take any effect and we cannot pass IPv6 ReadyLogo. We here
+	* increase DAD period of brX to 4 sec which should be long enough for our
+	* system to attach all interfaces to brX. Thus, DAD of brX can send/receive
+	* packets through attached interfaces.
+	*/
+	if ( !strncmp(dev->name, "br", 2) )
+		ndev->cnf.dad_transmits = 4;
+#endif
+
 	ndev->nd_parms = neigh_parms_alloc(dev, &nd_tbl);
 	if (ndev->nd_parms == NULL) {
 		kfree(ndev);
@@ -427,6 +554,15 @@ static struct inet6_dev * ipv6_add_dev(struct net_device *dev)
 	/* Join all-node multicast group */
 	ipv6_dev_mc_inc(dev, &in6addr_linklocal_allnodes);
 
+#if defined(CONFIG_MIPS_BRCM)
+	/* Join all-router multicast group */
+	if (dev && (dev->flags & IFF_MULTICAST)) {
+		struct inet6_dev *idev = ipv6_find_idev(dev);
+
+		if (idev->cnf.forwarding && !(idev->dev->priv_flags & IFF_WANDEV))
+			ipv6_dev_mc_inc(dev, &in6addr_linklocal_allrouters);
+	}
+#endif
 	return ndev;
 }
 
@@ -1380,6 +1516,9 @@ static void addrconf_dad_stop(struct inet6_ifaddr *ifp)
 		ifp->flags |= IFA_F_TENTATIVE;
 		spin_unlock_bh(&ifp->lock);
 		in6_ifa_put(ifp);
+#ifdef ACTION_TEC_IPV6_CODE_FOR_IOT
+		ipv6_del_addr(ifp);
+#endif
 #ifdef CONFIG_IPV6_PRIVACY
 	} else if (ifp->flags&IFA_F_TEMPORARY) {
 		struct inet6_ifaddr *ifpub;
@@ -1406,6 +1545,10 @@ void addrconf_dad_failure(struct inet6_ifaddr *ifp)
 	if (net_ratelimit())
 		printk(KERN_INFO "%s: IPv6 duplicate address detected!\n",
 			ifp->idev->dev->name);
+
+#ifdef ACTION_TEC_IPV6_CODE_FOR_IOT
+    addconf_broadcast_dad_failed(ifp);
+#endif
 
 	if (idev->cnf.accept_dad > 1 && !idev->cnf.disable_ipv6) {
 		struct in6_addr addr;
@@ -1758,6 +1901,13 @@ void addrconf_prefix_rcv(struct net_device *dev, u8 *opt, int len)
 		return;
 	}
 
+#ifdef ACTION_TEC_IPV6_CODE_FOR_IOT
+
+	if (!pinfo->onlink) {
+		printk(KERN_ERR "According to CPE.2.3 Part C,wouldn't accept this Prefix\n");
+		return;
+	}
+#endif
 	/*
 	 *	Validation checks ([ADDRCONF], page 19)
 	 */
@@ -2179,7 +2329,12 @@ int addrconf_add_ifaddr(struct net *net, void __user *arg)
 	rtnl_lock();
 	err = inet6_addr_add(net, ireq.ifr6_ifindex, &ireq.ifr6_addr,
 			     ireq.ifr6_prefixlen, IFA_F_PERMANENT,
+#ifdef ACTION_TEC_IPV6_CODE_FOR_IOT
+						 ireq.ifr6_pltime,ireq.ifr6_vltime);
+#else
 			     INFINITY_LIFE_TIME, INFINITY_LIFE_TIME);
+#endif
+
 	rtnl_unlock();
 	return err;
 }
@@ -2683,7 +2838,12 @@ static void addrconf_rs_timer(unsigned long data)
 {
 	struct inet6_ifaddr *ifp = (struct inet6_ifaddr *) data;
 
+#if defined(CONFIG_MIPS_BRCM)
+	/* WAN interface needs to act as a host. */
+	if (ifp->idev->cnf.forwarding && !(ifp->idev->dev->priv_flags & IFF_WANDEV))
+#else
 	if (ifp->idev->cnf.forwarding)
+#endif
 		goto out;
 
 	if (ifp->idev->if_flags & IF_RA_RCVD) {
@@ -2730,6 +2890,7 @@ static void addrconf_dad_kick(struct inet6_ifaddr *ifp)
 		rand_num = 0;
 	else
 		rand_num = net_random() % (idev->cnf.rtr_solicit_delay ? : 1);
+	//rand_num = 5*HZ;//per For debug only,if error just delete this line; 
 
 	ifp->probes = idev->cnf.dad_transmits;
 	addrconf_mod_timer(ifp, AC_DAD, rand_num);
@@ -2839,7 +3000,13 @@ static void addrconf_dad_completed(struct inet6_ifaddr *ifp)
 	   start sending router solicitations.
 	 */
 
+#if defined(CONFIG_MIPS_BRCM)
+	/* WAN interface needs to act as a host. */
+	if (( (ifp->idev->cnf.forwarding == 0) || 
+		  (ifp->idev->dev->priv_flags & IFF_WANDEV) ) &&
+#else
 	if (ifp->idev->cnf.forwarding == 0 &&
+#endif
 	    ifp->idev->cnf.rtr_solicits > 0 &&
 	    (dev->flags&IFF_LOOPBACK) == 0 &&
 	    (ipv6_addr_type(&ifp->addr) & IPV6_ADDR_LINKLOCAL)) {
@@ -3912,11 +4079,21 @@ static void __ipv6_ifa_notify(int event, struct inet6_ifaddr *ifp)
 		 */
 		if (!(ifp->rt->rt6i_node))
 			ip6_ins_rt(ifp->rt);
+#if defined(CONFIG_MIPS_BRCM)
+		if (ifp->idev->cnf.forwarding && 
+			!(ifp->idev->dev->priv_flags & IFF_WANDEV))
+#else
 		if (ifp->idev->cnf.forwarding)
+#endif
 			addrconf_join_anycast(ifp);
 		break;
 	case RTM_DELADDR:
+#if defined(CONFIG_MIPS_BRCM)
+		if (ifp->idev->cnf.forwarding && 
+			!(ifp->idev->dev->priv_flags & IFF_WANDEV))
+#else
 		if (ifp->idev->cnf.forwarding)
+#endif
 			addrconf_leave_anycast(ifp);
 		addrconf_leave_solict(ifp->idev, &ifp->addr);
 		dst_hold(&ifp->rt->u.dst);
@@ -4466,6 +4643,13 @@ int __init addrconf_init(void)
 	__rtnl_register(PF_INET6, RTM_GETANYCAST, NULL, inet6_dump_ifacaddr);
 
 	ipv6_addr_label_rtnl_register();
+#ifdef ACTION_TEC_IPV6_CODE_FOR_IOT
+
+    addrconf_nl_sk = netlink_kernel_create(&init_net,NETLINK_DAD, 0, skb_addrconf_rcv,NULL,THIS_MODULE);
+    if (!addrconf_nl_sk) {
+        printk(KERN_ERR "Create netlink error\n");
+    }
+#endif
 
 	return 0;
 errout:

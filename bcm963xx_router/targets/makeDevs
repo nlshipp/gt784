@@ -30,6 +30,8 @@ mknod $ROOTFS/dev/urandom c 1 9
 mknod $ROOTFS/dev/i2c-0 c 89 0
 mknod $ROOTFS/dev/mtd0 c 90 0
 mknod $ROOTFS/dev/mtd1 c 90 2
+mknod $ROOTFS/dev/mtd2 c 90 4
+mknod $ROOTFS/dev/mtd3 c 90 6
 mknod $ROOTFS/dev/ubi0 c 254 0
 mknod $ROOTFS/dev/ubi_ctrl c 10 63
 mknod $ROOTFS/dev/random c 1 8
@@ -39,6 +41,7 @@ mkdir $ROOTFS/dev/pts/
 mknod $ROOTFS/dev/pts/0 c 136 0 
 mknod $ROOTFS/dev/pts/1 c 136 1 
 
+mknod $ROOTFS/dev/ttyUSB0 c 188 0
 
 # Create Broadcom specific devices
 mknod $ROOTFS/dev/dect c 197 0

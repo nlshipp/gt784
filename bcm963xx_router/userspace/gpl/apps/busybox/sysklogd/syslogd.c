@@ -389,13 +389,12 @@ static void message(char *fmt, ...)
 	}
 }
 
-#ifdef CUSTOMER_ACTIONTEC
+#ifdef AEI_VDSL_CUSTOMER_NCS
 #define TZ2SYSLOG
 #ifdef TZ2SYSLOG
 char *weekday_abbr[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 #endif
 #endif
-
 static void logMessage(int pri, char *msg)
 {
 	time_t now;
@@ -409,7 +408,7 @@ static void logMessage(int pri, char *msg)
 	int localLog=1;
 	int remoteLog=1;
 	int len;
-#ifdef CUSTOMER_ACTIONTEC
+#ifdef AEI_VDSL_CUSTOMER_NCS
 #ifdef TZ2SYSLOG
 	FILE *fp;
 	char timezone[128]="(GMT)";
@@ -470,7 +469,7 @@ static void logMessage(int pri, char *msg)
 		msg += 16;
 	}
 
-#ifdef CUSTOMER_ACTIONTEC
+#ifdef AEI_VDSL_CUSTOMER_NCS
 #ifdef TZ2SYSLOG
 	   fp = fopen("/var/timezone", "r");
 	   if(fp != NULL) {
@@ -771,8 +770,8 @@ extern int syslogd_main(int argc, char **argv)
 
 	char *p;
 
-#ifdef CUSTOMER_ACTIONTEC
-    signed sessionPid;
+#ifdef AEI_VDSL_CUSTOMER_NCS
+	signed sessionPid;
 #endif
 	/* do normal option parsing */
 /*BRCM begin*/
@@ -864,8 +863,8 @@ extern int syslogd_main(int argc, char **argv)
 			bb_perror_msg_and_die("daemon");
 #endif /* __uClinux__ */
 	}
-   
-#ifdef CUSTOMER_ACTIONTEC
+
+#ifdef AEI_VDSL_CUSTOMER_NCS
     /*
     * detach from the terminal so we don't catch the user typing control-c
     */

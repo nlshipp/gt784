@@ -418,7 +418,11 @@ CmsRet cmsUtl_parseDNS(const char *inDsnServers, char *outDnsPrimary, char *outD
    char *separator;
    UINT32 len;
 
+#ifdef AEI_VDSL_CUSTOMER_NCS
+   if (IS_EMPTY_STRING(inDsnServers))
+#else
    if (inDsnServers == NULL)
+#endif
    {
       return CMSRET_INVALID_ARGUMENTS;
    }      
@@ -460,10 +464,25 @@ CmsRet cmsUtl_parseDNS(const char *inDsnServers, char *outDnsPrimary, char *outD
 
          if (outDnsSecondary != NULL)
          {
-            if (cmsUtl_isValidIpv4Address(separator))
-            {
-               strcpy(outDnsSecondary, separator);
-            }
+            //support for more than thress dns servers is optional. 
+            char *pStr = NULL;
+            do {
+                pStr = strstr(separator, ",");
+                char strSecDNS[BUFLEN_128] = { 0 };
+                if (pStr != NULL)
+                    strncpy(strSecDNS, separator, pStr - separator);
+                else
+                    snprintf(strSecDNS, BUFLEN_128 - 1, "%s", separator);
+                if (cmsUtl_isValidIpv4Address(strSecDNS)) {
+                    strcpy(outDnsSecondary, strSecDNS);
+                    break;
+                } else {
+                    if (pStr != NULL) {
+                        separator = pStr + 1;
+			if(!separator) break;
+                     }
+                } 
+            } while (pStr != NULL);
             cmsLog_debug("dnsSecondary=%s", outDnsSecondary);
          }
       }
@@ -665,6 +684,38 @@ char * cmsUtl_numToSyslogLevelString(SINT32 level)
    return levelString;
 }
 
+#ifdef AEI_VDSL_CUSTOMER_NCS
+SINT32 cmsUtl_syslogSizeToNum(const char *sizeStr)
+{
+    SINT32 size=1;
+   /*
+    * These values are hard coded in httpd/html/logconfig.html.
+    * Any changes to these values must also be reflected in that file.
+    */
+   if (!strcmp(sizeStr, MDMVS_10K))
+   {
+      size = 1;
+   }
+   else if (!strcmp(sizeStr, MDMVS_20K))
+   {
+      size = 2;
+   }
+   else if (!strcmp(sizeStr, MDMVS_30K))
+   {
+      size = 3;
+   }
+   else 
+   {
+      cmsLog_error("unsupported size string %s, default to size=%d", sizeStr, size);
+   }
+
+   /*
+    * The data model also specifies LOCAL_FILE and LOCAL_FILE_AND_REMOTE,
+    * but its not clear if syslogd actually supports local file size.
+    */
+   return size;
+}
+#endif
 
 UBOOL8 cmsUtl_isValidSyslogLevel(const char *levelStr)
 {

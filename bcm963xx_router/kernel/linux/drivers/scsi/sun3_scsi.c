@@ -46,7 +46,10 @@
  */
 
 /*
- * $Log: sun3_NCR5380.c,v $
+ * $Log: sun3_scsi.c,v $
+ * Revision 1.1.1.1  2010/06/14 22:49:13  tliu
+ *  broadcom SDK 4.6.2
+ *
  */
 
 #define AUTOSENSE

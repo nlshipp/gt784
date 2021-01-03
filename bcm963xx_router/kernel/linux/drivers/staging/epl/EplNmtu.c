@@ -51,9 +51,9 @@
 
                 $RCSfile: EplNmtu.c,v $
 
-                $Author: D.Krueger $
+                $Author: tliu $
 
-                $Revision: 1.8 $  $Date: 2008/11/10 17:17:42 $
+                $Revision: 1.1.1.1 $  $Date: 2010/06/14 22:49:24 $
 
                 $State: Exp $
 

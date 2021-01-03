@@ -1,4 +1,4 @@
-/* $Id: telnetd.c,v 1.1.1.1 2010/06/24 19:07:16 denny Exp $
+/* $Id: telnetd.c,v 1.1.1.1 2010/06/14 22:47:25 tliu Exp $
  *
  * Simple telnet server
  * Bjorn Wesen, Axis Communications AB (bjornw@axis.com)

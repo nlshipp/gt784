@@ -1286,11 +1286,11 @@ static void read_capacity_error(struct scsi_disk *sdkp, struct scsi_device *sdp,
 	    sense_valid && sshdr->sense_key == NOT_READY)
 		sdp->changed = 1;
 
-/*
+	/*
 	 * We used to set media_present to 0 here to indicate no media
 	 * in the drive, but some drives fail read capacity even with
 	 * media present, so we can't do that.
- */
+	 */
 	sdkp->capacity = 0; /* unknown mapped to zero - as usual */
 }
 
@@ -1312,8 +1312,8 @@ static int read_capacity_16(struct scsi_disk *sdkp, struct scsi_device *sdp,
 
 	do {
 		memset(cmd, 0, 16);
-			cmd[0] = SERVICE_ACTION_IN;
-			cmd[1] = SAI_READ_CAPACITY_16;
+		cmd[0] = SERVICE_ACTION_IN;
+		cmd[1] = SAI_READ_CAPACITY_16;
 		cmd[13] = RC16_LEN;
 		memset(buffer, 0, RC16_LEN);
 
@@ -1374,13 +1374,13 @@ static int read_capacity_10(struct scsi_disk *sdkp, struct scsi_device *sdp,
 	unsigned sector_size;
 
 	do {
-			cmd[0] = READ_CAPACITY;
+		cmd[0] = READ_CAPACITY;
 		memset(&cmd[1], 0, 9);
 		memset(buffer, 0, 8);
-		
+
 		the_result = scsi_execute_req(sdp, cmd, DMA_FROM_DEVICE,
 					buffer, 8, &sshdr,
-					      SD_TIMEOUT, SD_MAX_RETRIES, NULL);
+					SD_TIMEOUT, SD_MAX_RETRIES, NULL);
 
 		if (media_not_present(sdkp, &sshdr))
 			return -ENODEV;
@@ -1419,8 +1419,8 @@ static int sd_try_rc16_first(struct scsi_device *sdp)
 	if (scsi_device_protection(sdp))
 		return 1;
 	return 0;
-	}	
-	
+}
+
 /*
  * read disk capacity
  */
@@ -1450,8 +1450,8 @@ sd_read_capacity(struct scsi_disk *sdkp, unsigned char *buffer)
 		if ((sizeof(sdkp->capacity) > 4) &&
 		    (sdkp->capacity > 0xffffffffULL)) {
 			int old_sector_size = sector_size;
-				sd_printk(KERN_NOTICE, sdkp, "Very big device. "
-					  "Trying to use READ CAPACITY(16).\n");
+			sd_printk(KERN_NOTICE, sdkp, "Very big device. "
+					"Trying to use READ CAPACITY(16).\n");
 			sector_size = read_capacity_16(sdkp, sdp, buffer);
 			if (sector_size < 0) {
 				sd_printk(KERN_NOTICE, sdkp,
@@ -1461,7 +1461,7 @@ sd_read_capacity(struct scsi_disk *sdkp, unsigned char *buffer)
 				goto got_data;
 			}
 		}
-	}	
+	}
 
 	/* Some devices are known to return the total number of blocks,
 	 * not the highest block number.  Some devices have versions
@@ -1478,7 +1478,7 @@ sd_read_capacity(struct scsi_disk *sdkp, unsigned char *buffer)
 		sd_printk(KERN_INFO, sdkp, "Adjusting the sector count "
 				"from its reported value: %llu\n",
 				(unsigned long long) sdkp->capacity);
-				--sdkp->capacity;
+		--sdkp->capacity;
 	}
 
 got_data:
@@ -1522,10 +1522,10 @@ got_data:
 				sizeof(cap_str_10));
 
 		if (sdkp->first_scan || old_capacity != sdkp->capacity)
-		sd_printk(KERN_NOTICE, sdkp,
-			  "%llu %d-byte hardware sectors: (%s/%s)\n",
-			  (unsigned long long)sdkp->capacity,
-			  sector_size, cap_str_10, cap_str_2);
+			sd_printk(KERN_NOTICE, sdkp,
+				  "%llu %d-byte hardware sectors: (%s/%s)\n",
+				  (unsigned long long)sdkp->capacity,
+				  sector_size, cap_str_10, cap_str_2);
 	}
 
 	/* Rescale capacity to 512-byte units */
@@ -1604,13 +1604,13 @@ sd_read_write_protect_flag(struct scsi_disk *sdkp, unsigned char *buffer)
 		sdkp->write_prot = ((data.device_specific & 0x80) != 0);
 		set_disk_ro(sdkp->disk, sdkp->write_prot);
 		if (sdkp->first_scan || old_wp != sdkp->write_prot) {
-		sd_printk(KERN_NOTICE, sdkp, "Write Protect is %s\n",
-			  sdkp->write_prot ? "on" : "off");
-		sd_printk(KERN_DEBUG, sdkp,
-			  "Mode Sense: %02x %02x %02x %02x\n",
-			  buffer[0], buffer[1], buffer[2], buffer[3]);
+			sd_printk(KERN_NOTICE, sdkp, "Write Protect is %s\n",
+				  sdkp->write_prot ? "on" : "off");
+			sd_printk(KERN_DEBUG, sdkp,
+				  "Mode Sense: %02x %02x %02x %02x\n",
+				  buffer[0], buffer[1], buffer[2], buffer[3]);
+		}
 	}
-}
 }
 
 /*
@@ -1703,12 +1703,12 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
 
 		if (sdkp->first_scan || old_wce != sdkp->WCE ||
 		    old_rcd != sdkp->RCD || old_dpofua != sdkp->DPOFUA)
-		sd_printk(KERN_NOTICE, sdkp,
-		       "Write cache: %s, read cache: %s, %s\n",
-		       sdkp->WCE ? "enabled" : "disabled",
-		       sdkp->RCD ? "disabled" : "enabled",
-		       sdkp->DPOFUA ? "supports DPO and FUA"
-		       : "doesn't support DPO or FUA");
+			sd_printk(KERN_NOTICE, sdkp,
+				  "Write cache: %s, read cache: %s, %s\n",
+				  sdkp->WCE ? "enabled" : "disabled",
+				  sdkp->RCD ? "disabled" : "enabled",
+				  sdkp->DPOFUA ? "supports DPO and FUA"
+				  : "doesn't support DPO or FUA");
 
 		return;
 	}

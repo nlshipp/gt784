@@ -138,4 +138,8 @@ void cmsTms_addMilliSeconds(CmsTimestamp *tms, UINT32 ms);
  */
 CmsRet cmsTms_getXSIDateTime(UINT32 t, char *buf, UINT32 bufLen);
 
+#ifdef DMP_PERIODICSTATSBASE_1
+int cmsTms_subXSIDateTime(const char *xsiTime1, const char *xsiTime2, UINT32 *result);
+#endif
+
 #endif  /* __CMS_TMS_H__ */

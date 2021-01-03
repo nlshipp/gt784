@@ -15,7 +15,7 @@
     WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
     
-    $Id: eui64.h,v 1.1.1.1 2010/06/24 19:07:37 denny Exp $
+    $Id: eui64.h,v 1.1.1.1 2010/06/14 22:47:27 tliu Exp $
 */
 
 #ifndef __EUI64_H__

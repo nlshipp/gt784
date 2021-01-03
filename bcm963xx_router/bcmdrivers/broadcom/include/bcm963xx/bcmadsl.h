@@ -116,6 +116,10 @@ typedef struct AdslConnectionInfo
 	UINT32 ulFastDnStreamRate;
 	UINT32 ulInterleavedUpStreamRate;
 	UINT32 ulInterleavedDnStreamRate;
+#if defined (AEI_VDSL_CUSTOMER_QWEST_Q1000)
+	UINT32 demodCapabilities;
+	UINT32 demodCapabilities2;
+#endif
 } ADSL_CONNECTION_INFO, *PADSL_CONNECTION_INFO;
 
 /* OEM parameter definition */
@@ -152,7 +156,7 @@ typedef struct
 #define ADSL_MIB_INFO	adslMibInfo
 typedef	ADSL_MIB_INFO   *PADSL_MIB_INFO;
 
-typedef void (*ADSL_FN_NOTIFY_CB) (unsigned char lineId, ADSL_LINK_STATE AdslLinkState, UINT32 ulParm);
+typedef void (*ADSL_FN_NOTIFY_CB) (unsigned char lineId, ADSL_LINK_STATE dslLinkState, ADSL_LINK_STATE dslPrevLinkState, UINT32 ulParm);
 
 typedef struct {
 	int		nStatus;		/* Total number of statuses saved */

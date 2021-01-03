@@ -26,6 +26,10 @@
 #include <asm/uaccess.h>
 #include <asm/byteorder.h>
 
+#ifdef AEI_VDSL_CUSTOMER_QWEST
+#include <board.h>
+#endif
+
 #include "usb.h"
 #include "hcd.h"
 #include "hub.h"
@@ -1415,6 +1419,10 @@ void usb_disconnect(struct usb_device **pdev)
 		return;
 	}
 
+#ifdef AEI_VDSL_CUSTOMER_QWEST
+	kerSysLedCtrl(kLedUsb, kLedStateOff);
+#endif
+
 	/* mark the device as inactive, so any further urb submissions for
 	 * this device (and any of its children) will fail immediately.
 	 * this quiesces everyting except pending urbs.
@@ -2658,6 +2666,10 @@ hub_port_init (struct usb_hub *hub, struct usb_device *udev, int port1,
 	}
 
 	retval = 0;
+
+#ifdef AEI_VDSL_CUSTOMER_QWEST
+	kerSysLedCtrl(kLedUsb, kLedStateOn);
+#endif
 
 fail:
 	if (retval) {

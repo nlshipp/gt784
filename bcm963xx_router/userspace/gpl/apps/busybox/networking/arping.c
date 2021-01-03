@@ -26,6 +26,12 @@
 
 #include "busybox.h"
 
+#if defined(AEI_VDSL_SMARTDMZ)
+#include "cms_msg.h"
+#include "cms_util.h"
+#include "cms_log.h"
+#endif
+
 #define APPLET_NAME "arping"
 
 static struct in_addr src;
@@ -60,6 +66,42 @@ static void set_signal(int signo, void (*handler) (void))
 	sa.sa_handler = (void (*)(int)) handler;
 	sa.sa_flags = SA_RESTART;
 	sigaction(signo, &sa, NULL);
+}
+#endif
+
+#if defined(AEI_VDSL_SMARTDMZ)
+static void *msgHandle=NULL;
+static int telus_only = 0;
+char* glbIpAdder = NULL;
+/*Send arp response msg to SSK*/
+void sendArpResultForArping(int nResult,char *ipadder)
+{
+   char buf[sizeof(CmsMsgHeader) + 129]={0};
+   CmsMsgHeader *msg=(CmsMsgHeader *) buf;
+   char *tmpIpadder = (char*)(msg+1);
+   int strLength = 0;
+   CmsRet ret;
+   if(ipadder == NULL) return;
+   strLength = snprintf(tmpIpadder,128, "%s",ipadder);
+
+   msg->type = CMS_MSG_ARPING_RETURN_DATA;
+   msg->src = EID_ARPING;
+   msg->dst = EID_SSK;
+   msg->flags_event = 1;
+   msg->wordData = nResult;
+   msg->dataLength = strLength;
+
+   if ((ret = cmsMsg_send(msgHandle, msg)) != CMSRET_SUCCESS)
+   {
+      cmsLog_error("could not send out CMS_MSG_ARPING_RETURN_DATA to SSK");
+   }
+   else
+   {
+      cmsLog_debug("sent out CMS_MSG_ARPING_RETURN_DATA to SSK");
+      cmsLog_debug("++++++++++++arping result:(%d,%s)\n",nResult,ipadder);
+   }
+   cmsMsg_cleanup(&msgHandle);
+   return;
 }
 #endif
 
@@ -122,6 +164,9 @@ void finish(void)
 		putchar('\n');
 		fflush(stdout);
 	}
+#ifdef AEI_VDSL_SMARTDMZ
+	if(telus_only) sendArpResultForArping((received >= 1) ? 0 : 1,glbIpAdder);
+#endif
 	if (dad)
 		exit(!!received);
 	if (unsolicited)
@@ -268,15 +313,23 @@ int arping_main(int argc, char **argv)
 	char *device = "eth0";
 	int ifindex = 0;
 	char *source = NULL;
-	char *target;
+	char *target ;
 
 	s = socket(PF_PACKET, SOCK_DGRAM, 0);
 	socket_errno = errno;
 
 	setuid(uid);
-
+#if defined(AEI_VDSL_SMARTDMZ)
+	while ((ch = getopt(argc, argv, "th?bfDUAqc:w:s:I:")) != EOF) {
+#else
 	while ((ch = getopt(argc, argv, "h?bfDUAqc:w:s:I:")) != EOF) {
-		switch (ch) {
+#endif
+	    switch (ch) {
+#if defined(AEI_VDSL_SMARTDMZ)
+		case 't':
+			telus_only = 1;
+			break;
+#endif
 		case 'b':
 			broadcast_only = 1;
 			break;
@@ -328,10 +381,30 @@ int arping_main(int argc, char **argv)
 	if (argc != 1)
 		bb_show_usage();
 
+/*init EID_ARPING APP*/
+#if defined(AEI_VDSL_SMARTDMZ)
+	cmsLog_init(EID_ARPING);
+   	cmsLog_setLevel(DEFAULT_LOG_LEVEL);
+        cmsMsg_init(EID_ARPING, &msgHandle);
+#endif
 	target = *argv;
+/*make a custom arp request flag*/
+#ifdef AEI_VDSL_SMARTDMZ
+	char strDeviceInf[32] = "br0";
+	if(telus_only) 
+	{
+	   glbIpAdder = *argv;
+	   device = strDeviceInf;
+	   timeout = 1;
+	   quiet++;
+	}
+#endif
 
 
 	if (s < 0) {
+#ifdef AEI_VDSL_SMARTDMZ
+	if(telus_only) sendArpResultForArping(1,glbIpAdder);
+#endif
 		bb_error_msg("socket");
 		exit(socket_errno);
 	}
@@ -342,20 +415,32 @@ int arping_main(int argc, char **argv)
 		memset(&ifr, 0, sizeof(ifr));
 		strncpy(ifr.ifr_name, device, IFNAMSIZ - 1);
 		if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
+#ifdef AEI_VDSL_SMARTDMZ
+	if(telus_only) sendArpResultForArping(1,glbIpAdder);
+#endif
 			bb_error_msg("Interface %s not found", device);
 			exit(2);
 		}
 		ifindex = ifr.ifr_ifindex;
 
 		if (ioctl(s, SIOCGIFFLAGS, (char *) &ifr)) {
+#ifdef AEI_VDSL_SMARTDMZ
+	if(telus_only) sendArpResultForArping(1,glbIpAdder);
+#endif
 			bb_error_msg("SIOCGIFFLAGS");
 			exit(2);
 		}
 		if (!(ifr.ifr_flags & IFF_UP)) {
+#ifdef AEI_VDSL_SMARTDMZ
+	if(telus_only) sendArpResultForArping(1,glbIpAdder);
+#endif
 			bb_error_msg("Interface %s is down", device);
 			exit(2);
 		}
 		if (ifr.ifr_flags & (IFF_NOARP | IFF_LOOPBACK)) {
+#ifdef AEI_VDSL_SMARTDMZ
+	if(telus_only) sendArpResultForArping(1,glbIpAdder);
+#endif
 			bb_error_msg("Interface %s is not ARPable", device);
 			exit(dad ? 0 : 2);
 		}
@@ -366,6 +451,9 @@ int arping_main(int argc, char **argv)
 
 		hp = gethostbyname2(target, AF_INET);
 		if (!hp) {
+#ifdef AEI_VDSL_SMARTDMZ
+	if(telus_only) sendArpResultForArping(1,glbIpAdder);
+#endif
 			bb_error_msg("invalid or unknown target %s", target);
 			exit(2);
 		}
@@ -373,6 +461,9 @@ int arping_main(int argc, char **argv)
 	}
 
 	if (source && !inet_aton(source, &src)) {
+#ifdef AEI_VDSL_SMARTDMZ
+	if(telus_only) sendArpResultForArping(1,glbIpAdder);
+#endif
 		bb_error_msg("invalid source address %s", source);
 		exit(2);
 	}
@@ -385,6 +476,9 @@ int arping_main(int argc, char **argv)
 		int probe_fd = socket(AF_INET, SOCK_DGRAM, 0);
 
 		if (probe_fd < 0) {
+#ifdef AEI_VDSL_SMARTDMZ
+	if(telus_only) sendArpResultForArping(1,glbIpAdder);
+#endif
 			bb_error_msg("socket");
 			exit(2);
 		}
@@ -399,6 +493,9 @@ int arping_main(int argc, char **argv)
 		if (src.s_addr) {
 			saddr.sin_addr = src;
 			if (bind(probe_fd, (struct sockaddr *) &saddr, sizeof(saddr)) == -1) {
+#ifdef AEI_VDSL_SMARTDMZ
+	if(telus_only) sendArpResultForArping(1,glbIpAdder);
+#endif
 				bb_error_msg("bind");
 				exit(2);
 			}
@@ -415,11 +512,17 @@ int arping_main(int argc, char **argv)
 				perror("WARNING: setsockopt(SO_DONTROUTE)");
 			if (connect(probe_fd, (struct sockaddr *) &saddr, sizeof(saddr))
 				== -1) {
+#ifdef AEI_VDSL_SMARTDMZ
+	if(telus_only) sendArpResultForArping(1,glbIpAdder);
+#endif
 				bb_error_msg("connect");
 				exit(2);
 			}
 			if (getsockname(probe_fd, (struct sockaddr *) &saddr, &alen) ==
 				-1) {
+#ifdef AEI_VDSL_SMARTDMZ
+	if(telus_only) sendArpResultForArping(1,glbIpAdder);
+#endif
 				bb_error_msg("getsockname");
 				exit(2);
 			}
@@ -433,6 +536,9 @@ int arping_main(int argc, char **argv)
 	me.sll_protocol = htons(ETH_P_ARP);
 	if (bind(s, (struct sockaddr *) &me, sizeof(me)) == -1) {
 		bb_error_msg("bind");
+#ifdef AEI_VDSL_SMARTDMZ
+	if(telus_only) sendArpResultForArping(1,glbIpAdder);
+#endif
 		exit(2);
 	}
 
@@ -440,11 +546,17 @@ int arping_main(int argc, char **argv)
 		int alen = sizeof(me);
 
 		if (getsockname(s, (struct sockaddr *) &me, &alen) == -1) {
+#ifdef AEI_VDSL_SMARTDMZ
+	if(telus_only) sendArpResultForArping(1,glbIpAdder);
+#endif
 			bb_error_msg("getsockname");
 			exit(2);
 		}
 	}
 	if (me.sll_halen == 0) {
+#ifdef AEI_VDSL_SMARTDMZ
+	if(telus_only) sendArpResultForArping(1,glbIpAdder);
+#endif
 		bb_error_msg("Interface \"%s\" is not ARPable (no ll address)", device);
 		exit(dad ? 0 : 2);
 	}
@@ -458,6 +570,9 @@ int arping_main(int argc, char **argv)
 	}
 
 	if (!src.s_addr && !dad) {
+#ifdef AEI_VDSL_SMARTDMZ
+	if(telus_only) sendArpResultForArping(1,glbIpAdder);
+#endif
 		bb_error_msg("no src address in the non-DAD mode");
 		exit(2);
 	}

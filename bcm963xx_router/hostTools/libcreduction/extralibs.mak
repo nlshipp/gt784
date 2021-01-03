@@ -18,8 +18,9 @@ ifneq ($(strip $(BUILD_VODSL)),)
 endif
 
 ifneq ($(strip $(BUILD_OPROFILE)),)
-	TARGETS += $(LIBDIR)/libstdc++.so.6
-	TARGETS += $(LIBDIR)/libgcc_s.so.1
+	TARGETS += $(EXTRALIBDIR)/libstdc++.so.6
 	TARGETS += $(LIBDIR)/libm.so.0	
+	TARGETS += $(EXTRALIBDIR)/libgcc_s.so.1
+	TARGETS += $(LIBDIR)/libpthread.so.0
 endif
 

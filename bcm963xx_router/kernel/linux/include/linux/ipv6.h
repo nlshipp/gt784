@@ -26,6 +26,10 @@ struct in6_ifreq {
 	struct in6_addr	ifr6_addr;
 	__u32		ifr6_prefixlen;
 	int		ifr6_ifindex; 
+#ifdef ACTION_TEC_IPV6_CODE_FOR_IOT
+        u_int32_t ifr6_vltime;
+        u_int32_t ifr6_pltime;
+#endif 
 };
 
 #define IPV6_SRCRT_STRICT	0x01	/* Deprecated; will be removed */

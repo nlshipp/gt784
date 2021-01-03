@@ -44,10 +44,20 @@
 #include "fap4ke_memory.h"
 #endif
 
-#define CC_BCM_PKTDMA_DEBUG
+//#define CC_BCM_PKTDMA_DEBUG
 
 /* TX Buffer sources supported by bcmPktDma Lib */
-enum { HOST_VIA_LINUX=0, HOST_VIA_DQM, HOST_VIA_DQM_4KE_FREE, FAP_XTM_RX, FAP_ETH_RX };
+/* Add code for buffer quick free between enet and xtm - June 2010 */
+enum { HOST_VIA_LINUX=0,
+       HOST_VIA_DQM,
+       FAP_XTM_RX,
+       FAP_ETH_RX };
+
+/* TX DMA versions supported by bcmPktDma Lib. This is required in case of
+ * BCM6368 running non-bonding/bonding. For non-bonding only HW_DMA is used and
+ * for bonding both SW/HW DMA are used.
+ */
+enum {XTM_HW_DMA=0, XTM_SW_DMA=1} ;
 
 extern BcmEnet_devctrl *               g_pEnetDevCtrl;
 #ifndef CONFIG_BCM96816
@@ -93,13 +103,15 @@ extern int *                           g_pEnetrxchannel_isr_enable;
 #define bcmPktDma_XtmFreeXmitBuf          bcmPktDma_XtmFreeXmitBuf_Iudma
 #define bcmPktDma_XtmXmitAvailable        bcmPktDma_XtmXmitAvailable_Iudma
 #define bcmPktDma_XtmXmit                 bcmPktDma_XtmXmit_Iudma
+#define bcmPktDma_XtmXmitSwdmaToIudma     bcmPktDma_XtmXmit_Swdma_to_Iudma
 #define bcmPktDma_XtmTxEnable             bcmPktDma_XtmTxEnable_Iudma
 #define bcmPktDma_XtmTxDisable            bcmPktDma_XtmTxDisable_Iudma
 #define bcmPktDma_XtmRxEnable             bcmPktDma_XtmRxEnable_Iudma
 #define bcmPktDma_XtmFreeXmitBufGet       bcmPktDma_XtmFreeXmitBufGet_Iudma
+#define bcmPktDma_XtmForceFreeXmitBufGet  bcmPktDma_XtmForceFreeXmitBufGet_Iudma
 #define bcmPktDma_XtmRxDisable            bcmPktDma_XtmRxDisable_Iudma
 
-#define bcmPktDma_XtmCreateDevice(_devId, _encapType)
+#define bcmPktDma_XtmCreateDevice(_devId, _encapType, _headerLen)
 #define bcmPktDma_XtmLinkUp(_devId, _matchId)
 
 #else /* FAP is compiled in */
@@ -140,9 +152,10 @@ extern int *                           g_pEnetrxchannel_isr_enable;
 #define bcmPktDma_XtmRxEnable             bcmPktDma_XtmRxEnable_Dqm
 #define bcmPktDma_XtmRxDisable            bcmPktDma_XtmRxDisable_Dqm
 #define bcmPktDma_XtmFreeXmitBufGet       bcmPktDma_XtmFreeXmitBufGet_Dqm
+#define bcmPktDma_XtmForceFreeXmitBufGet  bcmPktDma_XtmForceFreeXmitBufGet_Dqm
 
-#define bcmPktDma_XtmCreateDevice(_devId, _encapType)   \
-    bcmPktDma_XtmCreateDevice_Dqm(_devId, _encapType) 
+#define bcmPktDma_XtmCreateDevice(_devId, _encapType, _headerLen)  \
+    bcmPktDma_XtmCreateDevice_Dqm(_devId, _encapType, _headerLen)
 
 #define bcmPktDma_XtmLinkUp(_devId, _matchId)   \
     bcmPktDma_XtmLinkUp_Dqm(_devId, _matchId)
@@ -196,6 +209,7 @@ extern BcmPktDma_LocalEthTxDma *g_pEthTxDma[NUM_TXDMA_CHANNELS];
 extern BcmPktDma_LocalXtmRxDma *g_pXtmRxDma[MAX_RECEIVE_QUEUES]; 
 extern BcmPktDma_LocalXtmTxDma *g_pXtmTxDma[MAX_TRANSMIT_QUEUES];
 #endif
+extern BcmPktDma_LocalXtmTxDma *g_pXtmSwTxDma[MAX_TRANSMIT_QUEUES];
 
 /*
  * Inline functions
@@ -496,16 +510,22 @@ static inline BOOL bcmPktDma_EthFreeXmitBufGet_Iudma(int channel, uint32 *pKey,
 -------------------------------------------------------------------------- */
 static inline BOOL bcmPktDma_XtmFreeXmitBufGet_Iudma(int channel, uint32 *pKey,
                                                      uint32 *pTxSource, uint32 *pTxAddr,
-                                                     uint32 *pRxChannel)
+                                                     uint32 *pRxChannel,
+                                                     uint32 dmaType,
+                                                     uint32 noGlobalBufAccount)
 {
     BcmPktDma_LocalXtmTxDma *txdma;
     BOOL ret = FALSE;
     int  bdIndex;
+    BcmPktDma_LocalXtmTxDma **ppXtmTxDma ;
 
     //FAP4KE_IUDMA_PMON_DECLARE();
     //FAP4KE_IUDMA_PMON_BEGIN(FAP4KE_PMON_ID_IUDMA_FREEXMITBUFGET);
 
-    txdma = g_pXtmTxDma[channel];
+
+    ppXtmTxDma = (dmaType == XTM_HW_DMA) ? g_pXtmTxDma : g_pXtmSwTxDma ;
+
+    txdma = ppXtmTxDma[channel];
     bdIndex = txdma->txHeadIndex;
     *pKey = 0;
 #if defined(CONFIG_BCM_FAP) || defined(CONFIG_BCM_FAP_MODULE)
@@ -538,6 +558,7 @@ static inline BOOL bcmPktDma_XtmFreeXmitBufGet_Iudma(int channel, uint32 *pKey,
            txdma->ulNumTxBufsQdOne--;
 #if !defined(CONFIG_BCM96816) && !defined(CONFIG_BCM96362)
            // FIXME - Which chip uses more then one TX queue?
+           if (!noGlobalBufAccount)
            g_pXtmGlobalInfo->ulNumTxBufsQdAll--;
 #endif
 
@@ -627,17 +648,18 @@ static inline int bcmPktDma_XtmFreeRecvBuf_Iudma(int channel, unsigned char *pBu
     dmaDesc.length = RX_BUF_LEN;
 
     if (tail_idx == (rxdma->numRxBds - 1)) {
-        dmaDesc.status = DMA_OWN | DMA_WRAP;
-        rxdma->rxTailIndex = 0;
+       dmaDesc.status = DMA_OWN | DMA_WRAP;
+       rxdma->rxTailIndex = 0;
     } else {
-        dmaDesc.status = DMA_OWN;
-        rxdma->rxTailIndex = tail_idx + 1;
+       dmaDesc.status = DMA_OWN;
+       rxdma->rxTailIndex = tail_idx + 1;
     }
-    
+
     rxBd->address = (uint32)VIRT_TO_PHY(pBuf);
     rxBd->word0 = dmaDesc.word0;
 
     rxdma->rxAssignedBds++;
+
     if(rxdma->rxEnabled)
     {   /* Do not reenable if Host MIPs has shut the interface down */
         rxdma->rxDma->cfg = DMA_ENABLE;
@@ -839,17 +861,22 @@ static inline int bcmPktDma_EthXmitNoCheck_Iudma(int channel, uint8 *pBuf, uint1
 -------------------------------------------------------------------------- */
 static inline int bcmPktDma_XtmXmit_Iudma(int channel, uint8 *pBuf, uint16 len,
                                           int bufSource, uint16 dmaStatus, uint32 key,
-                                          int param1)
+                                          int param1, uint32 dmaType,
+                                          uint32 noGlobalBufAccount)
 {
     BcmPktDma_LocalXtmTxDma *txdma;
     DmaDesc                  dmaDesc;
     volatile DmaDesc        *txBd;
     int                      txIndex;
+    BcmPktDma_LocalXtmTxDma **ppXtmTxDma ;
+
     
     //FAP4KE_IUDMA_PMON_DECLARE();
     //FAP4KE_IUDMA_PMON_BEGIN(FAP4KE_PMON_ID_IUDMA_XMIT);
 
-    txdma = g_pXtmTxDma[channel];
+    ppXtmTxDma = (dmaType == XTM_HW_DMA) ? g_pXtmTxDma : g_pXtmSwTxDma ;
+
+    txdma = ppXtmTxDma[channel];
 
     if (txdma->txFreeBds == 0) return 0;   /* No free tx BDs. Return Fail */
     if (txdma->txEnabled == 0) return 0;   /* Channel is down */
@@ -863,6 +890,7 @@ static inline int bcmPktDma_XtmXmit_Iudma(int channel, uint8 *pBuf, uint16 len,
     txdma->ulNumTxBufsQdOne++;
 #if !defined(CONFIG_BCM96816) && !defined(CONFIG_BCM96362)
        // FIXME - Which chip uses more then one TX queue?
+    if (!noGlobalBufAccount)
     g_pXtmGlobalInfo->ulNumTxBufsQdAll++;
 #endif
 
@@ -910,7 +938,11 @@ static inline int bcmPktDma_XtmXmit_Iudma(int channel, uint8 *pBuf, uint16 len,
 #endif
 
 
-    /* Enable DMA for this channel */
+    /* Enable DMA for this channel.
+     * Software DMA are controlled using this "cfg" field more at the whole DMA
+     * enable/disable operation level as opposed to being at every packet
+     */
+    if (dmaType == XTM_HW_DMA)
     txdma->txDma->cfg = DMA_ENABLE;
 
     //FAP4KE_IUDMA_PMON_END(FAP4KE_PMON_ID_IUDMA_XMIT);
@@ -918,6 +950,77 @@ static inline int bcmPktDma_XtmXmit_Iudma(int channel, uint8 *pBuf, uint16 len,
     return 1;
 }
 
+/* --------------------------------------------------------------------------
+    Name: bcmPktDma_XtmXmitSwdmaToIudma
+ Purpose: Xmit the DmaDesc contents from SW DMA to HW DMA. Done by
+          BCM6368 SW Scheduler. 
+   Notes: param1 = gemid;   param2 = port_id; param3 = egress_queue 
+  Return: 1 on success; 0 otherwise
+-------------------------------------------------------------------------- */
+static inline int bcmPktDma_XtmXmit_Swdma_to_Iudma(int channel, DmaDesc dmaDesc,
+                                                   uint32 key)
+{
+    BcmPktDma_LocalXtmTxDma *txdma;
+    volatile DmaDesc        *txBd;
+    int                      txIndex;
+
+    txdma = g_pXtmTxDma[channel];
+
+    if (txdma->txFreeBds == 0) return 0;   /* No free tx BDs. Return Fail */
+    if (txdma->txEnabled == 0) return 0;   /* Channel is down */
+
+    txIndex = txdma->txTailIndex;
+
+    /* Decrement total BD count */
+    txdma->txFreeBds--;
+    txdma->ulNumTxBufsQdOne++;
+
+    txdma->txRecycle[txIndex].key = key;
+    
+    txBd = &txdma->txBds[txIndex];
+
+    dmaDesc.status &= ~DMA_WRAP ;
+
+    /* advance BD pointer to next in the chain. */
+    if (txIndex == (txdma->ulQueueSize - 1))
+    {
+        dmaDesc.status = dmaDesc.status | DMA_WRAP;
+        txdma->txTailIndex = 0;
+#if defined(ENABLE_BCMPKTDMA_IUDMA_ERROR_CHECKING)
+        BCM_XTM_TX_DEBUG("Tx BD: dma_status: %x\n", dmaDesc.status);
+#endif
+    }
+    else
+    {
+        txdma->txTailIndex++;
+#if defined(ENABLE_BCMPKTDMA_IUDMA_ERROR_CHECKING)
+        BCM_XTM_TX_DEBUG("Tx BD: dma_status: %x idx: %d\n", dmaDesc.status, txdma->txTailIndex);
+#endif
+    }
+
+    txBd->address = dmaDesc.address ;
+    txBd->word0 = dmaDesc.word0;
+
+#if defined(ENABLE_BCMPKTDMA_IUDMA_ERROR_CHECKING)
+    BCM_XTM_TX_DEBUG("key: 0x%08x\n", (int)key);
+    BCM_XTM_TX_DEBUG("TX BD: address=0x%08x\n", (int)VIRT_TO_PHY(pBuf) );
+    BCM_XTM_TX_DEBUG("Tx BD: length=%u\n", len);
+    BCM_XTM_TX_DEBUG("Tx BD: word0=%ld \n", dmaDesc.word0);
+
+    BCM_XTM_TX_DEBUG("Enabling Tx DMA \n\n");
+#endif
+
+
+    /* Enable DMA for this channel.
+     * Software DMA are controlled using this "cfg" field more at the whole DMA
+     * enable/disable operation level as opposed to being at every packet
+     */
+    txdma->txDma->cfg = DMA_ENABLE;
+
+    //FAP4KE_IUDMA_PMON_END(FAP4KE_PMON_ID_IUDMA_XMIT);
+
+    return 1;
+}
 
 static inline int bcmPktDma_EthXmitFreeCount_Iudma(int channel) 
 {
@@ -926,10 +1029,13 @@ static inline int bcmPktDma_EthXmitFreeCount_Iudma(int channel)
     return txdma->txFreeBds;
 }
 
-static inline int bcmPktDma_XtmXmitFreeCount_Iudma(int channel) 
+static inline int bcmPktDma_XtmXmitFreeCount_Iudma(int channel, uint32 dmaType) 
 {
-    BcmPktDma_LocalXtmTxDma *txdma = g_pXtmTxDma[channel];
+   BcmPktDma_LocalXtmTxDma **ppXtmTxDma ;
+   BcmPktDma_LocalXtmTxDma *txdma ;
 
+   ppXtmTxDma = (dmaType == XTM_HW_DMA) ? g_pXtmTxDma : g_pXtmSwTxDma ;
+   txdma = ppXtmTxDma[channel];
     return txdma->txFreeBds;
 }
 
@@ -969,13 +1075,15 @@ int bcmPktDma_XtmInitRxChan_Dqm( uint32 channel,
 
 int bcmPktDma_XtmInitTxChan_Iudma( uint32 channel,
                                    uint32 bufDescrs,
-                                   BcmPktDma_LocalXtmTxDma *pXtmTxDma);
+                                   BcmPktDma_LocalXtmTxDma *pXtmTxDma,
+                                   uint32 dmaType);
 
 int bcmPktDma_XtmInitTxChan_Dqm( uint32 channel,
                                    uint32 bufDescrs,
-                                   BcmPktDma_LocalXtmTxDma *pXtmTxDma);
+                                   BcmPktDma_LocalXtmTxDma *pXtmTxDma,
+                                   uint32 dmaTypeUnused);
 
-int bcmPktDma_XtmCreateDevice_Dqm(uint32 devId, uint32 encapType);
+int bcmPktDma_XtmCreateDevice_Dqm(uint32 devId, uint32 encapType, uint32 headerLen);
 int bcmPktDma_XtmLinkUp_Dqm(uint32 devId, uint32 matchId);
   
 int bcmPktDma_EthInit_Dqm( BcmPktDma_LocalEthRxDma **pEthRxDma,
@@ -1004,18 +1112,22 @@ uint32  bcmPktDma_XtmRecv_Iudma(int channel, unsigned char **pBuf, int * pLen);
 void    bcmPktDma_XtmFreeXmitBuf_Iudma(int channel, int index);
 
 int     bcmPktDma_EthXmitAvailable_Iudma(int channel);
-int     bcmPktDma_XtmXmitAvailable_Iudma(int channel);
+int     bcmPktDma_XtmXmitAvailable_Iudma(int channel, uint32 dmaType);
 
 int     bcmPktDma_EthXmit_Iudma(int channel, uint8 *pBuf, uint16 len, int bufSource, uint16 dmaStatus, uint32 key, int param1);
-int     bcmPktDma_XtmXmit_Iudma(int channel, uint8 *pBuf, uint16 len, int bufSource, uint16 dmaStatus, uint32 key, int param1);
+int     bcmPktDma_XtmXmit_Iudma(int channel, uint8 *pBuf, uint16 len, int bufSource, uint16 dmaStatus, uint32 key, int param1,
+                                uint32 dmaType, uint32 noGlobalBufAccount);
+
+int     bcmPktDma_XtmXmit_Swdma_to_Iudma(int channel, DmaDesc dmaDesc, uint32 key) ;
 
 int     bcmPktDma_EthTxEnable_Iudma(int channel);
 #ifndef CONFIG_BCM96816
-int     bcmPktDma_XtmTxEnable_Iudma(int channel, PDEV_PARAMS pDevParams);
+int     bcmPktDma_XtmTxEnable_Iudma(int channel, PDEV_PARAMS pDevParams, uint32 dmaType);
 #endif
 
 int     bcmPktDma_EthTxDisable_Iudma(int channel);
-int     bcmPktDma_XtmTxDisable_Iudma(int channel);
+int     bcmPktDma_XtmTxDisable_Iudma(int channel, uint32 dmaType, void (*func) (uint32 param1,
+         BcmPktDma_XtmTxDma *txdma), uint32 param1);
 
 int     bcmPktDma_EthRxEnable_Iudma(int channel);
 int     bcmPktDma_XtmRxEnable_Iudma(int channel);
@@ -1027,7 +1139,8 @@ int     bcmPktDma_EthRxReEnable_Iudma(int channel);
 
 BOOL bcmPktDma_XtmForceFreeXmitBufGet_Iudma(int channel, uint32 *pKey,
                                             uint32 *pTxSource, uint32 *pTxAddr,
-                                            uint32 *pRxChannel);
+                                            uint32 *pRxChannel, uint32 dmaType,
+                                            uint32 noGlobalBufAccount);
 
 /* DQM versions */
 int     bcmPktDma_EthSelectRxIrq_Dqm(int channel);
@@ -1049,20 +1162,22 @@ void    bcmPktDma_EthFreeXmitBuf_Dqm(int channel, int index);
 void    bcmPktDma_XtmFreeXmitBuf_Dqm(int channel, int index);
 
 int     bcmPktDma_EthXmitAvailable_Dqm(int channel) ;
-int     bcmPktDma_XtmXmitAvailable_Dqm(int channel) ;
+int     bcmPktDma_XtmXmitAvailable_Dqm(int channel, uint32 dmaTypeUnused) ;
 
 int     bcmPktDma_EthXmit_Dqm(int channel, uint8 *pBuf, uint16 len, int bufSource, uint16 dmaStatus, uint32 key, int param1);
 void    bcmPktDma_EthXmitNoCheck_Dqm(int channel, uint8 *pBuf, uint16 len, int bufSource, uint16 dmaStatus,  uint32 key, int param1);
 
-int     bcmPktDma_XtmXmit_Dqm(int channel, uint8 *pBuf, uint16 len, int bufSource, uint16 dmaStatus, uint32 key, int param1);
+int     bcmPktDma_XtmXmit_Dqm(int channel, uint8 *pBuf, uint16 len, int bufSource, uint16 dmaStatus, uint32 key, int param1,
+                              uint32 dmaTypeUnUsed, uint32 noGlobalBufAccount);
 
 int     bcmPktDma_EthTxEnable_Dqm(int channel);
 #ifndef CONFIG_BCM96816
-int     bcmPktDma_XtmTxEnable_Dqm(int channel, PDEV_PARAMS pDevParams);
+int     bcmPktDma_XtmTxEnable_Dqm(int channel, PDEV_PARAMS pDevParams, uint32 dmaTypeUnused);
 #endif
 
 int     bcmPktDma_EthTxDisable_Dqm(int channel);
-int     bcmPktDma_XtmTxDisable_Dqm(int channel);
+int     bcmPktDma_XtmTxDisable_Dqm(int channel, uint32 dmaTypeUnused, void (*func)(uint32 param1, 
+            BcmPktDma_XtmTxDma *txdma), uint32 param1);
 
 int     bcmPktDma_EthRxEnable_Dqm(int channel);
 int     bcmPktDma_XtmRxEnable_Dqm(int channel);
@@ -1073,7 +1188,12 @@ int     bcmPktDma_XtmRxDisable_Dqm(int channel);
 BOOL    bcmPktDma_EthFreeXmitBufGet_Dqm(int channel, uint32 *pKey, uint32 *pTxSource,
                                         uint32 *pTxAddr, uint32 *pRxChannel);
 BOOL    bcmPktDma_XtmFreeXmitBufGet_Dqm(int channel, uint32 *pKey, uint32 *pTxSource,
-                                        uint32 *pTxAddr, uint32 *rxChannel);
+                                        uint32 *pTxAddr, uint32 *rxChannel,
+                                        uint32 dmaType, uint32 noGlobalBufAccount);
+
+BOOL    bcmPktDma_XtmForceFreeXmitBufGet_Dqm(int channel, uint32 *pKey, uint32 *pTxSource,
+                                        uint32 *pTxAddr, uint32 *rxChannel,
+                                        uint32 dmaType, uint32 noGlobalBufAccount);
 
 int     bcmPktDma_EthRxReEnable_Dqm(int channel);
 
@@ -1095,5 +1215,11 @@ DmaDesc * bcmPktDma_EthAllocRxBds(int channel, int numBds);
 DmaDesc * bcmPktDma_XtmAllocTxBds(int channel, int numBds);
 DmaDesc * bcmPktDma_XtmAllocRxBds(int channel, int numBds);
 
+/* Add code for buffer quick free between enet and xtm - June 2010 */
+/* Calls directed through bcmPktDma due to linking restrictions between enet and xtm loaded drivers */
+void bcmPktDma_set_enet_recycle(RecycleFuncP enetRecycle);
+RecycleFuncP bcmPktDma_get_enet_recycle(void);
+void bcmPktDma_set_xtm_recycle(RecycleFuncP xtmRecycle);
+RecycleFuncP bcmPktDma_get_xtm_recycle(void);
 
 #endif  /* defined(__PKTDMA_H_INCLUDED__) */

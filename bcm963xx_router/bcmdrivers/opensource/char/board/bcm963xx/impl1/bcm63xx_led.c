@@ -49,7 +49,7 @@
 #define kLedRed             1
 
 // uncomment // for debug led
-// #define DEBUG_LED
+// #define DEBUG_LED 1
 
 typedef int (*BP_LED_FUNC) (unsigned short *);
 
@@ -72,7 +72,13 @@ static BP_LED_INFO bpLedInfo[] =
     {kLedSecAdsl, BpGetSecAdslLedGpio, BpGetSecAdslFailLedGpio},
     {kLedHpna, BpGetHpnaLedGpio, NULL},
     {kLedWanData, BpGetWanDataLedGpio, BpGetWanErrorLedGpio},
-    {kLedSes, BpGetWirelessSesLedGpio, NULL},
+
+#if defined(AEI_VDSL_CUSTOMER_NCS) && defined(CONFIG_BCM96328)
+//#if defined(AEI_ADSL_CUSTOMER_QWEST_L5000)
+    {kLedSes, BpGetWirelessSesLedGpio, BpGetWirelessSesLedGpiofail},
+#else
+    {kLedSes, BpGetWirelessSesLedGpio, BpGetWirelessFailSesLedGpio},
+#endif
     {kLedVoip, BpGetVoipLedGpio, NULL},
     {kLedVoip1, BpGetVoip1LedGpio, BpGetVoip1FailLedGpio},
     {kLedVoip2, BpGetVoip2LedGpio, BpGetVoip2FailLedGpio},
@@ -80,6 +86,10 @@ static BP_LED_INFO bpLedInfo[] =
     {kLedDect, BpGetDectLedGpio, NULL},
     {kLedGpon, BpGetGponLedGpio, BpGetGponFailLedGpio},
     {kLedMoCA, BpGetMoCALedGpio, BpGetMoCAFailLedGpio},
+#ifdef AEI_VDSL_CUSTOMER_NCS
+    {kLedUsb, BpGetUsbLedGpio, NULL},
+    {kLedPower, BpGetBootloaderPowerOnLedGpio, BpGetBootloaderStopLedGpio},
+#endif
     {kLedEnd, NULL, NULL}
 };
 
@@ -132,12 +142,33 @@ static void setLed (PLED_CTRL pLed, unsigned short led_state, unsigned short led
 #endif
 
 #if defined(CONFIG_BCM96328) || defined(CONFIG_BCM96362)
+#if defined(AEI_VDSL_CUSTOMER_NCS) && defined(CONFIG_BCM96328)
+//#if defined(AEI_ADSL_CUSTOMER_QWEST_L5000)
+	if((led_gpio & 0xff) <= 23){ /*0~23 normal LED,it's controlled by ledMode*/
+		LED->ledMode &= ~(LED_MODE_MASK << GPIO_NUM_TO_LED_MODE_SHIFT(led_gpio));
+		if( gpio_state )
+			LED->ledMode |= (LED_MODE_OFF << GPIO_NUM_TO_LED_MODE_SHIFT(led_gpio));
+		else
+			LED->ledMode |= (LED_MODE_ON << GPIO_NUM_TO_LED_MODE_SHIFT(led_gpio));
+	}
+	else{ 
+		/*GPIO 29 : WPS LED GREEN,,,GPIO 31 : WPS LED RED
+		 * GPIO->GPIOio controls on&off for WPS LED ,bit[29],bit[31]
+		 * GPIO->GPIODir controls Enable&Disable for WPS LED,bit[29],bit[31]
+		 * */
+        GPIO->GPIODir |= GPIO_NUM_TO_MASK(led_gpio);
+        if( gpio_state )
+            GPIO->GPIOio |= GPIO_NUM_TO_MASK(led_gpio);
+        else
+            GPIO->GPIOio &= ~GPIO_NUM_TO_MASK(led_gpio);
+	}
+#else
     LED->ledMode &= ~(LED_MODE_MASK << GPIO_NUM_TO_LED_MODE_SHIFT(led_gpio));
     if( gpio_state )
         LED->ledMode |= (LED_MODE_OFF << GPIO_NUM_TO_LED_MODE_SHIFT(led_gpio));
     else
         LED->ledMode |= (LED_MODE_ON << GPIO_NUM_TO_LED_MODE_SHIFT(led_gpio));
-
+#endif
 #else
     if (led_gpio & BP_GPIO_SERIAL) {
         while (GPIO->SerialLedCtrl & SER_LED_BUSY);
@@ -167,9 +198,23 @@ static void ledToggle(PLED_CTRL pLed)
         return;
 
 #if defined(CONFIG_BCM96328) || defined(CONFIG_BCM96362)
-    LED->ledMode ^= (LED_MODE_MASK << GPIO_NUM_TO_LED_MODE_SHIFT(led_gpio));
+#if defined(AEI_VDSL_CUSTOMER_NCS) && defined(CONFIG_BCM96328)
+//#if defined(AEI_ADSL_CUSTOMER_QWEST_L5000)
+	if(led_gpio <= 23){ /*0~23 normal LED,it's controlled by ledMode*/
+    	LED->ledMode ^= (LED_MODE_MASK << GPIO_NUM_TO_LED_MODE_SHIFT(led_gpio));
+	}
+	else{ 
+		/*GPIO 29 : WPS LED GREEN,,,GPIO 31 : WPS LED RED
+		 * GPIO->GPIOio controls on&off for WPS LED ,bit[29],bit[31]
+		 * GPIO->GPIODir controls Enable&Disable for WPS LED,bit[29],bit[31]
+		 * */
+        GPIO->GPIODir |= GPIO_NUM_TO_MASK(led_gpio);
+    	GPIO->GPIOio ^= GPIO_NUM_TO_MASK(led_gpio);
+	}
 #else
-
+    LED->ledMode ^= (LED_MODE_MASK << GPIO_NUM_TO_LED_MODE_SHIFT(led_gpio));
+#endif
+#else
     if (led_gpio & BP_GPIO_SERIAL) {
         while (GPIO->SerialLedCtrl & SER_LED_BUSY);
         GPIO->SerialLed ^= GPIO_NUM_TO_MASK(led_gpio);
@@ -178,9 +223,35 @@ static void ledToggle(PLED_CTRL pLed)
         GPIO->GPIODir |= GPIO_NUM_TO_MASK(led_gpio);
         GPIO->GPIOio ^= GPIO_NUM_TO_MASK(led_gpio);
     }
-
 #endif
-}   
+}
+
+#ifdef AEI_VDSL_CUSTOMER_NCS
+static void ledToggleRed(PLED_CTRL pLed)
+{
+    short led_gpio;
+
+    led_gpio = pLed->ledRedGpio;
+
+    if (led_gpio == -1)
+        return;
+
+#if defined(CONFIG_BCM96328) || defined(CONFIG_BCM96362)
+    LED->ledMode ^= (LED_MODE_MASK << GPIO_NUM_TO_LED_MODE_SHIFT(led_gpio));
+#else
+    if (led_gpio & BP_GPIO_SERIAL) {
+        while (GPIO->SerialLedCtrl & SER_LED_BUSY);
+        GPIO->SerialLed ^= GPIO_NUM_TO_MASK(led_gpio);
+    }
+    else {
+        GPIO->GPIODir |= GPIO_NUM_TO_MASK(led_gpio);
+        GPIO->GPIOio ^= GPIO_NUM_TO_MASK(led_gpio);
+    }
+#endif
+}
+#endif 
+
+// led timer.  Will return if timer is already on
 
 // led timer.  Will return if timer is already on
 static void ledTimerStart(void)
@@ -213,16 +284,29 @@ static void ledTimerExpire(void)
     for (i = 0, pCurLed = gLedCtrl; i < kLedEnd; i++, pCurLed++)
     {
 #if defined(DEBUG_LED)
-        printk("led[%d]: Mask=0x%04x, State = %d, blcd=%d\n", i, pCurLed->ledGreenGpio, pCurLed->ledState, pCurLed->blinkCountDown);
+        printk("< %s >led[%d]: Mask=0x%04x, State = %d, blcd=%d\n", __FUNCTION__, i, pCurLed->ledGreenGpio, pCurLed->ledState, pCurLed->blinkCountDown);
 #endif
         spin_lock_irqsave(&brcm_ledlock, flags);        // LEDs can be changed from ISR
         switch (pCurLed->ledState)
         {
         case kLedStateOn:
         case kLedStateOff:
+             pCurLed->blinkCountDown = 0;            // reset the blink count down
+             spin_unlock_irqrestore(&brcm_ledlock, flags);
+             break;
         case kLedStateFail:
-            pCurLed->blinkCountDown = 0;            // reset the blink count down
-            spin_unlock_irqrestore(&brcm_ledlock, flags);
+            pCurLed->blinkCountDown--;
+
+            if (pCurLed->blinkCountDown == 0) {
+#ifndef AEI_VDSL_CUSTOMER_QWEST
+                setLed (pCurLed, kLedOff, kLedRed);
+#endif
+                spin_unlock_irqrestore(&brcm_ledlock, flags);
+            }
+            else  {
+                spin_unlock_irqrestore(&brcm_ledlock, flags);
+                ledTimerStart();
+            }
             break;
 
         case kLedStateSlowBlinkContinues:
@@ -234,6 +318,18 @@ static void ledTimerExpire(void)
             spin_unlock_irqrestore(&brcm_ledlock, flags);
             ledTimerStart();
             break;
+
+#ifdef AEI_VDSL_CUSTOMER_NCS
+        case kLedStateRedSlowBlinkContinues:
+            if (pCurLed->blinkCountDown-- == 0)
+            {
+                pCurLed->blinkCountDown = kSlowBlinkCount;
+                ledToggleRed(pCurLed);
+            }
+            spin_unlock_irqrestore(&brcm_ledlock, flags);
+            ledTimerStart();
+            break;
+#endif
 
         case kLedStateFastBlinkContinues:
             if (pCurLed->blinkCountDown-- == 0)
@@ -329,6 +425,12 @@ void __init boardLedInit(void)
         {
             gLedCtrl[pInfo->ledName].ledRedGpio = gpio;
         }
+
+#ifdef AEI_VDSL_CUSTOMER_NCS
+        if (pInfo->ledName == kLedPower)
+            continue;        
+#endif
+
         setLed(&gLedCtrl[pInfo->ledName], kLedOff, kLedGreen);
         setLed(&gLedCtrl[pInfo->ledName], kLedOff, kLedRed);
     }
@@ -363,8 +465,7 @@ void boardLedCtrl(BOARD_LED_NAME ledName, BOARD_LED_STATE ledState)
         // If the state is kLedStateFail and there is not a failure LED defined
         // in the board parameters, change the state to kLedStateSlowBlinkContinues.
         if( ledState == kLedStateFail && pLed->ledRedGpio == -1 )
-            ledState = kLedStateSlowBlinkContinues;
-
+		 ledState = kLedStateOff;
         // Save current LED state
         pLed->ledState = ledState;
 
@@ -410,12 +511,21 @@ void boardLedCtrl(BOARD_LED_NAME ledName, BOARD_LED_STATE ledState)
 
         case kLedStateFail:
             setLed (pLed, kLedOn, kLedRed);
+            pLed->blinkCountDown = 1000 * kSlowBlinkCount; 
+            ledTimerStart();
             break;
 
         case kLedStateSlowBlinkContinues:
             pLed->blinkCountDown = kSlowBlinkCount;
             ledTimerStart();
             break;
+
+#ifdef AEI_VDSL_CUSTOMER_NCS
+        case kLedStateRedSlowBlinkContinues:
+            pLed->blinkCountDown = kSlowBlinkCount;
+            ledTimerStart();
+            break;
+#endif
 
         case kLedStateFastBlinkContinues:
             pLed->blinkCountDown = kFastBlinkCount;

@@ -5,7 +5,7 @@
  * LICENSE must follow the one in squashfs.
  */
 
-/* $Id: sqmagic.h,v 1.2 2006-11-27 03:54:58 jro Exp $ */
+/* $Id: sqmagic.h,v 1.1.1.1 2010/06/14 22:49:28 tliu Exp $ */
 
 #ifndef __sqmagic_h__
 #define __sqmagic_h__

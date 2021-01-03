@@ -24,8 +24,9 @@ if [ "$firsttime" = "/var/udhcpd/udhcpd.lease*" ]; then
  echo > /var/udhcpd/udhcpd.leases
  ifconfig lo 127.0.0.1 netmask 255.0.0.0 broadcast 127.255.255.255 up
 # /etc/modules_install /lib/modules/$KERNELVER/extra
+ test -e /lib/modules/$KERNELVER/extra/bcm96368wdt.ko && insmod /lib/modules/$KERNELVER/extra/bcm96368wdt.ko
  test -e /lib/modules/$KERNELVER/extra/bcm_log.ko && insmod /lib/modules/$KERNELVER/extra/bcm_log.ko
- test -e /lib/modules/$KERNELVER/extra/pktflow.ko && insmod /lib/modules/$KERNELVER/extra/pktflow.ko
+ test -e /lib/modules/$KERNELVER/extra/pktflow.ko && insmod /lib/modules/$KERNELVER/extra/pktflow.ko fcacheMaxEntries=4096
  test -e /lib/modules/$KERNELVER/extra/pktcmf.ko && insmod /lib/modules/$KERNELVER/extra/pktcmf.ko
  test -e /lib/modules/$KERNELVER/extra/bcmfap.ko && insmod /lib/modules/$KERNELVER/extra/bcmfap.ko
  test -e /etc/cmf/cmfcfg && /etc/cmf/cmfcfg
@@ -64,6 +65,9 @@ if [ "$firsttime" = "/var/udhcpd/udhcpd.lease*" ]; then
  test -e /lib/modules/$KERNELVER/extra/pwrmngtd.ko && insmod /lib/modules/$KERNELVER/extra/pwrmngtd.ko
  test -e /lib/modules/$KERNELVER/kernel/drivers/char/hw_random/rng-core.ko && insmod /lib/modules/$KERNELVER/kernel/drivers/char/hw_random/rng-core.ko
  test -e /lib/modules/$KERNELVER/extra/bcmtrng.ko && insmod /lib/modules/$KERNELVER/extra/bcmtrng.ko
+ # increase max send buffer for tr69c
+ echo 1048576 > /proc/sys/net/core/wmem_max 
+ cmf disable
  smd
 fi
 

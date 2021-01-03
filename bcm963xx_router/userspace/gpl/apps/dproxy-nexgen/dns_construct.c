@@ -3,14 +3,6 @@
 #include <arpa/inet.h>
 #include "dns_construct.h"
 
-#ifdef ACTION_TEC_WBA_DPROXY
-extern int wba_flag;
-#endif
-
-#ifdef CUSTOMER_ATT_DIAGNOSTIC
-extern int diagnostic_flag;
-#endif
-
 #define SET_UINT16_TO_N(buf, val, count) *(uint16*)buf = htons(val);count += 2; buf += 2
 #define SET_UINT32_TO_N(buf, val, count) *(uint32*)buf = htonl(val);count += 4; buf += 4
 /*****************************************************************************/
@@ -79,17 +71,6 @@ void dns_construct_reply( dns_request_t *m )
     if(m->ttl > 0) {
       SET_UINT32_TO_N( m->here, m->ttl, m->numread );  /* ttl */
     }
-#ifdef ACTION_TEC_WBA_DPROXY
-    else if (wba_flag)
-    {
-      SET_UINT32_TO_N( m->here, 0, m->numread );
-    }
-#elif defined (CUSTOMER_ATT_DIAGNOSTIC)
-    else if (diagnostic_flag )
-    {
-      SET_UINT32_TO_N( m->here, 0, m->numread );
-    }
-#endif
     else {
       SET_UINT32_TO_N( m->here, 10000, m->numread );  /* ttl */
     }
@@ -104,20 +85,8 @@ void dns_construct_reply( dns_request_t *m )
     if(m->ttl > 0) {
       SET_UINT32_TO_N( m->here, m->ttl, m->numread );  /* ttl */
     }
-#ifdef ACTION_TEC_WBA_DPROXY
-    else if (wba_flag)
-    {
-      SET_UINT32_TO_N( m->here, 0, m->numread );
-    }
-#elif defined (CUSTOMER_ATT_DIAGNOSTIC)
-    else if (diagnostic_flag )
-    {
-      SET_UINT32_TO_N( m->here, 0, m->numread );
-    }
-#endif
     else {
-      //SET_UINT32_TO_N( m->here, 10000, m->numread );  /* ttl */
-      SET_UINT32_TO_N( m->here, 0, m->numread );
+      SET_UINT32_TO_N( m->here, 10000, m->numread );  /* ttl */
     }
       len = dns_construct_name( m->cname, m->here + 2 );
       SET_UINT16_TO_N( m->here, len, m->numread );      /* datalen */

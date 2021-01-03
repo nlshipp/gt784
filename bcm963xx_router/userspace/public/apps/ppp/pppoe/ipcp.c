@@ -17,7 +17,7 @@
  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#define RCSID	"$Id: ipcp.c,v 1.2 2011/01/04 20:14:08 ywang Exp $"
+#define RCSID	"$Id: ipcp.c,v 1.4 2011/06/09 09:43:54 lzhang Exp $"
 
 /*
  * TODO:
@@ -43,13 +43,6 @@
 #include <syscall.h>
 #endif
 #include <syslog.h>
-
-#ifdef CUSTOMER_ACTIONTEC
-int ipcpDownCnt=0;
-extern int isPppoa; 
-extern void save_session_info_temp(unsigned char *buf);
-#endif
-
 
 static const char rcsid[] = RCSID;
 
@@ -1651,12 +1644,12 @@ static void config_save()
 }
 #endif /* ifndef BRCM_CMS_BUILD */
 
-#ifdef CUSTOMER_ACTIONTEC
+
+#ifdef AEI_VDSL_CUSTOMER_NCS
 #define IPCP_STATUS_INFO_PATH  "var/ppp/ipcp_status"
 #define  PPP_Auth_FAIL   	"var/ppp/ppp_auth_fail"
 extern void save_status_to_file(const char *PATH , int status );
-#endif 
-
+#endif
 /*
  * ipcp_up - IPCP has come UP.
  *
@@ -1812,8 +1805,8 @@ ipcp_up(f)
 
     np_up(f->unit, PPP_IP);
     ipcp_is_up = 1;
-#ifdef CUSTOMER_ACTIONTEC
-       save_status_to_file(IPCP_STATUS_INFO_PATH , ipcp_is_up);
+#ifdef AEI_VDSL_CUSTOMER_NCS
+	save_status_to_file(IPCP_STATUS_INFO_PATH , ipcp_is_up);
 #endif
 
     // brcm
@@ -1854,9 +1847,7 @@ ipcp_up(f)
     }
 #endif /* BRCM_CMS_BUILD */
 
-
-   printf("PPP: %s Connection Up.\n", req_name);
-#ifdef CUSTOMER_ACTIONTEC
+#ifdef AEI_VDSL_CUSTOMER_NCS
 	FILE *f_auth;
 
     f_auth = fopen(PPP_Auth_FAIL, "w");
@@ -1866,10 +1857,6 @@ ipcp_up(f)
         fprintf(f_auth, "%d\n", 0); // If successfully connected, then clear ppp auth fail number. 
     fclose(f_auth);
 #endif
-
-
-
-   printf("PPP: %s Connection Up.\n", req_name);
 
    // Todo: remove after support in the cms.
    if (isPppL2tp || isPptp) {
@@ -1910,10 +1897,12 @@ ipcp_up(f)
     else {
        printf("PPP: %s Connection Up.\n", req_name);
        sendPppEventMessage(BCM_PPPOE_CLIENT_STATE_UP, local_ip, subnet_ip, router_ip, dns_ip, MDMVS_ERROR_NONE);
-       syslog(LOG_CRIT,"Received valid IP address from server.  Connection UP.\n");  
-#if defined(CUSTOMER_ACTIONTEC)
-       if(isPppoa) save_session_info_temp("00d0ff138438/0019"); 
-#endif
+#ifdef AEI_CONTROL_LAYER   
+	//fix Bug #9284 [12i9test][function]There is no ipv6 addr in pppoe, 6rd model
+	sendCtlPppEventMessage(BCM_PPPOE_CLIENT_IPV6_STATE_UP, NULL, NULL, NULL, NULL, MDMVS_ERROR_NONE);
+#endif	   
+       //sendCtlPppEventMessage(BCM_PPPOE_CLIENT_IPV6_STATE_UP, local_ip, subnet_ip, router_ip, dns_ip, MDMVS_ERROR_NONE);
+       syslog(LOG_CRIT,"Received valid IP address from server.  Connection UP.\n");   
     }
 }
 
@@ -1939,8 +1928,9 @@ ipcp_down(f)
 	np_down(f->unit, PPP_IP);
     }
     sifvjcomp(f->unit, 0, 0, 0);
-#ifdef CUSTOMER_ACTIONTEC
-       save_status_to_file(IPCP_STATUS_INFO_PATH , ipcp_is_up);
+
+#ifdef AEI_VDSL_CUSTOMER_NCS
+	save_status_to_file(IPCP_STATUS_INFO_PATH , ipcp_is_up);
 #endif
 
     /*
@@ -1965,6 +1955,12 @@ ipcp_down(f)
 
 // brcm
     printf("PPP: %s Connection Down.\n", req_name);
+#ifdef AEI_CONTROL_LAYER 
+	//fix Bug #9284 [12i9test][function]There is no ipv6 addr in pppoe, 6rd model
+	sendCtlPppEventMessage(BCM_PPPOE_CLIENT_IPV6_STATE_DOWN, NULL, NULL, NULL, NULL, MDMVS_ERROR_NONE);
+#endif
+
+
     create_msg(BCM_PPPOE_CLIENT_STATE_DOWN, MDMVS_ERROR_UNKNOWN);
     syslog(LOG_CRIT,"Clear IP addresses.  Connection DOWN.\n");   
 }

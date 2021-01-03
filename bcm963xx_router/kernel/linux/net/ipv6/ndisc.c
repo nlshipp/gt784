@@ -177,6 +177,103 @@ struct ndisc_options {
 
 #define NDISC_OPT_SPACE(len) (((len)+2+7)&~7)
 
+
+#ifdef  ACTION_TEC_IPV6_CODE_FOR_IOT
+
+#define MAX_PAYLOAD 1024
+
+static struct sock *ndisc_nl_sk = NULL;
+
+
+#define RESEND_TIMES	(200)
+#define RESEND_DURA		(HZ/2)
+
+static void broadcast_resend(unsigned long);
+static int broadcast_resend_times=RESEND_TIMES;
+static DEFINE_TIMER(resend_timer, broadcast_resend, 0, 0);
+static u32 message_val;
+
+static void skb_ndisc_rcv(struct sk_buff *skb)
+{
+	printk(KERN_DEBUG "received sth\n");
+	return;
+}
+
+
+static int send_netlink_message_to_userspace(u32 *flag) {
+    struct nlmsghdr *nlh;
+	int ret=0;
+	struct sk_buff *skb = NULL;
+	u32 *intp;
+
+	if (!ndisc_nl_sk) {
+		ndisc_nl_sk = netlink_kernel_create(&init_net,NETLINK_RAD, 0, skb_ndisc_rcv,NULL,THIS_MODULE);
+		if (!ndisc_nl_sk) {
+			printk(KERN_ERR "Create netlink error\n");
+			return -1;
+		}
+	}
+
+	skb=alloc_skb(NLMSG_SPACE(MAX_PAYLOAD),GFP_ATOMIC);
+	if (!skb) {
+		printk(KERN_ERR "alloc skb error\n");
+		return -1;   
+	}
+
+	nlh = NLMSG_PUT(skb, 0, 0, NLMSG_DONE, sizeof(*intp));
+	intp = (u32 *)NLMSG_DATA(nlh);
+	*intp = *flag;
+
+    nlh->nlmsg_pid = 0;  /* from kernel */
+    nlh->nlmsg_flags = 0;
+
+	/* sender is in group 1<<0 */
+
+    NETLINK_CB(skb).pid = 0;  		/* from kernel */
+    //NETLINK_CB(skb).dst_pid = 0;  	/* multicast */
+    /* to mcast group 1<<0 */
+    NETLINK_CB(skb).dst_group = 1;
+
+    /*multicast the message to all listening processes*/
+    ret = netlink_broadcast(ndisc_nl_sk, skb, 0, 1, GFP_ATOMIC);
+	if (ret < 0) {
+		if (broadcast_resend_times>0) {
+			//printk(KERN_DEBUG "Need redo broadcast start a timer\n");
+	
+			resend_timer.expires = jiffies + RESEND_DURA;
+			resend_timer.data = (unsigned long)flag;
+
+			mod_timer(&resend_timer,resend_timer.expires);
+			broadcast_resend_times--;
+		}
+	}
+	else if( timer_pending(&resend_timer)) {
+		del_timer(&resend_timer);
+		//printk(KERN_DEBUG "Sent succ,need delete the timer in pending");
+	}
+
+	//printk(KERN_DEBUG "Sending msg ,ret is %d,"
+	//	   "flag is 0x%08x\n",ret,*flag);
+
+	return ret;
+nlmsg_failure:
+	kfree_skb(skb);
+	return -EINVAL;
+}
+static void broadcast_resend(unsigned long param)
+{
+	u32 *flag;
+	if (!param) {
+		printk(KERN_NOTICE "Param in broadcast time func is null,should be a bug\n");
+		return;
+	}
+	flag=(int *)param;
+	send_netlink_message_to_userspace(flag);
+	return;
+}
+
+#endif
+
 /*
  * Return the padding between the option length and the start of the
  * link addr.  Currently only IP-over-InfiniBand needs this, although
@@ -1022,8 +1119,15 @@ static void ndisc_recv_rs(struct sk_buff *skb)
 		return;
 	}
 
-	/* Don't accept RS if we're not in router mode */
+	/* 
+	 * Don't accept RS if we're not in router mode.
+	 * However, WAN interface needs to act as a host.
+	 */
+#if defined(CONFIG_MIPS_BRCM)
+	if (!idev->cnf.forwarding  || (idev->dev->priv_flags & IFF_WANDEV))
+#else
 	if (!idev->cnf.forwarding)
+#endif
 		goto out;
 
 	/*
@@ -1150,7 +1254,13 @@ static void ndisc_router_discovery(struct sk_buff *skb)
 			   skb->dev->name);
 		return;
 	}
+#if defined(CONFIG_MIPS_BRCM)
+	/* WAN interface needs to act like a host. */
+	if (((in6_dev->cnf.forwarding) && !(in6_dev->dev->priv_flags & IFF_WANDEV))
+		|| (!in6_dev->cnf.accept_ra)) {
+#else
 	if (in6_dev->cnf.forwarding || !in6_dev->cnf.accept_ra) {
+#endif
 		in6_dev_put(in6_dev);
 		return;
 	}
@@ -1344,6 +1454,14 @@ skip_linkparms:
 		     p = ndisc_next_option(p, ndopts.nd_opts_pi_end)) {
 			addrconf_prefix_rcv(skb->dev, (u8*)p, (p->nd_opt_len) << 3);
 		}
+#ifdef ACTION_TEC_IPV6_CODE_FOR_IOT
+		{
+			memcpy(&message_val,(const void*)&(ra_msg->icmph.icmp6_dataun.u_nd_ra),
+				   sizeof(struct icmpv6_nd_ra));
+			broadcast_resend_times = RESEND_TIMES;
+			send_netlink_message_to_userspace(&message_val);
+		}
+#endif
 	}
 
 	if (ndopts.nd_opts_mtu) {
@@ -1447,7 +1565,13 @@ static void ndisc_redirect_rcv(struct sk_buff *skb)
 	in6_dev = in6_dev_get(skb->dev);
 	if (!in6_dev)
 		return;
+#if defined(CONFIG_MIPS_BRCM)
+	/* WAN interface needs to act like a host. */
+	if (((in6_dev->cnf.forwarding) && !(in6_dev->dev->priv_flags & IFF_WANDEV))
+		|| (!in6_dev->cnf.accept_redirects)) {
+#else
 	if (in6_dev->cnf.forwarding || !in6_dev->cnf.accept_redirects) {
+#endif
 		in6_dev_put(in6_dev);
 		return;
 	}
@@ -1863,6 +1987,14 @@ int __init ndisc_init(void)
 	err = register_netdevice_notifier(&ndisc_netdev_notifier);
 	if (err)
 		goto out_unregister_sysctl;
+
+#ifdef ACTION_TEC_IPV6_CODE_FOR_IOT
+    ndisc_nl_sk = netlink_kernel_create(&init_net,NETLINK_RAD, 0, skb_ndisc_rcv,NULL,THIS_MODULE);
+    if (!ndisc_nl_sk) {
+        printk(KERN_ERR "Create netlink error\n");
+    }
+#endif
+
 out:
 	return err;
 

@@ -36,6 +36,26 @@ extern int reboot_main(int argc, char **argv)
 	if(bb_getopt_ulflags(argc, argv, "d:", &delay)) {
 		sleep(atoi(delay));
 	}
+#ifdef AEI_VDSL_CUSTOMER_NCS	
+                struct stat sbuf;
+                {
+                    int i=0;
+                while(i<100)
+                {  
+                    i++;
+                    if (stat("/var/write_psi_lock", &sbuf) >= 0) // flash writing
+                    {
+                        bb_error_msg("Writing the configuration file to the flash.Please wait for 2 secs!\n");
+                        sleep(2);
+                    }
+                    else
+                        break;
+
+                }
+                if(i==100)
+                    return -1;
+                }
+#endif
 
 #ifndef CONFIG_INIT
 #ifndef RB_AUTOBOOT

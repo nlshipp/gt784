@@ -29,6 +29,9 @@
 
 /*
  * $Log: eql.c,v $
+ * Revision 1.1.1.1  2010/06/14 22:49:17  tliu
+ *  broadcom SDK 4.6.2
+ *
  * Revision 1.2  1996/04/11 17:51:52  guru
  * Added one-line eql_remove_slave patch.
  *

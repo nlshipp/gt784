@@ -11,10 +11,6 @@ int read_vendor_id_config(char *file);
 void write_decline(void);
 void write_viTable(int dummy);
 
-#ifdef ACTION_TEC_DHCP_LEASE
-int act_getDhcpLeasesFromScratchPad();
-int act_setDhcpLeasesToScratchPad();
-#endif
 
 #ifdef DHCP_RELAY
 void set_relays(void);

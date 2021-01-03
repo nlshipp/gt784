@@ -19,7 +19,7 @@
  */
 
 static const char vi_Version[] =
-	"$Id: vi.c,v 1.1.1.1 2010/06/24 19:07:16 denny Exp $";
+	"$Id: vi.c,v 1.1.1.1 2010/06/14 22:47:25 tliu Exp $";
 
 /*
  * To compile for standalone use:

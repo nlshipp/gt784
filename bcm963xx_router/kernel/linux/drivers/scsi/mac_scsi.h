@@ -23,7 +23,10 @@
  */
 
 /*
- * $Log: cumana_NCR5380.h,v $
+ * $Log: mac_scsi.h,v $
+ * Revision 1.1.1.1  2010/06/14 22:49:14  tliu
+ *  broadcom SDK 4.6.2
+ *
  */
 
 #ifndef MAC_NCR5380_H

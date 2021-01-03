@@ -1,4 +1,4 @@
-/*	$Id: if_ppp.h,v 1.1.1.1 2010/06/24 19:07:38 denny Exp $	*/
+/*	$Id: if_ppp.h,v 1.4 2011/03/30 19:55:19 dkorchak Exp $	*/
 
 /*
  * if_ppp.h - Point-to-Point Protocol definitions.
@@ -107,6 +107,10 @@ struct ifpppcstatsreq {
 	struct ppp_comp_stats stats;
 };
 
+/* PPP device name type */
+typedef char	ppp_dev_name[IFNAMSIZ];
+
+
 #define ifr__name       b.ifr_ifrn.ifrn_name
 #define stats_ptr       b.ifr_ifru.ifru_data
 
@@ -143,6 +147,7 @@ struct ifpppcstatsreq {
 #define PPPIOCDISCONN	_IO('t', 57)		/* disconnect channel */
 #define PPPIOCATTCHAN	_IOW('t', 56, int)	/* attach to ppp channel */
 #define PPPIOCGCHAN	_IOR('t', 55, int)	/* get ppp channel number */
+#define	PPPIOCSREALDEV	_IOW('t', 53, ppp_dev_name) /* set real device name */
 
 #define SIOCGPPPSTATS   (SIOCDEVPRIVATE + 0)
 #define SIOCGPPPVER     (SIOCDEVPRIVATE + 1)	/* NEVER change this!! */

@@ -413,6 +413,19 @@ static inline int ip6_forward_finish(struct sk_buff *skb)
 	return dst_output(skb);
 }
 
+static inline int isULA(const struct in6_addr *addr)
+{
+	__be32 st;
+
+	st = addr->s6_addr32[0];
+
+	/* RFC 4193 */
+	if ((st & htonl(0xFE000000)) == htonl(0xFC000000))
+		return	1;
+	else
+		return	0;
+}
+
 int ip6_forward(struct sk_buff *skb)
 {
 	struct dst_entry *dst = skb->dst;
@@ -466,6 +479,12 @@ int ip6_forward(struct sk_buff *skb)
 		kfree_skb(skb);
 		return -ETIMEDOUT;
 	}
+
+    /* No traffic with ULA address should be forwarded at WAN intf */
+	if ( isULA(&hdr->daddr) || isULA(&hdr->saddr) )
+		if ((skb->dev->priv_flags & IFF_WANDEV) || 
+			(dst->dev->priv_flags & IFF_WANDEV) )
+			goto drop;
 
 	/* XXX: idev->cnf.proxy_ndp? */
 	if (net->ipv6.devconf_all->proxy_ndp &&
@@ -1235,6 +1254,18 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
 	 */
 
 	inet->cork.length += length;
+
+#if defined(CONFIG_MIPS_BRCM)
+	if (((length >(mtu - fragheaderlen)) && (sk->sk_protocol == IPPROTO_UDP)) &&
+	    (rt->u.dst.dev->features & NETIF_F_UFO)) {
+		err = ip6_ufo_append_data(sk, getfrag, from, length, hh_len,
+					  fragheaderlen, transhdrlen, mtu,
+					  flags);
+		if (err)
+			goto error;
+		return 0;
+	}
+#else
 	if (((length > mtu) && (sk->sk_protocol == IPPROTO_UDP)) &&
 	    (rt->u.dst.dev->features & NETIF_F_UFO)) {
 
@@ -1245,6 +1276,7 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
 			goto error;
 		return 0;
 	}
+#endif
 
 	if ((skb = skb_peek_tail(&sk->sk_write_queue)) == NULL)
 		goto alloc_new_skb;

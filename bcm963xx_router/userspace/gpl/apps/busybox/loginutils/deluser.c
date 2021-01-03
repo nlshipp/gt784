@@ -65,4 +65,4 @@ int deluser_main(int argc, char **argv)
 	return (EXIT_SUCCESS);
 }
 
-/* $Id: deluser.c,v 1.1.1.1 2010/06/24 19:07:16 denny Exp $ */
+/* $Id: deluser.c,v 1.1.1.1 2010/06/14 22:47:25 tliu Exp $ */

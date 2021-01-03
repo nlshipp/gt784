@@ -51,187 +51,6 @@ static void klogd_signal(int sig)
 	exit(EXIT_SUCCESS);
 }
 
-#if defined(CUSTOMER_FWlOG)
-// FILE SIZE is 1000K 
-#define FILE_SIZE      (1000 * 1000) 
-#define FW_LOG_HEAD       "[firewall_log]"
-#define FW_LOG_PATH       "/var/log/firewall_log"
-static int check_logtime(time_t latest_t, char * timeStr)
-{
-    struct tm logTm;
-    time_t log_t;
-    char buf[32] = {0};
-    char col[32] = {0};
-      
-    sscanf(timeStr, "%s %s", buf, col);
-    memset(&logTm, 0, sizeof(struct tm));
-    strptime(buf, "%m/%d/%Y|%I:%M:%S%p|", &logTm);
-    log_t = mktime(&logTm);
-    // just show 7days' log
-    if ((latest_t-log_t) <60*60*24*7)
-        return 0;
-    else
-        return -1;
-}
-
-typedef struct buf_node_s 
-{
-    struct buf_node_s * next;
-    char   *data;
-}buf_node_t;
-
-buf_node_t *p_head = NULL;
-buf_node_t *p_tail = NULL;
-static int write_file()
-{
-    FILE * fp = NULL;
-    buf_node_t *node = p_head;
-    time_t log_t = time(NULL);
-
-    if ((fp=fopen(FW_LOG_PATH, "a+"))==NULL)
-    {
-        printf("klod: open %s failed\n", FW_LOG_PATH);
-        return -1;
-    }
-
-    if (p_head == NULL)
-        goto EXT_SUCC;
-    if (p_head == p_tail)
-    {
-        if (check_logtime(log_t, p_head->data) == 0)
-            fprintf(fp, "%s", node->data);
-        goto EXT_SUCC;
-    }
-
-    do{
-        // check log time 
-        if (check_logtime(log_t, p_head->data) == 0)
-            fprintf(fp, "%s", node->data);
-        node = node->next;
-    }while (node!=p_head);
-        
-EXT_SUCC:
-    fclose(fp);
-    return 0;
-}
-
-
-
-static void free_node(buf_node_t *node)
-{
-    free(node->data);
-    free(node);
-}
-
-// add element on the tail of the list
-static int add_node(buf_node_t *node, int *p_total_len)
-{
-    if (p_head == NULL)
-    {
-        p_head = node;
-        p_tail = node;
-        p_head->next = p_tail;
-        *p_total_len = strlen(node->data);
-    }
-    else
-    {
-        node->next = p_head;
-        p_tail->next = node;
-        p_tail = node;
-        *p_total_len = *p_total_len + strlen(node->data);
-    }
-
-    return 0;
-}
-
-// just delete the last element of the list
-static void del_node(int *p_total_len)
-{
-    if (p_head == NULL)
-        return ;
-    if (p_head->next == p_head)
-    {
-        free_node(p_head);
-        *p_total_len = 0;
-        p_head = NULL;
-        p_tail = NULL;
-        return;
-    }
-
-    *p_total_len = *p_total_len - strlen(p_head->data);
-    p_tail->next = p_head->next;
-    free_node(p_head);
-    p_head = p_tail->next;
-}
-
-static int fill_loopList( const char * const target ) 
-{
-    static total_len = 0;
-    int data_len = 0;
-    char src_ip[32] = {0};
-    char dst_ip[32] = {0};
-    char col[32] = {0}; 
-    char record[256] = {0};
-    buf_node_t *node;
-    char currTime[64];
-    struct tm *tmp;
-	time_t now;
-
-    sscanf(target, "%s %s %s %s %s %s", col, col, col, src_ip, dst_ip, col);
-
-    now = time(NULL);
-    tmp = localtime(&now);
-	memset(currTime, 0, sizeof(currTime));
-	strftime(currTime, sizeof(currTime), "%m/%d/%Y|%I:%M:%S%p|", tmp);
-    sprintf(record, "%s %s %s\n",  currTime, src_ip, dst_ip);
-
-    data_len = strlen(record);
-    
-    if ((node = (buf_node_t *)malloc(sizeof(buf_node_t))) == NULL)
-    { 
-        printf("klogd: alloc memory for firewall log failed\n");        
-        return -1; 
-    }
-    if ((node->data = (char *)malloc(data_len + 1)) == NULL)
-    {
-        printf("klogd: alloc memory for firewall log failed\n");        
-        free (node);
-        return -1; 
-    }
-
-    strcpy(node->data, record);
-    node->data[data_len] = 0;
-    if ((total_len + data_len )< FILE_SIZE)
-    {
-        add_node(node ,&total_len); 
-    }
-    else
-    {
-        del_node(&total_len);
-        add_node(node, &total_len);
-    }
-
-    return 0;
-}
-
-static void save_fwLog(const char * const log_buffer)
-{
-    if (strstr(log_buffer, FW_LOG_HEAD) )
-    {
-        time_t nowTm = time(NULL);
-        static time_t last_writeTm = 0;
-
-        fill_loopList(log_buffer);
-        // we will write file every 5 sec
-        if ((nowTm - last_writeTm) >= 5)
-        {
-            write_file();
-            last_writeTm = time(NULL);
-        }
-    }
-}
-#endif
-
 static void doKlogd(const int console_log_level) __attribute__ ((noreturn));
 static void doKlogd(const int console_log_level)
 {
@@ -267,9 +86,6 @@ static void doKlogd(const int console_log_level)
 			syslog(LOG_ERR, "klogd: Error return from sys_sycall: %d - %m.\n", errno);
 			exit(EXIT_FAILURE);
 		}
-#if defined(CUSTOMER_FWlOG)
-        save_fwLog(log_buffer);
-#endif
 
 		/* klogctl buffer parsing modelled after code in dmesg.c */
 		start = &log_buffer[0];
@@ -304,10 +120,6 @@ extern int klogd_main(int argc, char **argv)
 	int doFork = TRUE;
 	unsigned char console_log_level = -1;
 
-#ifdef CUSTOMER_ACTIONTEC
-    signed sessionPid;
-#endif
-
 	/* do normal option parsing */
 	while ((opt = getopt(argc, argv, "c:n")) > 0) {
 		switch (opt) {
@@ -339,15 +151,6 @@ extern int klogd_main(int argc, char **argv)
 			bb_perror_msg_and_die("daemon");
 #endif /* __uClinux__ */
 	}
-
-#ifdef CUSTOMER_ACTIONTEC
-    /*
-    * detach from the terminal so we don't catch the user typing control-c
-    */
-    if ((sessionPid = setsid()) == -1)
-        printf("Could not detach from terminal\n");
-#endif 
-
 	doKlogd(console_log_level);
 
 	return EXIT_SUCCESS;

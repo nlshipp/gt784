@@ -90,10 +90,10 @@
  * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * $Id: ipv6cp.c,v 1.1.1.1 2010/06/24 19:07:37 denny Exp $ 
+ * $Id: ipv6cp.c,v 1.1.1.1 2010/06/14 22:47:27 tliu Exp $ 
  */
 
-#define RCSID	"$Id: ipv6cp.c,v 1.1.1.1 2010/06/24 19:07:37 denny Exp $"
+#define RCSID	"$Id: ipv6cp.c,v 1.1.1.1 2010/06/14 22:47:27 tliu Exp $"
 
 /*
  * TODO: 

@@ -83,7 +83,15 @@ libopt:
 	    cp -f $(LIBDIR)/$(LINKER) $(PLATFORM); \
 	    $(SHELL) -e generate_library $(PLATFORM) $(BINARIES); \
 	fi
+
+	# folder uclibc is an empty folder to hold the dynamic generated lib files. It won't be picked up if check out by tag
+	# so we add this to create this folder if it doesn't exist during the compliation
 	if [ "$(PLATFORM)" = "uclibc" ]; then \
+	    if [ ! -d ./uclibc ]; then \
+		@echo "uclibc doesn't exist, create it!"; \
+		mkdir ./uclibc; \
+	    fi; \
+	    if [ ! -e $(INSTALL_DIR)/lib/libdbus.so ]; then cp -f $(PLATFORM)/libdbus.so $(INSTALL_DIR)/lib; fi; \
 	    python ./mklibs.py -D $(LIBDIR_LIST) --target=$(TOOLCHAIN)/bin/mips-linux-uclibc- --ldlib ld-uClibc.so.0 -d $(PLATFORM) $(BINARIES); \
 	fi
 
@@ -119,4 +127,4 @@ endif
 clean:
 	@if [ "$(INSTALL_DIR)" != "" -a "$(INSTALL_DIR)" != "/" ]; then rm -rf $(INSTALL_DIR)/lib/*; fi
 	@if [ "$(PLATFORM)" = "glibc" ]; then rm -f $(PLATFORM)/$(LIBC) $(PLATFORM)/$(LINKER); fi
-	@if [ "$(PLATFORM)" = "uclibc" ]; then rm -f $(PLATFORM)/*; fi	
+	#@if [ "$(PLATFORM)" = "uclibc" ]; then rm -f $(PLATFORM)/*; fi	

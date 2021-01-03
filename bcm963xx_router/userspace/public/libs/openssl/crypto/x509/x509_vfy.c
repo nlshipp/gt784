@@ -837,7 +837,14 @@ static int internal_verify(X509_STORE_CTX *ctx)
 		/* The last error (if any) is still in the error value */
 		ctx->current_cert=xs;
 		ok=(*cb)(1,ctx);
+#ifdef AEI_VDSL_CUSTOMER_NCS
+		/* change the behavior of the certificate check,
+		 * only check the last certificate in the chain.
+		 */
+		if (n <= 0) goto end;
+#else
 		if (!ok) goto end;
+#endif
 
 		n--;
 		if (n >= 0)

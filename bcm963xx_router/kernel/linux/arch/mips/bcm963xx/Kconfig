@@ -186,6 +186,10 @@ config BCM_PWRMNGT
 	tristate "Support for Power Management"
 	depends on BCM96368 || BCM96816 || BCM96362 || BCM96328
 	
+config BCM_WATCHDOG
+	tristate "Support for Broadcom 6368 Watchdog"
+	depends on BCM96368
+
 config BCM_ETH_PWRSAVE
     bool "Support for Ethernet Auto Power Down and Sleep"
 	depends on BCM96368 || BCM96816 || BCM96362 || BCM96328
@@ -338,6 +342,10 @@ config BCM_PROCFS_IMPL
 	int "Implementation index for PROCFS"
         depends on BCM96368 || BCM96816 || BCM96362 || BCM96328
 
+config BCM_WATCHDOG_IMPL
+	int "Implementation index for Broadcom Watchdog
+	depends on BCM96368
+
 config BCM_PWRMNGT_IMPL
 	int "Implementation index for PWRMNGT"
 	depends on BCM96368 || BCM96816 || BCM96362 || BCM96328
@@ -426,3 +434,27 @@ config BRCM_BOUNCE_DATAPATH
 	  This option enables the brute force instrumentation of network data path.
 
 
+choice
+	prompt "Restrict memory used (testing)"
+
+config BRCM_MEMORY_RESTRICTION_OFF
+	bool "Use all available"
+
+config BRCM_MEMORY_RESTRICTION_16M
+	bool "Use 16M"
+
+config BRCM_MEMORY_RESTRICTION_32M
+	bool "Use 32M"
+endchoice
+choice
+	prompt "Auxillary File System on Board Flash"
+	depends on MIPS_BRCM
+	default AUXFS_JFFS2
+	help
+	  Say Y here to enable support for an auxillary file system on flash.
+
+config AUXFS_JFFS2
+	bool "JFFS2"
+
+# Add other choices for auxillary flash file systems here.  e.g AUXFS_YAFFS
+endchoice

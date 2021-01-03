@@ -74,7 +74,11 @@
 #include <netinet/udp.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
-
+#if defined(DMP_TRACEROUTE_1)
+#include "cms_msg.h"                                                     
+#include "cms_util.h"                                                    
+#include "cms_log.h"
+#endif
 
 #define MAXPACKET       65535   /* max ip packet size */
 #ifndef MAXHOSTNAMELEN
@@ -122,6 +126,59 @@ static int verbose;
 static int waittime = 5;               /* time to wait for response (in seconds) */
 static int nflag;                      /* print addresses numerically */
 
+#if defined(DMP_TRACEROUTE_1)
+static void *msgHandle=NULL;
+static CmsEntityId requesterId=0;
+void sendTraceRouteEventMessage(TraceRouteDataMsgBody *pTraceRouteInfo, TraceRouteResult result)
+{
+	char buf[sizeof(CmsMsgHeader) + sizeof(TraceRouteDataMsgBody)];
+	CmsMsgHeader *msg=(CmsMsgHeader *) buf;
+	TraceRouteDataMsgBody *traceRouteMsg = (TraceRouteDataMsgBody*)(msg+1);
+	CmsRet ret;
+	int i, strLength;
+
+	if (!requesterId)
+	{
+		return;
+	}
+
+	msg->type = CMS_MSG_TRACE_ROUTE_STATE_CHANGE;
+	msg->src = EID_TRACEROUTE;
+	msg->dst = EID_SSK;
+	msg->flags_event = 1;
+	msg->dataLength = sizeof(TraceRouteDataMsgBody);
+	memcpy(traceRouteMsg, pTraceRouteInfo, sizeof(TraceRouteDataMsgBody));
+	traceRouteMsg->requesterId = requesterId;
+	requesterId = 0;
+	traceRouteMsg->result = result; 
+
+	for (i=0; i<traceRouteMsg->routeHopsNumberOfEntries; i++)
+	{
+		strLength = strlen(traceRouteMsg->routeHops[i].hopRTTimes);
+		traceRouteMsg->routeHops[i].hopRTTimes[strLength-1]='\0';
+	}
+
+#ifdef AEI_VDSL_CUSTOMER_QWEST
+	if (result != Complete && result != Error_MaxHopCountExceeded)
+#else
+	if (result != Complete)
+#endif
+	{
+		traceRouteMsg->responseTime = 0;
+		traceRouteMsg->routeHopsNumberOfEntries = 0;
+	}
+
+	if ((ret = cmsMsg_send(msgHandle, msg)) != CMSRET_SUCCESS)
+	{
+		printf("traceroute send msg Fail\n");
+	}
+	else
+	{
+		printf("traceroute send msg success\n");
+	}
+	
+}
+#endif
 /*
  * Construct an Internet address representation.
  * If the nflag has been supplied, give
@@ -297,31 +354,55 @@ send_probe(int seq, int ttl)
 	struct udphdr *up = &op->udp;
 	int i;
 	struct timezone tz;
-
+#if defined (DMP_TRACEROUTE_1)
+	int dataSize = datalen -12; /* Minus some parameters' length in struct opacket*/
+#endif
 	ip->ip_off = 0;
 	ip->ip_hl = sizeof(*ip) >> 2;
 	ip->ip_p = IPPROTO_UDP;
+#if defined (DMP_TRACEROUTE_1)
+	ip->ip_len = dataSize;
+#else
 	ip->ip_len = datalen;
+#endif	
 	ip->ip_ttl = ttl;
 	ip->ip_v = IPVERSION;
 	ip->ip_id = htons(ident+seq);
 
 	up->source = htons(ident);
 	up->dest = htons(port+seq);
+#if defined (DMP_TRACEROUTE_1)
+	up->len = htons((u_short)(dataSize - sizeof(struct ip)));
+#else
 	up->len = htons((u_short)(datalen - sizeof(struct ip)));
+#endif	
 	up->check = 0;
 
 	op->seq = seq;
 	op->ttl = ttl;
 	(void) gettimeofday(&op->tv, &tz);
 
+#if defined (DMP_TRACEROUTE_1)
+	i = sendto(sndsock, (char *)outpacket, dataSize, 0, &whereto,
+		sizeof(struct sockaddr));
+#else
 	i = sendto(sndsock, (char *)outpacket, datalen, 0, &whereto,
-		   sizeof(struct sockaddr));
+		sizeof(struct sockaddr));
+#endif
+#if defined (DMP_TRACEROUTE_1)
+	if (i < 0 || i != dataSize)  {
+#else
 	if (i < 0 || i != datalen)  {
+#endif
 		if (i<0)
 			perror("sendto");
+#if defined (DMP_TRACEROUTE_1)
+		printf("traceroute: wrote %s %d chars, ret=%d\n", hostname,
+			dataSize, i);
+#else
 		printf("traceroute: wrote %s %d chars, ret=%d\n", hostname,
 			datalen, i);
+#endif			
 		(void) fflush(stdout);
 	}
 }
@@ -343,7 +424,20 @@ traceroute_main(int argc, char *argv[])
 	int options = 0;                /* socket options */
 	char *source = 0;
 	int nprobes = 3;
-
+#if defined(AEI_VDSL_CUSTOMER_QWEST_Q2000)
+	int ttl_set_flag = 0;
+#endif
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+	int failcount = 0;
+#endif
+#if defined(DMP_TRACEROUTE_1)
+	unsigned int repTime;
+	char strRepTime[16];
+	TraceRouteDataMsgBody traceRouteInfo;
+	memset(&traceRouteInfo, 0 , sizeof(TraceRouteDataMsgBody));
+	TraceRouteDataMsgBody *pTraceRouteInfo = &traceRouteInfo;
+	cmsMsg_init(EID_TRACEROUTE, &msgHandle);
+#endif
 	on = 1;
 	seq = tos = 0;
 	to = (struct sockaddr_in *)&whereto;
@@ -356,6 +450,9 @@ traceroute_main(int argc, char *argv[])
 			break;
 		case 'm':
 			max_ttl = atoi(optarg);
+#if defined(AEI_VDSL_CUSTOMER_QWEST_Q2000)
+			ttl_set_flag = 1;
+#endif
 			if (max_ttl <= 1)
 				bb_error_msg_and_die("max ttl must be >1.");
 			break;
@@ -409,12 +506,31 @@ traceroute_main(int argc, char *argv[])
 	setlinebuf (stdout);
 
 	memset(&whereto, 0, sizeof(struct sockaddr));
+#if defined(DMP_TRACEROUTE_1)
+	hp = gethostbyname(*argv);
+	if (*++argv)
+	{
+		requesterId = atoi(*argv);		
+	}
+	if (hp == NULL)
+	{
+		sendTraceRouteEventMessage(pTraceRouteInfo, Error_CannotResolveHostName);
+		bb_herror_msg_and_die("%s", *--argv);
+	}
+#else
 	hp = xgethostbyname(*argv);
+#endif
 			to->sin_family = hp->h_addrtype;
 	memcpy(&to->sin_addr, hp->h_addr, hp->h_length);
 			hostname = (char *)hp->h_name;
 	if (*++argv)
 		datalen = atoi(*argv);
+#if defined (DMP_TRACEROUTE_1)
+	if (datalen == 0)
+	{
+		datalen = 40; /*Default data length*/
+	}
+#endif		
 	if (datalen < 0 || datalen >= MAXPACKET - sizeof(struct opacket))
 		bb_error_msg_and_die("packet size must be 0 <= s < %d.",
 		    MAXPACKET - sizeof(struct opacket));
@@ -423,6 +539,9 @@ traceroute_main(int argc, char *argv[])
 	memset(outpacket, 0, datalen);
 	outpacket->ip.ip_dst = to->sin_addr;
 	outpacket->ip.ip_tos = tos;
+#if defined(DMP_TRACEROUTE_1)
+	outpacket->ip.ip_tos = (outpacket->ip.ip_tos)<<2;
+#endif
 	outpacket->ip.ip_v = IPVERSION;
 	outpacket->ip.ip_id = 0;
 
@@ -484,6 +603,9 @@ traceroute_main(int argc, char *argv[])
 		int got_there = 0;
 		int unreachable = 0;
 
+#if defined(DMP_TRACEROUTE_1)
+		pTraceRouteInfo->routeHopsNumberOfEntries++;	
+#endif
 		printf("%2d ", ttl);
 		for (probe = 0; probe < nprobes; ++probe) {
 			int cc, reset_timer;
@@ -503,6 +625,21 @@ traceroute_main(int argc, char *argv[])
 						lastaddr = from.sin_addr.s_addr;
 					}
 					printf("  %g ms", deltaT(&t1, &t2));
+#if defined(DMP_TRACEROUTE_1)
+					struct icmp *hopIcp;
+					int hopHlen;
+					struct ip *hopIp;
+					hopIp = (struct ip *) packet;
+					hopHlen = hopIp->ip_hl << 2;
+					hopIcp = (struct icmp *)(packet + hopHlen);
+					repTime = ((int)(t2.tv_sec - t1.tv_sec) * 1000 + (int)(t2.tv_usec - t1.tv_usec) / 1000);
+					sprintf(strRepTime, "%d,", repTime);
+					pTraceRouteInfo->responseTime+=repTime; 
+					pTraceRouteInfo->routeHops[ttl-1].hopErrorCode = hopIcp->icmp_code;
+					sprintf(pTraceRouteInfo->routeHops[ttl-1].hopHost, "%s", inet_ntoa(from.sin_addr));
+					sprintf(pTraceRouteInfo->routeHops[ttl-1].hopHostAddress, "%s", inet_ntoa(from.sin_addr));	
+					strcat(pTraceRouteInfo->routeHops[ttl-1].hopRTTimes, strRepTime);		
+#endif
 					switch(i - 1) {
 					case ICMP_UNREACH_PORT:
 						ip = (struct ip *)packet;
@@ -536,13 +673,50 @@ traceroute_main(int argc, char *argv[])
 					reset_timer = 0;
 			}
 			if (cc == 0)
+			{
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+				failcount++;
+#endif
 				printf(" *");
+			}
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+            		else
+				failcount=0;
+#endif
 			(void) fflush(stdout);
 		}
 		putchar('\n');
-		if (got_there || unreachable >= nprobes-1)
+		if (got_there || (unreachable && unreachable >= nprobes-1))
+		{
+#if defined(DMP_TRACEROUTE_1)		
+			if (got_there)
+			{
+				sendTraceRouteEventMessage(pTraceRouteInfo, Complete);
+			}
+			else if (unreachable && unreachable >= nprobes-1)
+			{
+				sendTraceRouteEventMessage(pTraceRouteInfo, Error_MaxHopCountExceeded);
+			}
+#endif
 			return 0;
+		}
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+#if defined(AEI_VDSL_CUSTOMER_QWEST_Q2000)
+		if (failcount >= nprobes*2&&ttl_set_flag==0)
+#else
+		if (failcount >= nprobes*2)
+#endif
+		{
+#if defined(DMP_TRACEROUTE_1)
+			sendTraceRouteEventMessage(pTraceRouteInfo, Error_MaxHopCountExceeded);
+#endif
+			return 0;
+		}	
+#endif
 	}
+#if defined(DMP_TRACEROUTE_1)
+	sendTraceRouteEventMessage(pTraceRouteInfo, Error_MaxHopCountExceeded);
+#endif
 
 	return 0;
 }

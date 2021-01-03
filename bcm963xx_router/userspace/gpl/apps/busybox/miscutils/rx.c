@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------
  * Filename:      xmodem.c
- * Version:       $Id: rx.c,v 1.1.1.1 2010/06/24 19:07:16 denny Exp $
+ * Version:       $Id: rx.c,v 1.1.1.1 2010/06/14 22:47:25 tliu Exp $
  * Copyright:     Copyright (C) 2001, Hewlett-Packard Company
  * Author:        Christopher Hoover <ch@hpl.hp.com>
  * Description:   xmodem functionality for uploading of kernels

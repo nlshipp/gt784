@@ -616,14 +616,24 @@ static int make_ppp_unit()
 
 /* end brcm */
 
+
 	x = ioctl(ppp_dev_fd, PPPIOCNEWUNIT, &ifunit);
 	if (x < 0 && req_unit >= 0 && errno == EEXIST) {
 		warn("Couldn't allocate PPP unit %d as it is already in use");
 		ifunit = -1;
 		x = ioctl(ppp_dev_fd, PPPIOCNEWUNIT, &ifunit);
 	}
-	if (x < 0)
+	if (x < 0) {
 		error("Couldn't create new ppp unit: %m");
+        }
+        else
+        {
+                x = ioctl(ppp_dev_fd, PPPIOCSREALDEV, devnam);
+                if (x < 0) {
+                    error("Couldn't set ppp real device (%s): %m", devnam);
+                }
+        }
+
 	return x;
 }
 

@@ -460,7 +460,7 @@ static int mpi_DetectPcCard(void)
 }
 #endif
 
-static int mpi_init(void)
+int mpi_init(void)
 {
     unsigned long data;
     unsigned long sdramsize;
@@ -535,6 +535,7 @@ static int mpi_init(void)
 
     return 0;
 }
+EXPORT_SYMBOL(mpi_init);
 #endif
 
 #if defined(CONFIG_BCM96816) || defined(CONFIG_BCM96362) || defined(CONFIG_BCM96328)
@@ -1025,22 +1026,26 @@ static int __init bcm6328_hw_init(void)
         if (GPIOOverlays & BP_OVERLAY_EPHY_LED_0) {
             GPIO->PinMuxSel |= PINMUX_EPHY0_ACT_LED;
             GPIO->GPIOMode |= (1 << EPHY0_SPD_LED);
-            LED->ledHWDis &= ~(1 << EPHY0_SPD_LED);
+//          LED->ledHWDis &= ~(1 << EPHY0_SPD_LED);
+            LED->ledHWDis |= (1 << EPHY0_SPD_LED);
         }
         if (GPIOOverlays & BP_OVERLAY_EPHY_LED_1) {
             GPIO->PinMuxSel |= PINMUX_EPHY1_ACT_LED;
             GPIO->GPIOMode |= (1 << EPHY1_SPD_LED);
-            LED->ledHWDis &= ~(1 << EPHY1_SPD_LED);
+//          LED->ledHWDis &= ~(1 << EPHY1_SPD_LED);
+            LED->ledHWDis |= (1 << EPHY1_SPD_LED);
         }
         if (GPIOOverlays & BP_OVERLAY_EPHY_LED_2) {
             GPIO->PinMuxSel |= PINMUX_EPHY2_ACT_LED;
             GPIO->GPIOMode |= (1 << EPHY2_SPD_LED);
-            LED->ledHWDis &= ~(1 << EPHY2_SPD_LED);
+//          LED->ledHWDis &= ~(1 << EPHY2_SPD_LED);
+            LED->ledHWDis |= (1 << EPHY2_SPD_LED);
         }
         if (GPIOOverlays & BP_OVERLAY_EPHY_LED_3) {
             GPIO->PinMuxSel |= PINMUX_EPHY3_ACT_LED;
             GPIO->GPIOMode |= (1 << EPHY3_SPD_LED);
-            LED->ledHWDis &= ~(1 << EPHY3_SPD_LED);
+//          LED->ledHWDis &= ~(1 << EPHY3_SPD_LED);
+            LED->ledHWDis |= (1 << EPHY3_SPD_LED);
         }
     }
 
@@ -1095,6 +1100,10 @@ unsigned long getMemorySize(void)
 {
 #if defined(CONFIG_BRCM_IKOS)
     return(31 * 1024 * 1024); /* voice DSP is loaded after this amount */
+#elif defined(CONFIG_BRCM_MEMORY_RESTRICTION_16M)
+    return(16 * 1024 * 1024); 
+#elif defined(CONFIG_BRCM_MEMORY_RESTRICTION_32M)
+    return(32 * 1024 * 1024); 
 #elif defined(CONFIG_BCM96368)
     unsigned long size;
     unsigned long memCfg;

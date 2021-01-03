@@ -17,7 +17,7 @@
  */
 /*
  * based on:
- * $Id: ip6tunnel.c,v 1.1.1.1 2010/06/24 19:07:17 denny Exp $
+ * $Id: ip6tunnel.c,v 1.1.1.1 2010/06/14 22:47:22 tliu Exp $
  *
  */
 /*

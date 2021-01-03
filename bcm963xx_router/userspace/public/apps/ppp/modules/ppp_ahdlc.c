@@ -41,7 +41,7 @@
  * OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS,
  * OR MODIFICATIONS.
  *
- * $Id: ppp_ahdlc.c,v 1.1.1.1 2010/06/24 19:07:37 denny Exp $
+ * $Id: ppp_ahdlc.c,v 1.1.1.1 2010/06/14 22:47:27 tliu Exp $
  */
 
 /*

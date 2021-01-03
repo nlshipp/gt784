@@ -427,7 +427,11 @@ CmsRet cmsNet_subnetIp6SitePrefix(const char *sp, UINT8 subnetId, UINT32 snPlen,
       return CMSRET_INVALID_ARGUMENTS;
    }
 
-   if ((snPlen <= plen) || (subnetId >= (1<<(snPlen-plen))))
+/* AEI_IPV6_DEPLOY @ Tue Oct 26 18:15:47 CST 2010
+ * if ((snPlen <= plen) || (subnetId >= (1<<(snPlen-plen)))) 
+ * when snPlen=64 and prefix=64, no SLA, but it's OK, 
+ * */
+   if ((snPlen < plen) || (subnetId >= (1<<(snPlen-plen))))
    {
       cmsLog_error("plen=%d snPlen=%d subnetId=%d", plen, snPlen, subnetId);
       return CMSRET_INVALID_ARGUMENTS;

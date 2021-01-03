@@ -22,8 +22,6 @@ int dns_read_packet(int sock, dns_request_t *m)
   }
   
   /* TODO: check source addr against list of allowed hosts */
-  if(sa.sin_addr.s_addr == inet_addr("127.0.0.1")) /* avoid loopback*/
-      return -1;
 
   /* record where it came from */
   memcpy( (void *)&m->src_addr, (void *)&sa.sin_addr, sizeof(struct in_addr));

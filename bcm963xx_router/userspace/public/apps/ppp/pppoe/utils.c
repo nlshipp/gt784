@@ -17,7 +17,7 @@
  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#define RCSID	"$Id: utils.c,v 1.1.1.1 2010/06/24 19:07:37 denny Exp $"
+#define RCSID	"$Id: utils.c,v 1.3 2010/11/24 02:09:45 azhang Exp $"
 
 #include <stdio.h>
 #include <ctype.h>
@@ -994,10 +994,66 @@ void create_msg(int lognumber, char *lastConnectionError)
    sendPppEventMessage(lognumber, NULL, NULL, NULL, NULL, lastConnectionError);   
 }
 
-#if defined(CUSTOMER_ACTIONTEC)
+#if defined(AEI_VDSL_CUSTOMER_NCS)
 #include <sys/sysinfo.h>
 
-#define SESSION_INFO_PATH  "var/ppp/session_info"
+#define SESSION_INFO_PATH  "/var/ppp/session_info"
+
+/*
+ * set session time to 0 in var/wan_clear.txt,
+ * var/wan_clear.txt is used for clear button on modemstatus_wanstatus.html page;
+ */
+
+
+#if defined(AEI_VDSL_CUSTOMER_QWEST)
+void set_clearinfo_txt()
+{
+    FILE *fp;
+    char line[BUFLEN_128] = {0};
+    char line2[BUFLEN_128] = {0};
+    char *chr = NULL;
+    int num = 0;
+    int i = 0;
+/*read*/
+    fp = fopen("/var/wan_clear.txt", "r");
+    if (fp == NULL) {
+	return;
+    }
+         
+    fgets(line, sizeof(line), fp);
+    fclose(fp);
+
+    if (line[0] == '\0') {
+        return;
+    }
+    else {
+	while (line[i] != '\0') {
+            if (line[i] == '|' )
+               num++;
+            if (num == 3) {
+               chr = &line[i];
+               break;
+            }
+            i++;
+	}
+        if (chr == NULL)
+            return;
+    }
+
+/*re-write*/
+    fp = fopen("/var/wan_clear.txt", "w");
+    if (fp == NULL) {
+	return;
+    }
+    sprintf(line2, "0|0|0%s", chr);
+    fputs(line2, fp);
+    fclose(fp);
+
+    return;
+}
+#endif
+
+
 /*
  * We save pppoe session info in to file "var/ppp/session_info" temporaryly  
  */
@@ -1009,7 +1065,6 @@ void save_session_info_temp(unsigned char *buf)
     int len = strlen(buf) ;
     long   starttime=0;
     struct sysinfo info;
-
     sprintf(path, "%s", SESSION_INFO_PATH);
     f = fopen(path, "w");
     if (f == NULL) {
@@ -1023,19 +1078,16 @@ void save_session_info_temp(unsigned char *buf)
         starttime = info.uptime ; 
         fprintf(f, "%ld\n", starttime);
     }
-  
     fclose(f);
 }
 #endif
-
-
 
 void save_session_info(unsigned char *remote_addr, int sid)
 {
 
    sprintf(oldsession, "%02x%02x%02x%02x%02x%02x/%04x", remote_addr[0], remote_addr[1], remote_addr[2],
       remote_addr[3], remote_addr[4], remote_addr[5], sid);
-   
+
    if (cmsPsp_set(req_name, oldsession, IFC_PPP_SESSION_LEN) != CMSRET_SUCCESS)
    {
       cmsLog_error("Unable to save ppp session info in scratch PAD");
@@ -1043,11 +1095,13 @@ void save_session_info(unsigned char *remote_addr, int sid)
    else
    {
       /* we can remove this printf once this issue is fixed */
-      cmsLog_error("saving ppp session info %s(%s)\n", req_name, oldsession);
-#if defined(CUSTOMER_ACTIONTEC)
+      printf("saving ppp session info %s(%s)\n", req_name, oldsession);
+#if defined(AEI_VDSL_CUSTOMER_NCS)
       save_session_info_temp(oldsession);
+#if defined(AEI_VDSL_CUSTOMER_QWEST)
+      set_clearinfo_txt();
+#endif
 #endif 
-
    }
    
 }   

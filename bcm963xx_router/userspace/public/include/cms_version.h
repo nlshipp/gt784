@@ -2,5 +2,5 @@
 /* modify version.make at the top. */
 #ifndef _CMS_VERSION_H_
 #define _CMS_VERSION_H_
-#define CMS_RELEASE_VERSION "4.06.02"
+#define CMS_RELEASE_VERSION "1.1L.1"
 #endif

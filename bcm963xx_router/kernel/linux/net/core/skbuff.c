@@ -72,6 +72,86 @@
 #if defined(CONFIG_MIPS_BRCM)
 #include <linux/nbuff.h>
 #include <linux/blog.h>
+
+/* Returns size of struct sk_buff */
+size_t skb_size(void)
+{
+    return sizeof(struct sk_buff);
+}
+EXPORT_SYMBOL(skb_size);
+
+size_t skb_aligned_size(void)
+{
+    return ((sizeof(struct sk_buff) + 0x0f) & ~0x0f);
+}
+EXPORT_SYMBOL(skb_aligned_size);
+
+int skb_layout_test(int head_offset, int tail_offset, int end_offset)
+{
+#undef SKBOFFSETOF
+#define SKBOFFSETOF(member)    ((int)&((struct sk_buff*)0)->member)
+    if ( (SKBOFFSETOF(head) == head_offset) &&
+         (SKBOFFSETOF(tail) == tail_offset) &&
+         (SKBOFFSETOF(end)  == end_offset) )
+        return 1;
+    return 0;
+}
+EXPORT_SYMBOL(skb_layout_test);
+
+unsigned int skb_avail_headroom(const struct sk_buff *skb)
+{
+    return skb->data - skb->head;
+}
+EXPORT_SYMBOL(skb_avail_headroom);
+
+/**
+ *  
+ *	skb_headerinit  -   initialize a socket buffer header
+ *	@headroom: reserved headroom size
+ *	@datalen: data buffer size, data buffer is allocated by caller
+ *	@skb: skb allocated by caller
+ *	@data: data buffer allocated by caller
+ *	@recycle_hook: callback function to free data buffer and skb
+ *	@recycle_context: context value passed to recycle_hook, param1
+ *	@blog_p: pass a blog to a skb for logging
+ *
+ *	Initializes the socket buffer and assigns the data buffer to it.
+ *	Both the sk_buff and the pointed data buffer are pre-allocated.
+ *
+ */
+void skb_headerinit(unsigned int headroom, unsigned int datalen,
+					struct sk_buff *skb, unsigned char *data,
+					RecycleFuncP recycle_hook, unsigned int recycle_context,
+					struct blog_t * blog_p)		/* defined(CONFIG_BLOG) */
+{
+	memset(skb, 0, offsetof(struct sk_buff, truesize));
+
+	skb->truesize = datalen + sizeof(struct sk_buff);
+	atomic_set(&skb->users, 1);
+	skb->head = data - headroom;
+	skb->data = data;
+	skb->tail = data + datalen;
+	skb->end  = (unsigned char *) (((unsigned)data + datalen + 0x0f) & ~0x0f);
+	skb->len = datalen;
+
+#if defined(CONFIG_BLOG)
+	skb->blog_p = blog_p;
+	if ( blog_p ) blog_p->skb_p = skb;
+#endif
+	skb->recycle_hook = recycle_hook;
+	skb->recycle_context = recycle_context;
+	skb->recycle_flags = SKB_RECYCLE | SKB_DATA_RECYCLE;
+
+	atomic_set(&(skb_shinfo(skb)->dataref), 1);
+	skb_shinfo(skb)->nr_frags = 0;
+	skb_shinfo(skb)->gso_size = 0;
+	skb_shinfo(skb)->gso_segs = 0;
+	skb_shinfo(skb)->gso_type = 0;
+	skb_shinfo(skb)->ip6_frag_id = 0;
+	skb_shinfo(skb)->frag_list = NULL;
+}
+EXPORT_SYMBOL(skb_headerinit);
+
 #endif
 #include <linux/version.h>
 
@@ -201,7 +281,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
 	 * actually initialise below. Hence, don't put any more fields after
    * the truesize pointer in struct sk_buff!
 	 */
-  memset(skb, 0, offsetof(struct sk_buff, truesize));
+	memset(skb, 0, offsetof(struct sk_buff, truesize));
 	skb->truesize = size + sizeof(struct sk_buff);
 	atomic_set(&skb->users, 1);
 	skb->head = data;
@@ -496,7 +576,7 @@ EXPORT_SYMBOL(kfree_skb);
 struct sk_buff * skb_xlate(struct fkbuff * fkb_p)
 {
 	struct sk_buff * skb_p;
-	int datalen;
+	unsigned int datalen;
 
 	/* Optimization: use preallocated pool of skb with SKB_POOL_RECYCLE flag */
 	skb_p = kmem_cache_alloc(skbuff_head_cache, GFP_ATOMIC);
@@ -508,32 +588,32 @@ struct sk_buff * skb_xlate(struct fkbuff * fkb_p)
 
 	datalen = SKB_DATA_ALIGN(fkb_p->len + FKB_XLATE_SKB_TAILROOM);
 
-	skb_p->truesize = datalen + sizeof(struct sk_buff);
-
-	atomic_set(&skb_p->users, 1);
-	skb_p->head = (unsigned char *)(fkb_p + 1 );
 	skb_p->data = fkb_p->data;
+	skb_p->head = (unsigned char *)(fkb_p + 1 );
 	skb_p->tail = fkb_p->data + fkb_p->len;
-	skb_p->end  = skb_p->data + datalen;
+	skb_p->end  = (unsigned char *)		/* align to skb cacheline */
+                  (((unsigned)skb_p->data + datalen + 0x0f) & ~0x0f);
 
-	skb_p->len  = fkb_p->len;
+#define F2S(x) skb_p->x = fkb_p->x
+	F2S(len);
+	F2S(mark);
+	F2S(priority);
 
 #if defined(CONFIG_BLOG)
     if ( _IS_BPTR_(fkb_p->blog_p) ) /* should not happen */
     {
-        skb_p->blog_p = fkb_p->blog_p;
+        F2S(blog_p);
         fkb_p->blog_p->skb_p = skb_p;
     }
 #endif
-
-#define F2S(x) skb_p->x = fkb_p->x
-
-	F2S(mark);
-	F2S(priority);
 	F2S(recycle_hook);
 	F2S(recycle_context);
 	skb_p->recycle_flags = SKB_DATA_RECYCLE;
+
 	fkb_dec_ref(fkb_p);	/* redundant: fkb_p must not be used henceforth */
+
+	atomic_set(&skb_p->users, 1);
+	skb_p->truesize = datalen + sizeof(struct sk_buff);
 
 	atomic_set(&(skb_shinfo(skb_p)->dataref), 1);
 	skb_shinfo(skb_p)->nr_frags = 0;
@@ -809,7 +889,7 @@ int skb_recycle_check(struct sk_buff *skb, int skb_size)
 	shinfo->frag_list = NULL;
 	memset(&shinfo->hwtstamps, 0, sizeof(shinfo->hwtstamps));
 
-  memset(skb, 0, offsetof(struct sk_buff, truesize));
+	memset(skb, 0, offsetof(struct sk_buff, truesize));
 	skb->data = skb->head + NET_SKB_PAD;
 	skb_reset_tail_pointer(skb);
 
@@ -847,6 +927,10 @@ static void __copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
 	new->nf_trace		= old->nf_trace;
 #endif
 #if defined(CONFIG_MIPS_BRCM)
+#if defined CONFIG_BLOG
+	blog_xfer(new, old);	/* CONFIG_BLOG: transfers blog ownership */
+#endif
+	new->vtag_word = old->vtag_word;
 	new->tc_word = old->tc_word;
 #else
 #ifdef CONFIG_NET_SCHED
@@ -884,13 +968,9 @@ static struct sk_buff *__skb_clone(struct sk_buff *n, struct sk_buff *skb)
 	C(truesize);
 
 #if defined(CONFIG_MIPS_BRCM)
-#if defined CONFIG_BLOG
-	blog_xfer(n, skb);	/* CONFIG_BLOG: transfers blog ownership */
-#endif
 	C(recycle_hook);
 	C(recycle_context);
 	n->recycle_flags = skb->recycle_flags & SKB_NO_RECYCLE;
-	C(vtag_word);
 #endif
 
 
@@ -1154,11 +1234,6 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
 
 	off = (data + nhead) - skb->head;
 
-#if defined(CONFIG_MIPS_BRCM)
-	/* The data buffer of this skb is not pre-allocated any more
-	 * even the skb itself is pre-allocated */
-	skb->recycle_flags &= SKB_DATA_NO_RECYCLE;
-#endif
 	skb->head     = data;
 	skb->data    += off;
 #ifdef NET_SKBUFF_DATA_USES_OFFSET
@@ -1176,6 +1251,13 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
 	skb->cloned   = 0;
 	skb->hdr_len  = 0;
 	skb->nohdr    = 0;
+
+#if defined(CONFIG_MIPS_BRCM)
+	/* The data buffer of this skb is not pre-allocated any more
+	 * even the skb itself is pre-allocated */
+	skb->recycle_flags &= SKB_DATA_NO_RECYCLE;
+#endif
+
 	atomic_set(&skb_shinfo(skb)->dataref, 1);
 	return 0;
 

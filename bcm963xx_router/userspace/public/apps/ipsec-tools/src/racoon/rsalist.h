@@ -1,4 +1,4 @@
-/* $Id: rsalist.h,v 1.1.1.1 2010/06/24 19:07:38 denny Exp $ */
+/* $Id: rsalist.h,v 1.1.1.1 2010/06/14 22:47:27 tliu Exp $ */
 /*
  * Copyright (C) 2004 SuSE Linux AG, Nuernberg, Germany.
  * Contributed by: Michal Ludvig <mludvig@suse.cz>, SUSE Labs

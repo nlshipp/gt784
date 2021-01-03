@@ -55,6 +55,10 @@
 #define NETLINK_ADD_MEMBERSHIP 1
 #endif
 
+#ifndef NETLINK_NO_ENOBUFS
+#define NETLINK_NO_ENOBUFS	5
+#endif
+
 #ifndef SOL_NETLINK
 #define SOL_NETLINK 270
 #endif
@@ -200,6 +204,13 @@ struct nfnl_handle *nfnl_open(void)
 		errno = EINVAL;
 		goto err_close;
 	}
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+
+	printf("set NETLINK_RECV_NO_ENOBUFS\n");
+	unsigned int enable=1;
+	setsockopt(nfnlh->fd, SOL_NETLINK, NETLINK_NO_ENOBUFS,
+			  &enable, sizeof(enable));
+#endif
 
 	return nfnlh;
 

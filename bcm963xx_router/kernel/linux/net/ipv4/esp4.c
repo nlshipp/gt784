@@ -16,7 +16,7 @@
 #include <net/protocol.h>
 #include <net/udp.h>
 
-#ifdef CONFIG_BLOG
+#if defined(CONFIG_MIPS_BRCM)
 #include <linux/blog.h>
 #endif
 

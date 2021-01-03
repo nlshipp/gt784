@@ -18,11 +18,9 @@
 #include <linux/netfilter_bridge.h>
 #include "br_private.h"
 #if defined(CONFIG_MIPS_BRCM)
-#include <linux/blog.h>
-#endif
-#if defined(CONFIG_MIPS_BRCM)
 #include <linux/ip.h>
 #include <linux/igmp.h>
+#include <linux/blog.h>
 #endif /* for IGMP */
 
 /* Don't forward packets to originating port or forwarding diasabled */
@@ -57,17 +55,25 @@ static inline int should_deliver(const struct net_bridge_port *p,
         /*
          * CPE is querying for LAN-2-LAN multicast.  These query messages 
          * should not go on WAN interfaces.
+         * Also don't alow leaking of IGMPv2 report messages among LAN ports
          */ 
 	if((is_multicast_ether_addr(dest)) &&
-	   (p->dev->priv_flags & IFF_WANDEV) &&
+        (eth_hdr(skb)->h_proto == ETH_P_IP) &&
 	   (pip && pip->protocol == IPPROTO_IGMP)) {
 		if(pip->ihl == 5) {
 			igmp_type = skb->data[20];
 		} else {
 			igmp_type = skb->data[24];
 		}
-		if (igmp_type == IGMP_HOST_MEMBERSHIP_QUERY) 
-			return 0;
+
+		if((p->dev->priv_flags & IFF_WANDEV)) {
+			if (igmp_type == IGMP_HOST_MEMBERSHIP_QUERY) 
+				return 0;
+		}
+		else {
+			if (igmp_type != IGMP_HOST_MEMBERSHIP_QUERY) 
+				return 0;
+		}
 	}
 
 	return 1;
@@ -161,8 +167,10 @@ static void br_flood(struct net_bridge *br, struct sk_buff *skb,
 	struct net_bridge_port *p;
 	struct net_bridge_port *prev;
 
+
 #if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
-	if ( skb->blog_p && !skb->blog_p->rx.info.multicast)
+	Blog_t * blog_p = blog_ptr(skb);
+	if ( blog_p && !blog_p->rx.info.multicast)
 		blog_skip(skb);
 #endif
 	prev = NULL;
@@ -178,7 +186,7 @@ static void br_flood(struct net_bridge *br, struct sk_buff *skb,
 					return;
 				}
 #if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
-				blog_clone(skb, skb2->blog_p);
+				blog_clone(skb, blog_ptr(skb2));
 #endif
 				__packet_hook(prev, skb2);
 			}

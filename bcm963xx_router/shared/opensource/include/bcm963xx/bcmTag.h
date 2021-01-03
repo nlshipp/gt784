@@ -34,8 +34,11 @@
 #ifndef _BCMTAG_H_
 #define _BCMTAG_H_
 
-
+#ifdef AEI_VDSL_CUSTOMER_NCS
+#define BCM_SIG_1   "Actiontec"
+#else
 #define BCM_SIG_1   "Broadcom Corporation"
+#endif
 #define BCM_SIG_2   "ver. 2.0"          // was "firmware version 2.0" now it is split 6 char out for chip id.
 
 #define BCM_TAG_VER         "6"
@@ -43,8 +46,13 @@
 // file tag (head) structure all is in clear text except validationTokens (crc, md5, sha1, etc). Total: 128 unsigned chars
 #define TAG_LEN         256
 #define TAG_VER_LEN     4
+#ifdef AEI_VDSL_CUSTOMER_NCS
+#define SIG_LEN         10
+#define SIG_LEN_2       24
+#else
 #define SIG_LEN         20
 #define SIG_LEN_2       14   // Original second SIG = 20 is now devided into 14 for SIG_LEN_2 and 6 for CHIP_ID
+#endif
 #define CHIP_ID_LEN		6	
 #define IMAGE_LEN       10
 #define ADDRESS_LEN     12
@@ -54,7 +62,11 @@
 #define RESERVED_LEN    (TAG_LEN - TAG_VER_LEN - SIG_LEN - SIG_LEN_2 - CHIP_ID_LEN - BOARD_ID_LEN - \
                         (4*IMAGE_LEN) - (3*ADDRESS_LEN) - (3*FLAG_LEN) - (2*TOKEN_LEN))
 
-
+#ifdef AEI_VDSL_DUAL_IMAGE
+#define IMAGE1_SEQUENCE 0x10000000
+#define IMAGE2_SEQUENCE 0x00001000
+#define DEFAULT_IMAGE_SEQUENCE 0x00000000
+#endif
 // TAG for downloadable image (kernel plus file system)
 typedef struct _FILE_TAG
 {

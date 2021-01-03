@@ -260,8 +260,8 @@ static int ip_local_deliver_finish(struct sk_buff *skb)
 int ip_local_deliver(struct sk_buff *skb)
 {
 
-/* do not track locally delivered packets */
-#if defined (CONFIG_MIPS_BRCM)
+#if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
+	/* do not track locally delivered packets */
 	blog_skip(skb);
 #endif
 

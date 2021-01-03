@@ -49,7 +49,7 @@ CFLAGS += -s -W -Wall -Wstrict-prototypes -DVERSION='"$(VER)"' -I$(INC_BRCMDRIVE
 CFLAGS += -DBRCM_CMS_BUILD -DCMS_LOG3 -I$(BUILD_DIR)/userspace/public/include -I$(BUILD_DIR)/userspace/public/include/linux
 CFLAGS += -I$(TOOLCHAIN)/include
 
-LIBS=-Wl,-rpath,/lib:/lib/public:$(INSTALL_DIR)/lib:$(INSTALL_DIR)/lib/public -L$(INSTALL_DIR)/lib/public -lcms_util -lcms_msg -lcms_boardctl
+LIBS=-Wl,-rpath,/lib:/lib/public:$(INSTALL_DIR)/lib:$(INSTALL_DIR)/lib/public -L$(INSTALL_DIR)/lib/public -lcms_util -lcms_msg
 
 #
 # Use between the following 2 lines depending on whether you want verbose debug or not.
@@ -71,8 +71,7 @@ ifeq ($(strip $(BUILD_UDHCP_RELAY)), y)
 CFLAGS += -DDHCP_RELAY
 DHCPD_OBJS += relay.o
 endif
-
-CFLAGS += $(ACTION_TEC_DFLAGS)
+CFLAGS +=$(ACTION_TEC_DFLAGS)
 
 # BRCM begin
 #all: $(AR1)
@@ -102,7 +101,6 @@ $(EXEC3): $(OBJS3)
 
 install: 
 	install -m 755 udhcpd $(INSTALL_DIR)/bin
-	install -m 755 dumpleases $(INSTALL_DIR)/bin
 	$(STRIP) $(INSTALL_DIR)/bin/udhcpd
 	ln -sf udhcpd $(INSTALL_DIR)/bin/dhcpc
 	ln -sf udhcpd $(INSTALL_DIR)/bin/dhcpd

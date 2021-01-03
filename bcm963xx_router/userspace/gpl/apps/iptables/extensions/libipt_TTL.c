@@ -1,7 +1,7 @@
 /* Shared library add-on to iptables for the TTL target
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id: libipt_TTL.c,v 1.1.1.1 2010/06/24 19:07:17 denny Exp $
+ * $Id: libipt_TTL.c,v 1.1.1.1 2010/06/14 22:47:22 tliu Exp $
  *
  * This program is distributed under the terms of GNU GPL
  */

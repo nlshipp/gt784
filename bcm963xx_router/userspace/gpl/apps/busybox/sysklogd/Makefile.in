@@ -31,8 +31,6 @@ SYSKLOGD-$(CONFIG_SYSLOGD)		+= syslogd.o
 
 libraries-y+=$(SYSKLOGD_DIR)$(SYSKLOGD_AR)
 
-CFLAGS += $(ACTION_TEC_DFLAGS)
-
 $(SYSKLOGD_DIR)$(SYSKLOGD_AR): $(patsubst %,$(SYSKLOGD_DIR)%, $(SYSKLOGD-y))
 	$(AR) -ro $@ $(patsubst %,$(SYSKLOGD_DIR)%, $(SYSKLOGD-y))
 

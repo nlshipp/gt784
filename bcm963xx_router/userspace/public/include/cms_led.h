@@ -46,5 +46,24 @@ void cmsLed_setWanDisconnected(void);
 
 void cmsLed_setWanFailed(void);
 
+#ifdef AEI_VDSL_CUSTOMER_NCS
+#ifdef AEI_VDSL_SMARTLED
+void setInetLedTrafficBlink(int state);
+#endif
+
+void cmsLed_setPowerGreen(void);
+
+void cmsLed_setPowerAmber(void);
+
+void cmsLed_setEthWanConnected(void);
+
+void cmsLed_setEthWanDisconnected(void);
+
+#if defined(SUPPORT_DSL_BONDING) && defined(AEI_VDSL_CUSTOMER_QWEST_Q2000)
+void cmsLed_setWanLineStatus(int state);
+#endif
+
+#endif
+
 
 #endif /* __CMS_LED_H__ */

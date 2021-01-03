@@ -32,7 +32,7 @@
  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#define RCSID	"$Id: auth.c,v 1.1.1.1 2010/06/24 19:07:37 denny Exp $"
+#define RCSID	"$Id: auth.c,v 1.3 2010/10/29 10:36:20 xshi Exp $"
 
 #include <stdio.h>
 #include <stddef.h>
@@ -642,10 +642,9 @@ auth_peer_success(unit, protocol, name, namelen)
         network_phase(unit);
 }
 
-#ifdef CUSTOMER_ACTIONTEC
+#if defined(AEI_VDSL_CUSTOMER_QWEST)
 #define  PPP_Auth_FAIL   	"var/ppp/ppp_auth_fail"
 #endif
-
 /*
  * We have failed to authenticate ourselves to the peer using `protocol'.
  */
@@ -668,7 +667,7 @@ auth_withpeer_fail(unit, protocol)
     printf("PPP: Authentication failed.\n");
     create_msg(BCM_PPPOE_AUTH_FAILED, MDMVS_ERROR_AUTHENTICATION_FAILURE); 
     syslog(LOG_ERR,"User name and password authentication failed.\n");
-#ifdef CUSTOMER_ACTIONTEC
+#if defined(AEI_VDSL_CUSTOMER_QWEST)
 	FILE *f;
     int  ppp_AuthFail = 1 ;
     char line[BUFLEN_64] = {0} ;
@@ -690,9 +689,15 @@ auth_withpeer_fail(unit, protocol)
 	}
 #endif
 
-    }
 
+    }
+#ifndef AEI_VDSL_CUSTOMER_NCS	
     persist=0;
+#endif
+#ifdef AEI_VDSL_CUSTOMER_NCS	
+	holdoff=20;
+#endif
+
 }
 
 /*
@@ -724,6 +729,9 @@ auth_withpeer_success(unit, protocol)
      */
     if ((auth_pending[unit] &= ~bit) == 0)
 	network_phase(unit);
+#ifdef AEI_VDSL_CUSTOMER_NCS	
+	holdoff=3;
+#endif	
 }
 
 

@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.12 2004/10/19 13:07:43 starvik Exp $
+# $Id: Makefile,v 1.1.1.1 2010/06/14 22:48:58 tliu Exp $
 #
 # Makefile for the linux kernel.
 #

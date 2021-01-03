@@ -21,7 +21,8 @@
 #include <net/dsfield.h>
 
 #define PPPOE_HLEN   6
-#define TYPE_PPP_IP  0x0021  /* IPv4 in PPP */
+#define PPP_TYPE_IPV4   0x0021  /* IPv4 in PPP */
+#define PPP_TYPE_IPV6   0x0057  /* IPv6 in PPP */
 
 static unsigned int ebt_ftos_tg(struct sk_buff *skb, const struct xt_target_param *par)      
 {
@@ -44,9 +45,9 @@ static unsigned int ebt_ftos_tg(struct sk_buff *skb, const struct xt_target_para
          ipv6h = (struct ipv6hdr *)(skb->network_header + VLAN_HLEN);
    }
    else if (skb->protocol == __constant_htons(ETH_P_PPP_SES)) {
-      if (*(unsigned short *)(skb->network_header + PPPOE_HLEN) == TYPE_PPP_IP)
+      if (*(unsigned short *)(skb->network_header + PPPOE_HLEN) == PPP_TYPE_IPV4)
          iph = (struct iphdr *)(skb->network_header + PPPOE_HLEN + 2);
-      else if (*(unsigned short *)(skb->network_header + PPPOE_HLEN) == TYPE_PPP_IPV6)
+      else if (*(unsigned short *)(skb->network_header + PPPOE_HLEN) == PPP_TYPE_IPV6)
          ipv6h = (struct ipv6hdr *)(skb->network_header + PPPOE_HLEN + 2);
    }
    /* if not IP header, do nothing. */

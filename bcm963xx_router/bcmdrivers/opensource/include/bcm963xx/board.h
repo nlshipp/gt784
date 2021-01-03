@@ -32,6 +32,7 @@
 extern "C" {
 #endif
 
+#define BOARD_SUPPORT_LOG_SECTOR
 /*****************************************************************************/
 /*          board ioctl calls for flash, led and some other utilities        */
 /*****************************************************************************/
@@ -70,7 +71,30 @@ extern "C" {
 #define BOARD_IOCTL_GET_SYSLOG_SIZE     _IOWR(BOARD_IOCTL_MAGIC, 29, BOARD_IOCTL_PARMS)
 #define BOARD_IOCTL_SET_SHUTDOWN_MODE   _IOWR(BOARD_IOCTL_MAGIC, 30, BOARD_IOCTL_PARMS)
 #define BOARD_IOCTL_SET_STANDBY_TIMER   _IOWR(BOARD_IOCTL_MAGIC, 31, BOARD_IOCTL_PARMS)
-    
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+#define BOARD_IOCTL_GET_SN              _IOWR(BOARD_IOCTL_MAGIC, 32, BOARD_IOCTL_PARMS)    
+#define BOARD_IOCTL_POWER_LED_ON        _IOWR(BOARD_IOCTL_MAGIC, 33, BOARD_IOCTL_PARMS)
+#define BOARD_IOCTL_POWER_LED_FLASH     _IOWR(BOARD_IOCTL_MAGIC, 34, BOARD_IOCTL_PARMS)
+#define BOARD_IOCTL_GET_FW_VERSION      _IOWR(BOARD_IOCTL_MAGIC, 35, BOARD_IOCTL_PARMS)
+#define BOARD_IOCTL_RESET_FW_VERSION    _IOWR(BOARD_IOCTL_MAGIC, 36, BOARD_IOCTL_PARMS)
+#define BOARD_IOCTL_SET_FW_VERSION      _IOWR(BOARD_IOCTL_MAGIC, 37, BOARD_IOCTL_PARMS)
+#ifdef AEI_VDSL_SMARTLED
+#define BOARD_IOCTL_SET_INET            _IOWR(BOARD_IOCTL_MAGIC, 38, BOARD_IOCTL_PARMS)
+#define BOARD_IOCTL_SET_INET_TRAFFIC_BLINK _IOWR(BOARD_IOCTL_MAGIC, 39, BOARD_IOCTL_PARMS)
+#endif
+#endif
+#ifdef AEI_VDSL_UPGRADE_DUALIMG_HISTORY_SPAD
+#define BOARD_IOCTL_GET_DUAL_FW_VERSION _IOWR(BOARD_IOCTL_MAGIC, 40, BOARD_IOCTL_PARMS)
+#define BOARD_IOCTL_GET_DUAL_UG_INFO _IOWR(BOARD_IOCTL_MAGIC, 41, BOARD_IOCTL_PARMS)
+#define BOARD_IOCTL_SET_DUAL_UG_INFO _IOWR(BOARD_IOCTL_MAGIC, 42, BOARD_IOCTL_PARMS)
+#endif
+#if defined(AEI_VDSL_QOS_SINK)
+#define BOARD_IOCTL_CMF_FLAG         _IOWR(BOARD_IOCTL_MAGIC, 43, BOARD_IOCTL_PARMS)
+#endif
+#if defined(AEI_VDSL_SIGNED_FIRMWARE)
+#define BOARD_IOCTL_GET_PRODUCTID _IOWR(BOARD_IOCTL_MAGIC, 44, BOARD_IOCTL_PARMS)
+#define BOARD_IOCTL_GET_FS_OFFSET _IOWR(BOARD_IOCTL_MAGIC, 45, BOARD_IOCTL_PARMS)
+#endif    
 // for the action in BOARD_IOCTL_PARMS for flash operation
 typedef enum 
 {
@@ -85,6 +109,10 @@ typedef enum
     SET_CS_PARAM,
     BACKUP_PSI,
     SYSLOG
+#if defined(AEI_VDSL_QOS_SINK)
+    ,CMF_ON,
+    CMF_OFF
+#endif
 } BOARD_IOCTL_ACTION;
     
 typedef struct boardIoctParms
@@ -113,6 +141,10 @@ typedef enum
     kLedDect,
     kLedGpon,
     kLedMoCA,
+#ifdef AEI_VDSL_CUSTOMER_NCS
+    kLedUsb,
+    kLedPower,
+#endif
     kLedEnd                             // NOTE: Insert the new led name before this one.
 } BOARD_LED_NAME;
 
@@ -122,6 +154,9 @@ typedef enum
     kLedStateOn,                         /* turn led on */
     kLedStateFail,                       /* turn led on red */
     kLedStateSlowBlinkContinues,         /* slow blink continues at 2HZ interval */
+#ifdef AEI_VDSL_CUSTOMER_NCS
+    kLedStateRedSlowBlinkContinues,      /* Red slow blink continues at 2HZ interval */
+#endif
     kLedStateFastBlinkContinues,         /* fast blink continues at 4HZ interval */
     kLedStateUserWpsInProgress,          /* 200ms on, 100ms off */
     kLedStateUserWpsError,               /* 100ms on, 100ms off */
@@ -188,6 +223,9 @@ typedef struct cs_config_pars_tag
 #define IF_NAME_MOCA   "moca"
 #define IF_NAME_ATM    "atm"
 #define IF_NAME_PTM    "ptm"
+#ifdef AEI_VDSL_CUSTOMER_NCS
+#define IF_NAME_EWAN "ewan"
+#endif
 
 #define MAC_ADDRESS_ANY         (unsigned long) -1
 
@@ -237,12 +275,21 @@ extern int kerSysGetSdramSize( void );
 #if defined(CONFIG_BCM96368)
 extern unsigned int kerSysGetSdramWidth( void );
 #endif
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+int kerClearScratchPad(int blk_size);
+extern int kerSysGetDslDatapump(unsigned char *dslDatapump);
+extern void restoreDatapump(int value);
+#endif
 extern void kerSysGetBootline(char *string, int strLen);
 extern void kerSysSetBootline(char *string, int strLen);
 extern void kerSysMipsSoftReset(void);
 extern void kerSysLedCtrl(BOARD_LED_NAME, BOARD_LED_STATE);
 extern int kerSysFlashSizeGet(void);
 extern int kerSysMemoryMappedFlashSizeGet(void);
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+extern int kerSysEraseFlash(unsigned long eraseaddr, unsigned long len);
+extern int kerSysWriteToFlash( unsigned long toaddr, void * fromaddr, unsigned long len);
+#endif
 extern unsigned long kerSysReadFromFlash( void *toaddr, unsigned long fromaddr, unsigned long len );
 extern void kerSysRegisterDyingGaspHandler(char *devname, void *cbfn, void *context);
 extern void kerSysDeregisterDyingGaspHandler(char *devname);    

@@ -3,3 +3,4 @@ tmpfs		/var	tmpfs	size=420k	0	0
 /dev/sda1	/mnt	vfat	noauto		0	0
 tmpfs		/mnt	tmpfs	size=16k	0	0
 sysfs		/sys	sysfs	defaults	0	0
+/dev/mtdblock1  /osgi   jffs2   defaults    	0   	0

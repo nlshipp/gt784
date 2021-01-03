@@ -4,7 +4,7 @@
  *
  * This code is distributed under the terms of GNU GPL v2
  *
- * $Id: iptables-restore.c,v 1.1.1.1 2010/06/24 19:07:17 denny Exp $
+ * $Id: iptables-restore.c,v 1.1.1.1 2010/06/14 22:47:22 tliu Exp $
  */
 
 #include <getopt.h>

@@ -4,7 +4,7 @@
 #
 # LICENSE follows the described one in lzma.txt.
 
-# $Id: kmod.mk,v 1.9 2007/01/07 15:12:48 jro Exp $
+# $Id: kmod.mk,v 1.1.1.1 2010/06/14 22:49:40 tliu Exp $
 
 ifndef Sqlzma
 $(error Sqlzma is not defined)

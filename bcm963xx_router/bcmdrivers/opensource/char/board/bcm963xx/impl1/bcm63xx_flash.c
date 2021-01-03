@@ -52,6 +52,9 @@
 
 #include <bcm_map_part.h>
 #include <board.h>
+#ifndef AEI_VDSL_CUSTOMER_QWEST_Q1000
+#define BCMTAG_EXE_USE
+#endif
 #include <bcmTag.h>
 #include "flash_api.h"
 #include "boardparms.h"
@@ -249,6 +252,11 @@ void kerSysEarlyFlashInit( void )
             (unsigned char *)&bootNvramData, sizeof (NVRAM_DATA)) ;
     }
 
+#ifdef AEI_VDSL_CUSTOMER_NCS
+    /* Enable Backup PSI by default */
+    bootNvramData.backupPsi = 0x01;
+#endif
+
 #if defined(DEBUG_FLASH)
     printk("reading nvram into bootNvramData\n");
     printk("ulPsiSize 0x%x\n", (unsigned int)bootNvramData.ulPsiSize);
@@ -360,6 +368,7 @@ int kerSysEraseNvRam(void)
     return sts;
 }
 
+#if !defined(AEI_CONFIG_AUXFS_JFFS2)
 unsigned long kerSysReadFromFlash( void *toaddr, unsigned long fromaddr,
     unsigned long len )
 {
@@ -369,6 +378,7 @@ unsigned long kerSysReadFromFlash( void *toaddr, unsigned long fromaddr,
 
     return( len );
 }
+#endif
 
 #else // CONFIG_BRCM_IKOS
 static NVRAM_DATA ikos_nvram_data =
@@ -420,12 +430,46 @@ unsigned long kerSysReadFromFlash( void *toaddr, unsigned long fromaddr,
     return(memcpy((unsigned char *) toaddr, (unsigned char *) fromaddr, len));
 }
 #endif  // CONFIG_BRCM_IKOS
+#ifndef AEI_VDSL_CUSTOMER_QWEST_Q1000
+static UINT32 getCrc32(byte *pdata, UINT32 size, UINT32 crc)
+{
+    while (size-- > 0)
+        crc = (crc >> 8) ^ Crc32_table[(crc ^ *pdata++) & 0xff];
 
+    return crc;
+}
+static void kerSysUpdateNvramData()
+{
+    NVRAM_DATA  nvramData;
 
+    kerSysNvRamGet((char *)&nvramData, sizeof(NVRAM_DATA), 0);
+    if (5 == nvramData.ulVersion) {
+        NVRAM_DATA_OLD  nvramDataOld;
+        UINT32 crc = CRC32_INIT_VALUE;
+
+        printk("\n\n ###################################\n");
+        printk(" Update NVRAM from version = %ld to version = %ld\n", nvramData.ulVersion, NVRAM_VERSION_NUMBER);
+        printk("####################################\n\n");
+        kerSysNvRamGet((char *)&nvramDataOld, sizeof(NVRAM_DATA_OLD), 0);
+        memcpy(nvramData.ulSerialNumber, nvramDataOld.ulSerialNumber, 32);
+        memcpy(nvramData.chFactoryFWVersion, nvramDataOld.chFactoryFWVersion, 48);
+        memcpy(nvramData.wpsPin, nvramDataOld.wpsPin, 32);
+        memcpy(nvramData.wpaKey, nvramDataOld.wpaKey, 32);
+        nvramData.ulVersion = NVRAM_VERSION_NUMBER;
+        nvramData.ulCheckSum = 0;
+        crc = getCrc32((char *)&nvramData, sizeof(NVRAM_DATA), crc);
+        nvramData.ulCheckSum = crc;
+        kerSysNvRamSet((char *)&nvramData, sizeof(NVRAM_DATA), 0);
+    }
+}
+#endif
 void kerSysFlashInit( void )
 {
     sema_init(&semflash, 1);
     flash_init_info(&bootNvramData, &fInfo);
+#ifndef AEI_VDSL_CUSTOMER_QWEST_Q1000    
+    kerSysUpdateNvramData();
+#endif
 }
 
 /***********************************************************************
@@ -455,7 +499,6 @@ void kerSysFlashAddrInfoGet(PFLASH_ADDR_INFO pflash_addr_info)
 int kerSysPersistentGet(char *string, int strLen, int offset)
 {
     char *pBuf = NULL;
-
     if( bootFromNand )
     {
         /* Root file system is on a writable NAND flash.  Read PSI from
@@ -551,6 +594,7 @@ int kerSysBackupPsiGet(char *string, int strLen, int offset)
     return 0;
 }
 
+
 // set psi 
 // return:
 //  0 - ok
@@ -590,7 +634,6 @@ int kerSysPersistentSet(char *string, int strLen, int offset)
 
         return 0;
     }
-
     if ((pBuf = getSharedBlks(fInfo.flash_persistent_start_blk,
         fInfo.flash_persistent_number_blk)) == NULL)
         return -1;
@@ -598,11 +641,15 @@ int kerSysPersistentSet(char *string, int strLen, int offset)
     // set string to the memory buffer
     memcpy((pBuf + fInfo.flash_persistent_blk_offset + offset), string, strLen);
 
+		//	printk(KERN_EMERG"pt_blk=%d,pnblk=%d,poff=%d,len=%d\n",fInfo.flash_persistent_start_blk, fInfo.flash_persistent_number_blk,fInfo.flash_persistent_blk_offset,fInfo.flash_persistent_length);
+		//	printk(KERN_EMERG"st_blk=%d,snblk=%d,soff=%d,len=%d\n",fInfo.flash_scratch_pad_start_blk, fInfo.flash_scratch_pad_number_blk,fInfo.flash_scratch_pad_blk_offset,fInfo.flash_scratch_pad_length);
+
     if (setSharedBlks(fInfo.flash_persistent_start_blk, 
         fInfo.flash_persistent_number_blk, pBuf) != 0)
         sts = -1;
     
     retriedKfree(pBuf);
+
 
     return sts;
 }
@@ -666,6 +713,11 @@ int kerSysBackupPsiSet(char *string, int strLen, int offset)
        usedBlkSize += flash_get_sector_size((unsigned short) i);
     }
 
+#ifdef AEI_VDSL_CUSTOMER_NCS
+    if (strLen + offset > usedBlkSize)
+        return -1;
+#endif
+
     if ((pBuf = (char *) retriedKmalloc(usedBlkSize)) == NULL)
     {
        printk("failed to allocate memory with size: %d\n", usedBlkSize);
@@ -676,10 +728,9 @@ int kerSysBackupPsiSet(char *string, int strLen, int offset)
 
     // set string to the memory buffer
     memcpy((pBuf + offset), string, strLen);
-
     if (setSharedBlks(fInfo.flash_backup_psi_start_blk, 
-        (fInfo.flash_backup_psi_start_blk + fInfo.flash_backup_psi_number_blk), pBuf) != 0)
-        sts = -1;
+       ( fInfo.flash_backup_psi_number_blk), pBuf) != 0)
+       sts = -1;
     
     retriedKfree(pBuf);
 
@@ -831,7 +882,7 @@ int kerSysSyslogSet(char *string, int strLen, int offset)
  * and change the extenstion of the cferam in the image to be flashed to that
  * number.
  */
-static void nandUpdateSeqNum(unsigned char *imagePtr, int imageSize, int blkLen)
+static int nandUpdateSeqNum(unsigned char *imagePtr, int imageSize, int blkLen)
 {
     char fname[] = NAND_CFE_RAM_NAME;
     int fname_actual_len = strlen(fname);
@@ -840,6 +891,8 @@ static void nandUpdateSeqNum(unsigned char *imagePtr, int imageSize, int blkLen)
     int i;
     struct file *fp;
     int seq = -1;
+    int ret = 1;
+
 
     strcpy(cferam_base, fname);
     cferam_base[fname_cmp_len] = '\0';
@@ -938,6 +991,7 @@ static void nandUpdateSeqNum(unsigned char *imagePtr, int imageSize, int blkLen)
                          * of the directory entry.
                          */
                         done = 1;
+                        ret = (buf - imagePtr) / len; /* block number */
                         break;
                     }
 
@@ -951,7 +1005,86 @@ static void nandUpdateSeqNum(unsigned char *imagePtr, int imageSize, int blkLen)
             }
         }
     }
+
+    return(ret);
 }
+
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+/* Erase the specified NAND flash block but preserve the spare area. */
+static int nandEraseBlkNotSpare( struct mtd_info *mtd, int blk )
+{
+    int sts = -1;
+
+    /* block_is bad returns 0 if block is not bad */
+    if( mtd->block_isbad(mtd, blk) == 0 )
+    {
+        unsigned char oobbuf[64]; /* expected to be a max size */
+        struct mtd_oob_ops ops;
+
+        memset(&ops, 0x00, sizeof(ops));
+        ops.ooblen = mtd->oobsize;
+        ops.ooboffs = 0;
+        ops.datbuf = NULL;
+        ops.oobbuf = oobbuf;
+        ops.len = 0;
+        ops.mode = MTD_OOB_PLACE;
+
+        /* Read and save the spare area. */
+        sts = mtd->read_oob(mtd, blk, &ops);
+        if( sts == 0 )
+        {
+            struct erase_info erase;
+
+            /* Erase the flash block. */
+            memset(&erase, 0x00, sizeof(erase));
+            erase.addr = blk;
+            erase.len = mtd->erasesize;
+            erase.mtd = mtd;
+
+            sts = mtd->erase(mtd, &erase);
+            if( sts == 0 )
+            {
+                int i;
+
+                /* Function local_bh_disable has been called and this
+                 * is the only operation that should be occurring.
+                 * Therefore, spin waiting for erase to complete.
+                 */
+                for(i = 0; i < 10000 && erase.state != MTD_ERASE_DONE &&
+                    erase.state != MTD_ERASE_FAILED; i++ )
+                {
+                    udelay(100);
+                }
+
+                if( erase.state != MTD_ERASE_DONE )
+                    sts = -1;
+            }
+
+            if( sts == 0 )
+            {
+                memset(&ops, 0x00, sizeof(ops));
+                ops.ooblen = mtd->oobsize;
+                ops.ooboffs = 0;
+                ops.datbuf = NULL;
+                ops.oobbuf = oobbuf;
+                ops.len = 0;
+                ops.mode = MTD_OOB_PLACE;
+
+                /* Restore the spare area. */
+                if( (sts = mtd->write_oob(mtd, blk, &ops)) != 0 )
+                    printk("nandImageSet - Block 0x%8.8x. Error writing spare "
+                        "area.\n", blk);
+            }
+            else
+                printk("nandImageSet - Block 0x%8.8x. Error erasing block.\n",blk);
+        }
+        else
+            printk("nandImageSet - Block 0x%8.8x. Error read spare area.\n", blk);
+    }
+
+    return( sts );
+}
+#endif
 
 // NAND flash bcm image 
 // return: 
@@ -961,16 +1094,23 @@ static int nandImageSet( int flash_start_addr, char *string, int img_size )
 {
     int sts = -1;
     int blk = 0;
-    int i;
-    struct mtd_info *mtd  = NULL, *mtd0 = NULL;
+    int i; 
+    struct mtd_info *mtd = NULL, *mtd0 = NULL;
     struct mtd_info *mtd1 = get_mtd_device_nm("nvram");
+    char *end_string = string + img_size;
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+    int         cferam_blk, fs_start_blk, ofs, retlen = 0;
+    char        *cferam_string;
+    /* Allow room to flash cferam sequence number at start of file system. */
+    const int   fs_start_blk_num = 8;
+#endif
 
     if( mtd1 )
     {
         int blksize = mtd1->erasesize / 1024;
         WFI_TAG wt;
 
-        memcpy(&wt, string + img_size, sizeof(wt));
+        memcpy(&wt, end_string, sizeof(wt));
         if( (wt.wfiVersion & WFI_ANY_VERS_MASK) == WFI_ANY_VERS &&
             ((blksize == 16 && wt.wfiFlashType != WFI_NAND16_FLASH) ||
              (blksize == 128 && wt.wfiFlashType != WFI_NAND128_FLASH)) )
@@ -999,21 +1139,25 @@ static int nandImageSet( int flash_start_addr, char *string, int img_size )
         smp_send_stop();
         udelay(20);
 #endif
-
-        /* Update the sequence number that replaces that extension in file
-         * cferam.000
-         */
+   
+#if !defined(AEI_CONFIG_AUXFS_JFFS2)
         nandUpdateSeqNum((unsigned char *) string, img_size, mtd0->erasesize);
-
         local_bh_disable();
-
-        if( *(unsigned short *) string == JFFS2_MAGIC_BITMASK )
+#endif 
+        if( *(unsigned short *) string == JFFS2_MAGIC_BITMASK ) {
+           /* Image only contains file system. */
             mtd = mtd0; /* only flash file system */
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+            ofs = 0; /* use entire string image to find sequence number */
+#endif
+        }
         else
         {
             PNVRAM_DATA pnd = (PNVRAM_DATA) (string + NVRAM_DATA_OFFSET);
             char *p;
-
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+            ofs = mtd0->erasesize; /* skip block 0 to find sequence number */
+#endif
             mtd = mtd1; /* flash first boot block and then file system */
 
             /* Copy NVRAM data to block to be flashed so it is preserved. */
@@ -1034,7 +1178,71 @@ static int nandImageSet( int flash_start_addr, char *string, int img_size )
             pnd->ulCheckSum = 0;
             pnd->ulCheckSum = crc32(CRC32_INIT_VALUE, pnd, sizeof(NVRAM_DATA));
         }
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+        /* Update the sequence number that replaces that extension in file
+         * cferam.000
+         */
+        cferam_blk = nandUpdateSeqNum((unsigned char *) string + ofs,
+            img_size - ofs, mtd0->erasesize) * mtd0->erasesize;
+        cferam_string = string + ofs + cferam_blk;
 
+        fs_start_blk = fs_start_blk_num * mtd0->erasesize;
+
+        local_bh_disable();
+
+        if( *(unsigned short *) string != JFFS2_MAGIC_BITMASK )
+        {
+            /* Flash the CFE ROM boot loader. */
+            nandEraseBlkNotSpare( mtd1, 0 );
+            mtd1->write(mtd1, 0, mtd1->erasesize, &retlen, string);
+            string += mtd1->erasesize;
+        }
+
+        /* Erase block with sequence number before flashing the image. */
+        nandEraseBlkNotSpare( mtd0, cferam_blk );
+
+        /* Flash the image except for the part with the sequence number. */
+        for( blk = fs_start_blk; blk < mtd0->size; blk += mtd0->erasesize )
+        {
+            if( (sts = nandEraseBlkNotSpare( mtd0, blk )) == 0 )
+            {
+                /* Write a block of the image to flash. */
+                if( string < end_string && string != cferam_string )
+                {
+                    mtd0->write(mtd0, blk, mtd0->erasesize,
+                        &retlen, string);
+
+                    if( retlen == mtd0->erasesize )
+                    {
+                        printk(".");
+                        string += mtd0->erasesize;
+                    }
+                }
+                else
+                    string += mtd0->erasesize;
+            }
+        }
+
+        /* Flash the image part with the sequence number. */
+        for( blk = 0; blk < fs_start_blk; blk += mtd0->erasesize )
+        {
+            if( (sts = nandEraseBlkNotSpare( mtd0, blk )) == 0 )
+            {
+                /* Write a block of the image to flash. */
+                if( cferam_string )
+                {
+                    mtd0->write(mtd0, blk, mtd0->erasesize,
+                        &retlen, cferam_string);
+
+                    if( retlen == mtd0->erasesize )
+                    {
+                        printk(".");
+                        cferam_string = NULL;
+                    }
+                }
+            }
+        }
+#else 
         sts = blk = 0;
         while( sts == 0 )
         {
@@ -1146,6 +1354,7 @@ static int nandImageSet( int flash_start_addr, char *string, int img_size )
             }
         }
 
+#endif 
         local_bh_enable();
 
         if( sts )
@@ -1161,6 +1370,34 @@ static int nandImageSet( int flash_start_addr, char *string, int img_size )
     return sts;
 }
 
+#ifdef AEI_VDSL_CUSTOMER_QWEST
+static void reportUpgradePercent(int percent)
+{
+        struct file     *f;
+
+        long int        rv;
+        mm_segment_t    old_fs;
+        loff_t          offset=0;
+        char buf[128] = "";
+
+        sprintf(buf, "%d\n", percent);
+        f = filp_open("/var/UpgradePercent", O_RDWR|O_CREAT|O_TRUNC, 0600);
+        if(f == NULL)
+                return;
+
+        old_fs = get_fs();
+        set_fs( get_ds() );
+        rv = f->f_op->write(f, buf, strlen(buf), &offset);
+        set_fs(old_fs);
+
+        if (rv < strlen(buf)) {
+                printk("write /var/UpgradePercent  error\n");
+        }
+        filp_close(f , 0);
+        return;
+}
+#endif
+
 // flash bcm image 
 // return: 
 // 0 - ok
@@ -1173,6 +1410,9 @@ int kerSysBcmImageSet( int flash_start_addr, char *string, int size)
     int savedSize = size;
     int whole_image = 0;
     WFI_TAG wt = {0};
+#ifdef AEI_VDSL_CUSTOMER_QWEST
+    int whole_size = size;
+#endif
 
     if (flash_start_addr == FLASH_BASE)
     {
@@ -1224,7 +1464,12 @@ int kerSysBcmImageSet( int flash_start_addr, char *string, int size)
     smp_send_stop();
     udelay(20);
 #endif
+
+#if defined(AEI_VDSL_CUSTOMER_QWEST) || defined(AEI_VDSL_CUSTOMER_TELUS)
+    down_interruptible(&semflash);
+#else
     local_bh_disable();
+#endif
 
     /* write image to flash memory */
     do 
@@ -1244,6 +1489,9 @@ int kerSysBcmImageSet( int flash_start_addr, char *string, int size)
             break;
         }
 
+#ifdef AEI_VDSL_CUSTOMER_QWEST 
+        reportUpgradePercent(100-size*100/whole_size);
+#endif
         printk(".");
         blk_start++;
         string += sect_size;
@@ -1269,7 +1517,11 @@ int kerSysBcmImageSet( int flash_start_addr, char *string, int size)
     else  
         sts = blk_start;    // failed to flash this sector
 
+#if defined(AEI_VDSL_CUSTOMER_QWEST) || defined(AEI_VDSL_CUSTOMER_TELUS)
+    up(&semflash);
+#else
     local_bh_enable();
+#endif
 
     return sts;
 }
@@ -1679,6 +1931,31 @@ int kerSysScratchPadSet(char *tokenId, char *tokBuf, int bufLen)
 
     
 }
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+
+int kerClearScratchPad(int blk_size)
+{
+    char buf[256];
+    memset(buf,0, 256);
+	if(bootFromNand){
+
+	}else{
+	
+	    kerSysPersistentSet( buf, 256, 0 );
+	    kerSysBackupPsiSet( buf, 256, 0 );	
+    	    kerSysScratchPadClearAll();
+#if !defined (CONFIG_BCM96328)
+#if defined(AEI_VDSL_CUSTOMER_Q2000H) || defined(AEI_VDSL_DEFAULT_NO_BONDING)			
+	   restoreDatapump(2);		
+#else
+	   restoreDatapump(0);		
+#endif
+#endif
+	}
+}
+
+#endif
+
 
 // wipe out the scratchPad
 // return:
@@ -1704,6 +1981,11 @@ int kerSysScratchPadClearAll(void)
     }
     else
     {
+  #if defined(AEI_VDSL_UPGRADE_HISTORY_SPAD)
+	/* get upgradeHistroy */
+	char uph[1024] = {0};
+	kerSysScratchPadGet("upgradeHistory", uph, 1024);
+#endif  
         if( (pShareBuf = getSharedBlks( fInfo.flash_scratch_pad_start_blk,
             fInfo.flash_scratch_pad_number_blk)) == NULL )
             return sts;
@@ -1724,6 +2006,10 @@ int kerSysScratchPadClearAll(void)
 
         sts = setSharedBlks(fInfo.flash_scratch_pad_start_blk,    
             fInfo.flash_scratch_pad_number_blk,  pShareBuf);
+#if defined(AEI_VDSL_UPGRADE_HISTORY_SPAD)
+	/* save upgradeHistory back to scratch */
+	kerSysScratchPadSet("upgradeHistory", uph, 1024);
+#endif		
     }
 
    retriedKfree(pShareBuf);
@@ -1752,3 +2038,360 @@ int kerSysFlashSizeGet(void)
     return ret;
 }
 
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+#if !defined(CONFIG_BRCM_IKOS) 
+
+int kerSysEraseFlash(unsigned long eraseaddr, unsigned long len)
+{
+    int blk;
+    int bgnBlk = flash_get_blk(eraseaddr);
+    int endBlk = flash_get_blk(eraseaddr + len);
+    unsigned long bgnAddr = (unsigned long) flash_get_memptr(bgnBlk);
+    unsigned long endAddr = (unsigned long) flash_get_memptr(endBlk);
+
+#ifdef DEBUG_FLASH
+    printk("kerSysEraseFlash blk[%d] eraseaddr[0x%08x] len[%lu]\n",
+    bgnBlk, (int)eraseaddr, len);
+#endif
+
+    if ( bgnAddr != eraseaddr)
+    {
+       printk("ERROR: kerSysEraseFlash eraseaddr[0x%08x]"
+              " != first block start[0x%08x]\n",
+              (int)eraseaddr, (int)bgnAddr);
+        return (len);
+    }
+
+    if ( (endAddr - bgnAddr) != len)
+    {
+        printk("ERROR: kerSysEraseFlash eraseaddr[0x%08x] + len[%lu]"
+               " != last+1 block start[0x%08x]\n",
+               (int)eraseaddr, len, (int) endAddr);
+        return (len);
+    }
+
+    for (blk=bgnBlk; blk<endBlk; blk++)
+        flash_sector_erase_int(blk);
+
+    return 0;
+}
+
+
+
+unsigned long kerSysReadFromFlash( void *toaddr, unsigned long fromaddr,
+    unsigned long len )
+{
+    int blk, offset, bytesRead;
+    unsigned long blk_start;
+    char * trailbyte = (char*) NULL;
+    char val[2];
+
+    blk = flash_get_blk((int)fromaddr);	/* sector in which fromaddr falls */
+    blk_start = (unsigned long)flash_get_memptr(blk); /* sector start address */
+    offset = (int)(fromaddr - blk_start); /* offset into sector */
+
+#ifdef DEBUG_FLASH
+    printk("kerSysReadFromFlash blk[%d] fromaddr[0x%08x]\n",
+           blk, (int)fromaddr);
+#endif
+
+    bytesRead = 0;
+
+        /* cfiflash : hardcoded for bankwidths of 2 bytes. */
+    if ( offset & 1 )   /* toaddr is not 2 byte aligned */
+    {
+        flash_read_buf(blk, offset-1, val, 2);
+        *((char*)toaddr) = val[1];
+
+        toaddr = (void*)((char*)toaddr+1);
+        fromaddr += 1;
+        len -= 1;
+        bytesRead = 1;
+
+        /* if len is 0 we could return here, avoid this if */
+
+        /* recompute blk and offset, using new fromaddr */
+        blk = flash_get_blk(fromaddr);
+        blk_start = (unsigned long)flash_get_memptr(blk);
+        offset = (int)(fromaddr - blk_start);
+    }
+
+        /* cfiflash : hardcoded for len of bankwidths multiples. */
+    if ( len & 1 )
+    {
+        len -= 1;
+        trailbyte = (char *)toaddr + len;
+    }
+
+        /* Both len and toaddr will be 2byte aligned */
+    if ( len )
+    {
+       flash_read_buf(blk, offset, toaddr, len);
+       bytesRead += len;
+    }
+
+        /* write trailing byte */
+    if ( trailbyte != (char*) NULL )
+    {
+        fromaddr += len;
+        blk = flash_get_blk(fromaddr);
+        blk_start = (unsigned long)flash_get_memptr(blk);
+        offset = (int)(fromaddr - blk_start);
+        flash_read_buf(blk, offset, val, 2 );
+        *trailbyte = val[0];
+        bytesRead += 1;
+    }
+
+    return( bytesRead );
+}
+
+/*
+ * Function: kerSysWriteToFlash
+ *
+ * Description:
+ * This function assumes that the area of flash to be written was
+ * previously erased. An explicit erase is therfore NOT needed 
+ * prior to a write. This function ensures that the offset and len are
+ * two byte multiple. [cfiflash hardcoded for bankwidth of 2 byte].
+ *
+ * Parameters:
+ *      toaddr : destination flash memory address
+ *      fromaddr: RAM memory address containing data to be written
+ *      len : non zero bytes to be written
+ * Return:
+ *      FAILURE: number of bytes remaining to be written
+ *      SUCCESS: 0 (all requested bytes were written)
+ */
+int kerSysWriteToFlash( unsigned long toaddr,
+                        void * fromaddr, unsigned long len)
+{
+    int blk, offset, size, blk_size, bytesWritten;
+    unsigned long blk_start;
+    char * trailbyte = (char*) NULL;
+    unsigned char val[2];
+
+#ifdef DEBUG_FLASH
+    printk("kerSysWriteToFlash flashAddr[0x%08x] fromaddr[0x%08x] len[%lu]\n",
+    (int)toaddr, (int)fromaddr, len);
+#endif
+
+    blk = flash_get_blk(toaddr);	/* sector in which toaddr falls */
+    blk_start = (unsigned long)flash_get_memptr(blk); /* sector start address */
+    offset = (int)(toaddr - blk_start);	/* offset into sector */
+
+	/* cfiflash : hardcoded for bankwidths of 2 bytes. */
+    if ( offset & 1 )	/* toaddr is not 2 byte aligned */
+    {
+        val[0] = 0xFF; // ignored
+        val[1] = *((char *)fromaddr); /* write the first byte */
+        bytesWritten = flash_write_buf(blk, offset-1, val, 2);
+        if ( bytesWritten != 2 )
+        {
+#ifdef DEBUG_FLASH
+           printk("ERROR kerSysWriteToFlash ... remaining<%d>\n", len); 
+#endif
+           return len;
+        }
+
+	toaddr += 1;
+        fromaddr = (void*)((char*)fromaddr+1);
+        len -= 1;
+
+	/* if len is 0 we could return bytesWritten, avoid this if */
+
+	/* recompute blk and offset, using new toaddr */
+        blk = flash_get_blk(toaddr);
+        blk_start = (unsigned long)flash_get_memptr(blk);
+        offset = (int)(toaddr - blk_start);
+    }
+
+	/* cfiflash : hardcoded for len of bankwidths multiples. */
+    if ( len & 1 )
+    {
+	/* need to handle trailing byte seperately */
+        len -= 1;
+        trailbyte = (char *)fromaddr + len;
+        toaddr += len;
+    }
+
+	/* Both len and toaddr will be 2byte aligned */
+    while ( len > 0 )
+    {
+        blk_size = flash_get_sector_size(blk);
+        size = blk_size - offset; /* space available in sector from offset */
+        if ( size > len )
+            size = len;
+
+        bytesWritten = flash_write_buf(blk, offset, fromaddr, size); 
+        if ( bytesWritten !=  size )
+        {
+#ifdef DEBUG_FLASH
+           printk("ERROR kerSysWriteToFlash ... remaining<%d>\n", 
+               (len - bytesWritten + ((trailbyte == (char*)NULL)? 0 : 1)));
+#endif
+           return (len - bytesWritten + ((trailbyte == (char*)NULL)? 0 : 1));
+        }
+
+        fromaddr += size;
+        len -= size;
+
+        blk++;	/* Move to the next block */
+        offset = 0; /* All further blocks will be written at offset 0 */
+    }
+
+	/* write trailing byte */
+    if ( trailbyte != (char*) NULL )
+    {
+        blk = flash_get_blk(toaddr);
+        blk_start = (unsigned long)flash_get_memptr(blk);
+        offset = (int)(toaddr - blk_start);
+        val[0] = *trailbyte; /* trailing byte */
+        val[1] = 0xFF; // ignored
+        bytesWritten = flash_write_buf(blk, offset, val, 2 );
+        if ( bytesWritten != 2 )
+        {
+#ifdef DEBUG_FLASH
+           printk("ERROR kerSysWriteToFlash ... remaining<%d>\n",1);
+#endif
+           return 1;
+        }
+    } 
+
+    return len;
+}
+/*
+ * Function: kerSysWriteToFlashREW
+ * 
+ * Description:
+ * This function does not assume that the area of flash to be written was erased.
+ * An explicit erase is therfore needed prior to a write.  
+ * kerSysWriteToFlashREW uses a sector copy  algorithm. The first and last sectors
+ * may need to be first read if they are not fully written. This is needed to
+ * avoid the situation that there may be some valid data in the sector that does
+ * not get overwritten, and would be erased.
+ *
+ * Due to run time costs for flash read, optimizations to read only that data
+ * that will not be overwritten is introduced.
+ *
+ * Parameters:
+ *	toaddr : destination flash memory address
+ *	fromaddr: RAM memory address containing data to be written
+ *	len : non zero bytes to be written
+ * Return:
+ *	FAILURE: number of bytes remaining to be written 
+ *	SUCCESS: 0 (all requested bytes were written)
+ *
+ */
+int kerSysWriteToFlashREW( unsigned long toaddr,
+                        void * fromaddr, unsigned long len)
+{
+    int blk, offset, size, blk_size, bytesWritten;
+    unsigned long sect_start;
+    int mem_sz = 0;
+    char * mem_p = (char*)NULL;
+
+#ifdef DEBUG_FLASH
+    printk("kerSysWriteToFlashREW flashAddr[0x%08x] fromaddr[0x%08x] len[%lu]\n",
+    (int)toaddr, (int)fromaddr, len);
+#endif
+
+    blk = flash_get_blk( toaddr );
+    sect_start = (unsigned long) flash_get_memptr(blk);
+    offset = toaddr - sect_start;
+
+    while ( len > 0 )
+    {
+        blk_size = flash_get_sector_size(blk);
+        size = blk_size - offset; /* space available in sector from offset */
+
+		/* bound size to remaining len in final block */
+        if ( size > len )
+            size = len;
+
+		/* Entire blk written, no dirty data to read */
+        if ( size == blk_size )
+        {
+            flash_sector_erase_int(blk);
+
+            bytesWritten = flash_write_buf(blk, 0, fromaddr, blk_size);
+
+            if ( bytesWritten != blk_size )
+            {
+                if ( mem_p != NULL )
+                    retriedKfree(mem_p);
+                return (len - bytesWritten);	/* FAILURE */
+            }
+        }
+        else
+        {
+                /* Support for variable sized blocks, paranoia */
+            if ( (mem_p != NULL) && (mem_sz < blk_size) )
+            {
+                retriedKfree(mem_p);	/* free previous temp buffer */
+                mem_p = (char*)NULL;
+            }
+
+            if ( (mem_p == (char*)NULL)
+              && ((mem_p = (char*)retriedKmalloc(blk_size)) == (char*)NULL) )
+            {
+                printk("\tERROR kerSysWriteToFlashREW fail to allocate memory\n");
+                return len;
+            }
+            else
+                mem_sz = blk_size;
+
+            if ( offset ) /* First block */
+            {
+                if ( (offset + size) == blk_size)
+                {
+                   flash_read_buf(blk, 0, mem_p, offset);
+                }
+                else
+                {  /*
+		    *	 Potential for future optimization:
+		    * Should have read the begining and trailing portions
+		    * of the block. If the len written is smaller than some
+		    * break even point.
+		    * For now read the entire block ... move on ...
+		    */
+                   flash_read_buf(blk, 0, mem_p, blk_size);
+                }
+            }
+            else
+            {
+                /* Read the tail of the block which may contain dirty data*/
+                flash_read_buf(blk, len, mem_p+len, blk_size-len );
+            }
+
+            flash_sector_erase_int(blk);
+
+            memcpy(mem_p+offset, fromaddr, size); /* Rebuild block contents */
+
+            bytesWritten = flash_write_buf(blk, 0, mem_p, blk_size);
+
+            if ( bytesWritten != blk_size )
+            {
+                if ( mem_p != (char*)NULL )
+                    retriedKfree(mem_p);
+                return (len + (blk_size - size) - bytesWritten );
+            }
+        }
+
+		/* take into consideration that size bytes were copied */
+        fromaddr += size;
+        toaddr += size;
+        len -= size;
+
+        blk++;		/* Move to the next block */
+        offset = 0;     /* All further blocks will be written at offset 0 */
+
+    }
+
+    if ( mem_p != (char*)NULL )
+        retriedKfree(mem_p);
+
+    return ( len );
+}
+
+#endif
+#endif

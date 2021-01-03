@@ -40,8 +40,6 @@
 #include "os_defs.h"
 #include "cms_version.h"
 
-
-
 /*!\enum CmsRet
  * \brief Return codes for all external functions, and some internal functions too.
  *
@@ -120,10 +118,11 @@ typedef enum
    CMSRET_INVALID_CONFIG_FILE = 9852,  /**< invalid config file was detected */
    CMSRET_CONFIG_PSI = 9853,         /**< old PSI/3.x config file was detected */
    CMSRET_IMAGE_FLASH_FAILED = 9854, /**< could not write the image to flash */
-#ifdef ACTION_TEC
-   CMSRET_MESSAGE_NOEXIST = 9900, /**< Requestesd message entry does not exist*/
-#endif
-
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+   CMSRET_OLD_IMAGE = 9855, /**< old image was given for download */
+   CMSRET_CURRENT_IMAGE = 9856, /**< current image was given for download */
+   CMSRET_ERASED_CONFIG_FILE = 9857,  /**< the config file was erased */
+#endif 
 } CmsRet;
 
 
@@ -231,6 +230,9 @@ typedef enum
 #define PROTO_IPOWAN       6  //!< ip over wan protocol
 #define PROTO_NONE         10 //!< invalid protocol
 
+#ifdef AEI_VDSL_CUSTOMER_NCS
+#define IFC_WAN_CONN_MAX   8  //!< Max WAN Interfaces allowed per WAN Connection in the system.
+#endif
 #define IFC_WAN_MAX        8  //!< Max WAN Connection in the system.
 #define IFC_VLAN_MAX       8  //!< Max VLAN on single PVC
 #define ATM_QUEUE_MAX      8  //!< Max ATM queues
@@ -294,6 +296,9 @@ typedef enum
 #define PPPOA_PROTO_STR       "PPPoA"
 #define IPOW_PROTO_STR        "IPoW"
 
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+#define EWAN_IFC_STR           "ewan"
+#endif
 #define ETH_IFC_STR           "eth"
 #define USB_IFC_STR           "usb"
 #define WLAN_IFC_STR          "wl"

@@ -32,6 +32,7 @@
 #include <linux/if_vlan.h>
 
 #ifdef CONFIG_MIPS_BRCM
+#include <linux/blog.h>
 struct net_device_stats *vlan_dev_get_stats(struct net_device *dev);
 #ifdef CONFIG_BLOG
 extern struct net_device_stats * vlan_dev_collect_stats(struct net_device * dev_p);
@@ -773,7 +774,7 @@ static const struct net_device_ops vlan_netdev_ops = {
 	.ndo_change_rx_flags	= vlan_dev_change_rx_flags,
 	.ndo_do_ioctl		= vlan_dev_ioctl,
 	.ndo_neigh_setup	= vlan_dev_neigh_setup,
-#ifdef CONFIG_BLOG
+#if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
 	.ndo_get_stats = vlan_dev_collect_stats,
 #else
 	.ndo_get_stats = vlan_dev_get_stats,
@@ -795,12 +796,10 @@ static const struct net_device_ops vlan_netdev_accel_ops = {
 	.ndo_change_rx_flags	= vlan_dev_change_rx_flags,
 	.ndo_do_ioctl		= vlan_dev_ioctl,
 	.ndo_neigh_setup	= vlan_dev_neigh_setup,
-#ifdef CONFIG_MIPS_BRCM
-#ifdef CONFIG_BLOG
+#if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
 	.ndo_get_stats = vlan_dev_collect_stats,
 #else
 	.ndo_get_stats = vlan_dev_get_stats,
-#endif
 #endif
 };
 
@@ -817,11 +816,9 @@ void vlan_setup(struct net_device *dev)
 	dev->destructor		= free_netdev;
 	dev->ethtool_ops	= &vlan_ethtool_ops;
 
-#ifdef CONFIG_MIPS_BRCM
-#ifdef CONFIG_BLOG
+#if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
 	dev->put_stats = vlan_dev_update_stats;
 	dev->clr_stats = vlan_dev_clear_stats;
-#endif
 #endif
 	memset(dev->broadcast, 0, ETH_ALEN);
 }

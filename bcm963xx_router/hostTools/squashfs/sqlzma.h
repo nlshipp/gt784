@@ -5,7 +5,7 @@
  * LICENSE follows the described one in lzma.
  */
 
-/* $Id: sqlzma.h,v 1.13 2007/01/07 15:12:48 jro Exp $ */
+/* $Id: sqlzma.h,v 1.1.1.1 2010/06/14 22:49:40 tliu Exp $ */
 
 #ifndef __sqlzma_h__
 #define __sqlzma_h__

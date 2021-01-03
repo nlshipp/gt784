@@ -48,11 +48,7 @@ typedef struct dns_request_s{
   //BRCM
   int switch_on_timeout;  /* if this request times out, switch to secondary server */
   time_t expiry; /* Time to expire */
-#ifdef CUSTOMER_VERIZON  
-  time_t timeout;
-  int pri_try_count;
-  int sec_try_count;
-#endif  
+
   /* the actual dns request that was recieved */
   struct dns_message message;
 
@@ -70,8 +66,6 @@ typedef struct dns_request_s{
   /* next node in list */
   struct dns_request_s *next;
 }dns_request_t;
-
-
 /*****************************************************************************/
 /* TYPE values */
 enum{ A = 1,      /* a host address */

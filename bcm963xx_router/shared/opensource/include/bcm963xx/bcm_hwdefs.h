@@ -113,9 +113,21 @@ extern "C" {
 #define DEFAULT_MAC_NUM     10
 #define DEFAULT_BOARD_MAC   "00:10:18:00:00:00"
 #define DEFAULT_TP_NUM      0
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+#define DEFAULT_PSI_SIZE    32
+#else 
 #define DEFAULT_PSI_SIZE    24
+#endif 
 #define DEFAULT_GPON_SN     "BRCM12345678"
 #define DEFAULT_GPON_PW     "          "
+//#if defined(AEI_CONFIG_AUXFS_JFFS2)
+#define DEFAULT_LOG_SIZE    128
+#define DEFAULT_FLASHBLK_SIZE  64
+#define MAX_FLASHBLK_SIZE      128
+#define DEFAULT_AUXFS_PERCENT 20
+#define MAX_AUXFS_PERCENT   80
+#define DEFAUT_BACKUP_PSI  0
+//#endif 
 
 #define DEFAULT_WPS_DEVICE_PIN     "12345670"
 
@@ -134,8 +146,12 @@ extern "C" {
 
 #define NAND_DATA_SIZE_KB   1024
 #define NAND_BBT_SIZE_KB    1024
+#define NAND_BBT_THRESHOLD_KB   (512 * 1024)
+#define NAND_BBT_SMALL_SIZE_KB  1024
+#define NAND_BBT_BIG_SIZE_KB    4096
 
 #define NAND_CFE_RAM_NAME   "cferam.000"
+
 
 #ifndef _LANGUAGE_ASSEMBLY
 typedef struct
@@ -147,6 +163,12 @@ typedef struct
     unsigned long ulPsiSize;
     unsigned long ulNumMacAddrs;
     unsigned char ucaBaseMacAddr[NVRAM_MAC_ADDRESS_LEN];
+#ifdef AEI_VDSL_CUSTOMER_QWEST_Q1000
+    char ulSerialNumber[32];
+    char chFactoryFWVersion[48];
+    char wpsPin[32];
+    char wpaKey[32];
+#endif
     char pad;
     char backupPsi;  /**< if 0x01, allocate space for a backup PSI */
     unsigned long ulCheckSumV4;
@@ -159,9 +181,73 @@ typedef struct
     unsigned long ulNandPartSizeKb[NP_TOTAL];
     char szVoiceBoardId[NVRAM_BOARD_ID_STRING_LEN];
     unsigned long afeId[2];
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+    /* add new parameters below dslDatapump parameter and substract size, don't move parameters */
+#ifndef AEI_VDSL_CUSTOMER_QWEST_Q1000    
+    char ulSerialNumber[32];
+    char chFactoryFWVersion[48];
+    char wpsPin[32];
+    char wpaKey[32];
+#endif
+    unsigned long dslDatapump; /* use long for alignment, put here so old cfe should work properly */
+#ifdef AEI_VDSL_UPGRADE_DUALIMG_HISTORY_SPAD
+	char ugstatus[3];
+  	char ugimage1[30];
+  	char ugimage2[30];	
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+	char chUnused[364-32-48-32-32-4-63-2];
+#else
+	char chUnused[364-32-48-32-32-4-63];
+#endif
+#else	
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+    char chUnused[364-32-48-32-32-4-2];
+#else
+    char chUnused[364-32-48-32-32-4];
+#endif
+#endif
+#else
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+    char chUnused[364-2];
+#else
     char chUnused[364];
+#endif
+#endif
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+	unsigned char ucFlashBlkSize;
+    unsigned char ucAuxFSPercent;
+#endif 
     unsigned long ulCheckSum;
 } NVRAM_DATA, *PNVRAM_DATA;
+
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+#ifndef AEI_VDSL_CUSTOMER_QWEST_Q1000
+typedef struct
+{
+    unsigned long ulVersion;
+    char szBootline[NVRAM_BOOTLINE_LEN];
+    char szBoardId[NVRAM_BOARD_ID_STRING_LEN];
+    unsigned long ulMainTpNum;
+    unsigned long ulPsiSize;
+    unsigned long ulNumMacAddrs;
+    unsigned char ucaBaseMacAddr[NVRAM_MAC_ADDRESS_LEN];
+    char ulSerialNumber[32];
+    char chFactoryFWVersion[48];
+    char wpsPin[32];
+    char wpaKey[32];
+    char chReserved[2];
+    unsigned long ulCheckSumV4;
+    char gponSerialNumber[NVRAM_GPON_SERIAL_NUMBER_LEN];
+    char gponPassword[NVRAM_GPON_PASSWORD_LEN];
+    char wpsDevicePin[NVRAM_WPS_DEVICE_PIN_LEN];
+    char wlanParams[NVRAM_WLAN_PARAMS_LEN];
+    char chUnused[432-32-48-32-32];
+    unsigned long ulCheckSum;
+} NVRAM_DATA_OLD, *PNVRAM_DATA_OLD;
+#endif
+#endif 
+
+
 #endif
 
 #define BOOT_LATEST_IMAGE   '0'
@@ -172,7 +258,11 @@ typedef struct
 /*****************************************************************************/
 #define CFE_VERSION_OFFSET           0x0570
 #define CFE_VERSION_MARK_SIZE        5
+#ifdef AEI_VDSL_CUSTOMER_NCS
+#define CFE_VERSION_SIZE             6
+#else
 #define CFE_VERSION_SIZE             5
+#endif
 
 #ifdef __cplusplus
 }

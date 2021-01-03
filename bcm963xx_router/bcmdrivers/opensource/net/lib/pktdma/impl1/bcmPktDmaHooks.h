@@ -34,10 +34,12 @@
 #define bcmPktDma_xmit2Fap(_msgType, _pMsg)                             \
     ({                                                                  \
         int __ret;                                                      \
-        if(bcmPktDma_hostHooks_g.xmit2Fap != NULL)                      \
-            __ret = bcmPktDma_hostHooks_g.xmit2Fap(_msgType, _pMsg);    \
-        else                                                            \
+        if(bcmPktDma_hostHooks_g.xmit2Fap != NULL) {                    \
+            bcmPktDma_hostHooks_g.xmit2Fap(_msgType, _pMsg);            \
+            __ret = FAP_SUCCESS;                                        \
+        } else {                                                        \
             __ret = FAP_ERROR;                                          \
+        }                                                               \
         __ret;                                                          \
     })
 
@@ -82,7 +84,7 @@
 
 /* FAP Driver Hooks */
 typedef struct {
-    int  (* xmit2Fap)(fapMsgGroups_t msgType, xmit2FapMsg_t *pMsg);
+    void  (* xmit2Fap)(fapMsgGroups_t msgType, xmit2FapMsg_t *pMsg);
     uint8 * (* psmAlloc)(int size);
     void (* dqmXmitMsgHost)(uint32 queue, uint32 tokenSize, DQMQueueDataReg_S *t);
     void (* dqmRecvMsgHost)(uint32 queue, uint32 tokenSize, DQMQueueDataReg_S *t);

@@ -57,6 +57,13 @@ CmsRet cmsXml_escapeString(const char *string, char **escapedString)
       {
          len2 += 4;
       }
+#ifdef AEI_VDSL_CUSTOMER_NCS
+      else if (string[i] == '"')
+      {
+         len2 += 5;
+      }
+#endif
+
       i++;
    }
 

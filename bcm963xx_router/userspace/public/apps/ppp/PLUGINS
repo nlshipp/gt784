@@ -128,4 +128,4 @@ set *popts to a wordlist containing any extra options for this user
 which pppd should apply at this point.
 
 
-## $Id: PLUGINS,v 1.1.1.1 2010/06/24 19:07:37 denny Exp $ ##
+## $Id: PLUGINS,v 1.1.1.1 2010/06/14 22:47:27 tliu Exp $ ##

@@ -4,7 +4,7 @@
 #
 APP_DIRS = atm2684 bridge-utils busybox dproxy-nexgen ebtables ftpd \
            iproute2-2.6.37 iptables radvd udhcp urlfilterd zebra \
-           dynahelper mtd-utils ntfs-3g samba conntrack openl2tpd rng-tools-2 pptp hostap
+           dynahelper mtd-utils ntfs-3g samba conntrack openl2tpd rng-tools-2 pptp oprofile mtd-util
 
 #
 # We need to declare these directory names as phony targets,
@@ -55,14 +55,6 @@ export BUILD_DIR
 # is modified via make menuconfig)
 #
 ##############################################################
-ifneq ($(strip $(BUILD_802_1X)),)
-hostap:
-	$(MAKE) -C hostap
-	$(MAKE) -C hostap install
-else
-hostap: 
-	@echo "skipping hostap (not configured)"
-endif
 
 
 ifneq ($(strip $(BUILD_BRCTL)),)
@@ -85,7 +77,7 @@ ifneq ($(strip $(BUILD_BUSYBOX)),)
 busybox: sanity_check
 	mkdir -p $(INSTALL_DIR)/bin
 	(tar xkfj busybox.tar.bz2 2> /dev/null || true)
-	cd busybox; cp -f $(BUSYBOX_CONFIG) .config
+	cd busybox; cp -f $(BUSYBOX_CONFIG) .config;
 	$(MAKE) -C busybox install
 else
 busybox: sanity_check
@@ -163,6 +155,14 @@ iproute2: sanity_check
 	@echo "skipping iproute2 (not configured)"
 endif
 
+ifneq ($(strip $(BRCM_KERNEL_AUXFS_JFFS2)),)
+# Always make flash utilities and installed executables
+mtd-util:
+	$(MAKE) -C mtd-util dynamic
+else
+mtd-util:
+endif
+
 
 # iptables is dependent on kernel netfilter modules
 ifneq ($(strip $(BRCM_KERNEL_NETFILTER)),)
@@ -196,8 +196,10 @@ endif
 
 ifneq ($(strip $(BUILD_IPV6)),)
 radvd: sanity_check
-	(tar xkjf radvd.tar.bz2 2> /dev/null || true)
-	$(MAKE) -C radvd
+#	(tar xkjf radvd.tar.bz2 2> /dev/null || true)
+#	$(MAKE) -C radvd
+	(tar xkzf radvd-1.8.tar.gz 2> /dev/null || true)
+	$(MAKE) -C radvd-1.8
 else
 radvd: sanity_check
 	@echo "skipping radvd (not configured)"
@@ -290,4 +292,11 @@ conntrack: sanity_check
 	@echo "skipping $@ (not configured)"
 endif
 
-
+ifneq ($(strip $(BUILD_OPROFILE)),)
+oprofile: sanity_check
+	(tar xkjf oprofile.tar.bz2 2> /dev/null || true)
+	$(MAKE) -C ./oprofile
+else
+oprofile: sanity_check
+	@echo "skipping $@ (not configured)"
+endif

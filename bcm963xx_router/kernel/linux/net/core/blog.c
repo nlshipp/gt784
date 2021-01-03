@@ -31,28 +31,24 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/blog.h>
+#include <linux/blog_net.h>
 #include <linux/nbuff.h>
+#include <linux/skbuff.h>
 
 #if defined(CONFIG_BLOG)
-#include <linux/skbuff.h>
+
 #include <linux/netdevice.h>
 #include <linux/slab.h>
-#include <linux/if_ether.h>
-#include <linux/if_pppox.h>
-#include <linux/if_vlan.h>
-#include <linux/in.h>
-#include <linux/tcp.h>
-#include <linux/udp.h>
-#include <net/ip.h>
 #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)   
+#define BLOG_NF_CONNTRACK
 #include <net/netfilter/nf_nat.h>
 #include <net/netfilter/nf_conntrack.h>
 #include <net/netfilter/nf_conntrack_helper.h>
-#endif //#if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)   
+#endif /* defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE) */
 
 #include "../bridge/br_private.h"
 
-#ifdef CC_CONFIG_BLOG_COLOR
+#ifdef CC_BLOG_SUPPORT_COLOR
 #define COLOR(clr_code)     clr_code
 #else
 #define COLOR(clr_code)
@@ -66,7 +62,11 @@
 /*--- globals ---*/
 
 /* RFC4008 */
+#ifdef AEI_VDSL_CUSTOMER_NCS
+uint32_t blog_nat_tcp_def_idle_timeout = 21600 *HZ;  
+#else
 uint32_t blog_nat_tcp_def_idle_timeout = 86400 *HZ;  /* 5 DAYS */
+#endif
 uint32_t blog_nat_udp_def_idle_timeout = 300 *HZ;    /* 300 seconds */
 
 EXPORT_SYMBOL(blog_nat_tcp_def_idle_timeout);
@@ -76,7 +76,7 @@ EXPORT_SYMBOL(blog_nat_udp_def_idle_timeout);
 int blog_dbg = 0;
 
 
-#if defined(CC_CONFIG_BLOG_DEBUG)
+#if defined(CC_BLOG_SUPPORT_DEBUG)
 #define blog_print(fmt, arg...)                                         \
     if ( blog_dbg )                                                     \
     printk( CLRc "BLOG %s :" fmt CLRN, __FUNCTION__, ##arg )
@@ -101,6 +101,22 @@ int blog_dbg = 0;
 #define blog_error(fmt, arg...)                                         \
     printk( CLRerr "BLOG ERROR %s :" fmt CLRN, __FUNCTION__, ##arg)
 
+#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)
+#define BLOG_LOCK()             spin_lock_bh( &blog_lock_g )
+#define BLOG_UNLOCK()           spin_unlock_bh( &blog_lock_g )
+#define BLOG_LOCK_BH()          spin_lock_bh( &blog_lock_g )
+#define BLOG_UNLOCK_BH()        spin_unlock_bh( &blog_lock_g )
+#define BLOG_LOCK_POOL()        spin_lock_irq( &blog_pool_lock_g )
+#define BLOG_UNLOCK_POOL()      spin_unlock_bh( &blog_pool_lock_g )
+#else
+#define BLOG_LOCK()             local_irq_disable()
+#define BLOG_UNLOCK()           local_irq_enable()
+#define BLOG_LOCK_BH()          NULL_STMT
+#define BLOG_UNLOCK_BH()        NULL_STMT
+#define BLOG_LOCK_POOL()        local_irq_disable()
+#define BLOG_UNLOCK_POOL()      local_irq_enable()
+#endif
+
 #undef  BLOG_DECL
 #define BLOG_DECL(x)        #x,         /* string declaration */
 
@@ -111,24 +127,68 @@ spinlock_t blog_lock_g = SPIN_LOCK_UNLOCKED;      /* blogged packet flow */
 spinlock_t blog_pool_lock_g = SPIN_LOCK_UNLOCKED; /* blog pool only      */
 #endif
 
-int blog_mcast_g = CC_SUPPORT_BLOG_MCAST;
-void blog_mcast(int enable) { blog_mcast_g = enable; }
+/*
+ * blog_support_mcast_g inherits the default value from CC_BLOG_SUPPORT_MCAST
+ * Exported blog_support_mcast() may be used to set blog_support_mcast_g.
+ */
+int blog_support_mcast_g = CC_BLOG_SUPPORT_MCAST;
+void blog_support_mcast(int config) { blog_support_mcast_g = config; }
 
 /*
  * Traffic flow generator, keep conntrack alive during idle traffic periods
  * by refreshing the conntrack. Dummy sk_buff passed to nf_conn.
  * Netfilter may not be statically loaded.
  */
-blog_refresh_t blog_refresh_fn;
-
-struct sk_buff * nfskb_p = (struct sk_buff*) NULL;
+blog_refresh_t blog_refresh_fn = (blog_refresh_t) NULL;
+struct sk_buff * nfskb_p = (struct sk_buff *) NULL;
 
 /*----- Constant string representation of enums for print -----*/
-const char * strBlogAction[3] =
+const char * strBlogAction[BLOG_ACTION_MAX] =
 {
     BLOG_DECL(PKT_DONE)
     BLOG_DECL(PKT_NORM)
     BLOG_DECL(PKT_BLOG)
+};
+
+const char * strBlogDir[BLOG_DIR_MAX] =
+{
+    BLOG_DECL(DIR_RX)
+    BLOG_DECL(DIR_TX)
+};
+
+const char * strBlogNetEntity[BLOG_NET_ENTITY_MAX] =
+{
+    BLOG_DECL(FLOWTRACK)
+    BLOG_DECL(BRIDGEFDB)
+    BLOG_DECL(MCAST_FDB)
+    BLOG_DECL(IF_DEVICE)
+};
+
+const char * strBlogNotify[BLOG_NOTIFY_MAX] =
+{
+    BLOG_DECL(DESTROY_FLOWTRACK)
+    BLOG_DECL(DESTROY_BRIDGEFDB)
+    BLOG_DECL(MCAST_CONTROL_EVT)
+    BLOG_DECL(DESTROY_NETDEVICE)
+    BLOG_DECL(LINK_STATE_CHANGE)
+    BLOG_DECL(FETCH_NETIF_STATS)
+    BLOG_DECL(DYNAMIC_TOS_EVENT)
+};
+
+const char * strBlogRequest[BLOG_REQUEST_MAX] =
+{
+    BLOG_DECL(FLOWTRACK_KEY_SET)
+    BLOG_DECL(FLOWTRACK_KEY_GET)
+    BLOG_DECL(FLOWTRACK_DSCP_GET)
+    BLOG_DECL(FLOW_CONFIRMED)
+    BLOG_DECL(FLOW_ASSURED)
+    BLOG_DECL(FLOW_ALG_HELPER)
+    BLOG_DECL(FLOW_EXCLUDE)
+    BLOG_DECL(FLOW_REFRESH)
+    BLOG_DECL(BRIDGE_REFRESH)
+    BLOG_DECL(NETIF_PUT_STATS)
+    BLOG_DECL(LINK_XMIT_FN)
+    BLOG_DECL(LINK_NOCARRIER)
 };
 
 const char * strBlogEncap[PROTO_MAX] =
@@ -143,34 +203,6 @@ const char * strBlogEncap[PROTO_MAX] =
     BLOG_DECL(L3_IPv6)
 };
 
-const char * strIpctDir[] = {   /* in reference to enum ip_conntrack_dir */
-    BLOG_DECL(DIR_ORIG)
-    BLOG_DECL(DIR_RPLY)
-    BLOG_DECL(DIR_UNKN)
-};
-
-const char * strBlogEvent[] = {
-    BLOG_DECL(BLOG_EVENT_STOP)      /* Destruction of a flow */
-    BLOG_DECL(BLOG_EVENT_DTOS)      /* Dynamic tos change notification */
-    BLOG_DECL(BLOG_EVENT_MAX)
-};
-
-const char * strIpctStatus[] =  /* in reference to enum ip_conntrack_status */
-{
-    BLOG_DECL(EXPECTED)
-    BLOG_DECL(SEEN_REPLY)
-    BLOG_DECL(ASSURED)
-    BLOG_DECL(CONFIRMED)
-    BLOG_DECL(SRC_NAT)
-    BLOG_DECL(DST_NAT)
-    BLOG_DECL(SEQ_ADJUST)
-    BLOG_DECL(SRC_NAT_DONE)
-    BLOG_DECL(DST_NAT_DONE)
-    BLOG_DECL(DYING)
-    BLOG_DECL(FIXED_TIMEOUT)
-    BLOG_DECL(BLOG)
-};
-
 /*
  *------------------------------------------------------------------------------
  * Support for RFC 2684 headers logging.
@@ -178,14 +210,14 @@ const char * strIpctStatus[] =  /* in reference to enum ip_conntrack_status */
  */
 const char * strRfc2684[RFC2684_MAX] =
 {
-        BLOG_DECL(RFC2684_NONE)         /*                               */
-        BLOG_DECL(LLC_SNAP_ETHERNET)    /* AA AA 03 00 80 C2 00 07 00 00 */
-        BLOG_DECL(LLC_SNAP_ROUTE_IP)    /* AA AA 03 00 00 00 08 00       */
-        BLOG_DECL(LLC_ENCAPS_PPP)       /* FE FE 03 CF                   */
-        BLOG_DECL(VC_MUX_ETHERNET)      /* 00 00                         */
-        BLOG_DECL(VC_MUX_IPOA)          /*                               */
-        BLOG_DECL(VC_MUX_PPPOA)         /*                               */
-        BLOG_DECL(PTM)                  /*                               */
+    BLOG_DECL(RFC2684_NONE)         /*                               */
+    BLOG_DECL(LLC_SNAP_ETHERNET)    /* AA AA 03 00 80 C2 00 07 00 00 */
+    BLOG_DECL(LLC_SNAP_ROUTE_IP)    /* AA AA 03 00 00 00 08 00       */
+    BLOG_DECL(LLC_ENCAPS_PPP)       /* FE FE 03 CF                   */
+    BLOG_DECL(VC_MUX_ETHERNET)      /* 00 00                         */
+    BLOG_DECL(VC_MUX_IPOA)          /*                               */
+    BLOG_DECL(VC_MUX_PPPOA)         /*                               */
+    BLOG_DECL(PTM)                  /*                               */
 };
 
 const uint8_t rfc2684HdrLength[BLOG_MAXPHY] =
@@ -232,55 +264,36 @@ const char * strBlogPhy[BLOG_MAXPHY] =
     BLOG_DECL(BLOG_WLANPHY)
 };
 
+const char * strIpctDir[] = {   /* in reference to enum ip_conntrack_dir */
+    BLOG_DECL(DIR_ORIG)
+    BLOG_DECL(DIR_RPLY)
+    BLOG_DECL(DIR_UNKN)
+};
+
+const char * strIpctStatus[] =  /* in reference to enum ip_conntrack_status */
+{
+    BLOG_DECL(EXPECTED)
+    BLOG_DECL(SEEN_REPLY)
+    BLOG_DECL(ASSURED)
+    BLOG_DECL(CONFIRMED)
+    BLOG_DECL(SRC_NAT)
+    BLOG_DECL(DST_NAT)
+    BLOG_DECL(SEQ_ADJUST)
+    BLOG_DECL(SRC_NAT_DONE)
+    BLOG_DECL(DST_NAT_DONE)
+    BLOG_DECL(DYING)
+    BLOG_DECL(FIXED_TIMEOUT)
+    BLOG_DECL(BLOG)
+};
+
 /*
  *------------------------------------------------------------------------------
  * Default Rx and Tx hooks.
  *------------------------------------------------------------------------------
  */
-static BlogHook_t blog_rx_hook_g = (BlogHook_t)NULL;
-static BlogHook_t blog_tx_hook_g = (BlogHook_t)NULL;
-static BlogStFnc_t blog_st_hook_g = (BlogStFnc_t)NULL;
-static BlogNotify_t blog_xx_hook_g = (BlogNotify_t)NULL;
-
-/*
- *------------------------------------------------------------------------------
- * Network Utilities  : Network Order IP Address access (in Big Endian) format
- *------------------------------------------------------------------------------
- */
-#define _IPFMT_                 "<%03u.%03u.%03u.%03u>"
-#define _IPPFMT_                "<%03u.%03u.%03u.%03u:%u>"
-#define _IP4_(ip)               ((uint8_t*)&ip)[0], ((uint8_t*)&ip)[1],     \
-                                ((uint8_t*)&ip)[2], ((uint8_t*)&ip)[3]
-
-#define _IP6FMT_                "<%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x>"
-#define _IP6PFMT_               "<%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x:%u>"
-#define _IP6_(ip)               ((uint16_t*)&ip)[0], ((uint16_t*)&ip)[1],   \
-                                ((uint16_t*)&ip)[2], ((uint16_t*)&ip)[3],   \
-                                ((uint16_t*)&ip)[4], ((uint16_t*)&ip)[5],   \
-                                ((uint16_t*)&ip)[6], ((uint16_t*)&ip)[7]
-
-/*
- *------------------------------------------------------------------------------
- * Function     : _read32_align16
- * Description  : Read a 32bit value from a 16 byte aligned data stream
- *------------------------------------------------------------------------------
- */
-static inline uint32_t _read32_align16( uint16_t * from )
-{
-    return (__force uint32_t)( (from[0] << 16) | (from[1]) );
-}
-
-/*
- *------------------------------------------------------------------------------
- * Function     : _write32_align16
- * Description  : Write a 32bit value to a 16bit aligned data stream
- *------------------------------------------------------------------------------
- */
-static inline void _write32_align16( uint16_t * to, uint32_t from )
-{
-    to[0] = (__force uint16_t)(from >> 16);
-    to[1] = (__force uint16_t)(from >>  0);
-}
+static BlogDevHook_t blog_rx_hook_g = (BlogDevHook_t)NULL;
+static BlogDevHook_t blog_tx_hook_g = (BlogDevHook_t)NULL;
+static BlogNotifyHook_t blog_xx_hook_g = (BlogNotifyHook_t)NULL;
 
 
 /*
@@ -295,7 +308,7 @@ static inline void _write32_align16( uint16_t * to, uint32_t from )
 static Blog_t * blog_list_gp = BLOG_NULL;
 
 static int blog_extends = 0;        /* Extension of Pool on depletion */
-#if defined(CC_CONFIG_BLOG_DEBUG)
+#if defined(CC_BLOG_SUPPORT_DEBUG)
 static int blog_cnt_free = 0;       /* Number of Blog_t free */
 static int blog_cnt_used = 0;       /* Number of in use Blog_t */
 static int blog_cnt_hwm  = 0;       /* In use high water mark for engineering */
@@ -314,7 +327,7 @@ static int blog_cnt_fails = 0;
  * Returns    : Number of Blog_t objects allocated in pool.
  *------------------------------------------------------------------------------
  */
-static uint32_t blog_extend( uint32_t num )
+uint32_t blog_extend( uint32_t num )
 {
     register int i;
     register Blog_t * list_p;
@@ -324,7 +337,7 @@ static uint32_t blog_extend( uint32_t num )
     list_p = (Blog_t *) kmalloc( num * sizeof(Blog_t), GFP_ATOMIC);
     if ( list_p == BLOG_NULL )
     {
-#if defined(CC_CONFIG_BLOG_DEBUG)
+#if defined(CC_BLOG_SUPPORT_DEBUG)
         blog_cnt_fails++;
 #endif
         blog_print( "WARNING: Failure to initialize %d Blog_t", num );
@@ -336,21 +349,13 @@ static uint32_t blog_extend( uint32_t num )
     for ( i = 0; i < num; i++ )
         list_p[i].blog_p = &list_p[i+1];
 
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-    spin_lock_irq( &blog_pool_lock_g );
-#else
-    local_irq_disable();
-#endif
+    BLOG_LOCK_POOL();
 
     BLOG_DBG( blog_cnt_free += num; );
     list_p[num-1].blog_p = blog_list_gp; /* chain last Blog_t object */
     blog_list_gp = list_p;  /* Head of list */
 
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-    spin_unlock_irq( &blog_pool_lock_g );
-#else
-    local_irq_enable();
-#endif
+    BLOG_UNLOCK_POOL();
 
     return num;
 }
@@ -363,23 +368,20 @@ static uint32_t blog_extend( uint32_t num )
  */
 static inline void blog_clr( Blog_t * blog_p )
 {
-    blog_assertv( ((blog_p != BLOG_NULL) && _IS_BPTR_(blog_p)) );
+    blog_assertv( ((blog_p != BLOG_NULL) && (_IS_BPTR_(blog_p))) );
     BLOG_DBG( memset( (void*)blog_p, 0, sizeof(Blog_t) ); );
 
     /* clear phyHdr, count, bmap, and channel */
     blog_p->rx.word = 0;
     blog_p->tx.word = 0;
     blog_p->key.match = 0;    /* clears hash, protocol, l1_tuple */
-    blog_p->rx.ct_p = (struct nf_conn*)NULL;
-    blog_p->tx.dev_p = (struct net_device *)NULL;
-    blog_p->fdb_src = (struct net_bridge_fdb_entry*)NULL;
-    blog_p->fdb_dst = (struct net_bridge_fdb_entry*)NULL;
-    blog_p->minMtu = BLOG_ENET_MTU;
-#if defined(CONFIG_BLOG_IPV6)
-    blog_p->tupleV6.t4in6offset = 0 ;   /* added Feb 19, 2010 */
-#endif
-    memset( (void*)blog_p->virt_dev_p, 0, 
-            sizeof(struct net_device *) * MAX_VIRT_DEV);
+    blog_p->rx.ct_p = (void *)NULL;
+    blog_p->tx.dev_p = (void *)NULL;
+    blog_p->fdb[0] = (void *)NULL;
+    blog_p->fdb[1] = (void *)NULL;
+    blog_p->minMtu = BLOG_ETH_MTU_LEN;
+    blog_p->tupleV6.t4in6offset = 0;
+    memset( (void*)blog_p->virt_dev_p, 0, sizeof(void*) * MAX_VIRT_DEV);
 
     blog_print( "blog<0x%08x>", (int)blog_p );
 }
@@ -391,13 +393,13 @@ static inline void blog_clr( Blog_t * blog_p )
  * Returns      : Pointer to an Blog_t or NULL, on depletion.
  *------------------------------------------------------------------------------
  */
-static Blog_t * blog_get( void )
+Blog_t * blog_get( void )
 {
     register Blog_t * blog_p;
 
     if ( blog_list_gp == BLOG_NULL )
     {
-#ifdef CC_SUPPORT_BLOG_EXTEND
+#ifdef CC_BLOG_SUPPORT_EXTEND
         if ( (blog_extends >= BLOG_EXTEND_MAX_ENGG)/* Try extending free pool */
           || (blog_extend( BLOG_EXTEND_SIZE_ENGG ) != BLOG_EXTEND_SIZE_ENGG))
         {
@@ -413,11 +415,7 @@ static Blog_t * blog_get( void )
 #endif
     }
 
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-    spin_lock_irq( &blog_pool_lock_g );
-#else
-    local_irq_disable();
-#endif
+    BLOG_LOCK_POOL();
 
     BLOG_DBG(
         blog_cnt_free--;
@@ -429,11 +427,7 @@ static Blog_t * blog_get( void )
 
     blog_clr( blog_p );     /* quickly clear the contents */
 
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-    spin_unlock_irq( &blog_pool_lock_g );
-#else
-    local_irq_enable();
-#endif
+    BLOG_UNLOCK_POOL();
 
     blog_print( "blog<0x%08x>", (int)blog_p );
 
@@ -450,13 +444,9 @@ static Blog_t * blog_get( void )
  */
 void blog_put( Blog_t * blog_p )
 {
-    blog_assertv( ((blog_p != BLOG_NULL) && _IS_BPTR_(blog_p)) );
+    blog_assertv( ((blog_p != BLOG_NULL) && (_IS_BPTR_(blog_p))) );
 
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-    spin_lock_irq( &blog_pool_lock_g );
-#else
-    local_irq_disable();
-#endif
+    BLOG_LOCK_POOL();
 
     blog_clr( blog_p );
 
@@ -464,13 +454,31 @@ void blog_put( Blog_t * blog_p )
     blog_p->blog_p = blog_list_gp;  /* clear pointer to skb_p */
     blog_list_gp = blog_p;          /* link into free pool */
 
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-    spin_unlock_irq( &blog_pool_lock_g );
-#else
-    local_irq_enable();
-#endif
+    BLOG_UNLOCK_POOL();
 
     blog_print( "blog<0x%08x>", (int)blog_p );
+}
+
+/*
+ *------------------------------------------------------------------------------
+ * Function     : blog_skb
+ * Description  : Allocate and associate a Blog_t with an sk_buff.
+ * Parameters   :
+ *  skb_p       : pointer to a non-null sk_buff
+ * Returns      : A Blog_t object or NULL,
+ *------------------------------------------------------------------------------
+ */
+Blog_t * blog_skb( struct sk_buff * skb_p )
+{
+    blog_assertr( (skb_p != (struct sk_buff *)NULL), BLOG_NULL );
+    blog_assertr( (!_IS_BPTR_(skb_p->blog_p)), BLOG_NULL ); /* avoid leak */
+
+    skb_p->blog_p = blog_get(); /* Allocate and associate with sk_buff */
+
+    blog_print( "skb<0x%08x> blog<0x%08x>", (int)skb_p, (int)skb_p->blog_p );
+
+    /* CAUTION: blog_p does not point back to the skb, do it explicitly */
+    return skb_p->blog_p;       /* May be null */
 }
 
 /*
@@ -484,11 +492,11 @@ void blog_put( Blog_t * blog_p )
  */
 Blog_t * blog_fkb( struct fkbuff * fkb_p )
 {
-    int in_skb_tag;
+    uint32_t in_skb_tag;
     blog_assertr( (fkb_p != (FkBuff_t *)NULL), BLOG_NULL );
     blog_assertr( (!_IS_BPTR_(fkb_p->blog_p)), BLOG_NULL ); /* avoid leak */
 
-    in_skb_tag = (fkb_p->in_skb_tag == FKB_IN_SKB);
+    in_skb_tag = _is_in_skb_tag_( fkb_p->flags );
 
     fkb_p->blog_p = blog_get(); /* Allocate and associate with fkb */
 
@@ -617,7 +625,7 @@ void blog_xfer( struct sk_buff * skb_p, const struct sk_buff * prev_p )
         blog_print( "skb<0x%08x> to new<0x%08x> blog<0x%08x> [<%08x>]",
                     (int)prev_p, (int)skb_p, (int)blog_p,
                     (int)__builtin_return_address(0) );
-        blog_assertv( _IS_BPTR_(blog_p) );
+        blog_assertv( (_IS_BPTR_(blog_p)) );
         blog_p->skb_p = skb_p;
     }
 }
@@ -638,8 +646,8 @@ void blog_clone( struct sk_buff * skb_p, const struct blog_t * prev_p )
     if ( likely(prev_p != BLOG_NULL) )
     {
         Blog_t * blog_p;
-        
-        blog_assertv( _IS_BPTR_(prev_p) );
+
+        blog_assertv( (_IS_BPTR_(prev_p)) );
         
         skb_p->blog_p = blog_get(); /* Allocate and associate with skb */
         blog_p = skb_p->blog_p;
@@ -661,278 +669,339 @@ void blog_clone( struct sk_buff * skb_p, const struct blog_t * prev_p )
     }
 }
 
-#if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)   
-
 /*
  *------------------------------------------------------------------------------
- * Function     : blog_nfct [Down call from Netfilter]
- * Description  : Associate a nf_conn with an skb's blog object
- *                See: resolve_normal_ct() nf_conntrack_core.c
+ * Function     : blog_link
+ * Description  : Associate a network entity with an skb's blog object
  * Parameters   :
- *  skb_p       : Pointer to a sk_buff
- *  ct_p        : Pointer to a nf_conn
+ *  entity_type : Network entity type
+ *  blog_p      : Pointer to a Blog_t
+ *  net_p       : Pointer to a network stack entity 
+ *  param1      : optional parameter 1
+ *  param2      : optional parameter 2
  *------------------------------------------------------------------------------
  */
-void blog_nfct( struct sk_buff * skb_p, struct nf_conn * ct_p )
+void blog_link( BlogNetEntity_t entity_type, Blog_t * blog_p,
+                void * net_p, uint32_t param1, uint32_t param2 )
 {
-    enum ip_conntrack_info ctinfo;
-    struct nf_conn * ct;
-    
-    blog_assertv( (ct_p != (struct nf_conn *)NULL) );
-    blog_assertv( (skb_p != (struct sk_buff *)NULL) );
-
-    if ( unlikely(skb_p->blog_p == BLOG_NULL) )
-        return;
-
-    blog_assertv( _IS_BPTR_(skb_p->blog_p) );
-
-    if ( unlikely(skb_p->blog_p->rx.info.multicast) )
-        return;
-
-    blog_print( "skb<0x%08x> blog<0x%08x> nfct<0x%08x> [<%08x>]",
-                (int)skb_p, (int)skb_p->blog_p, (int)ct_p,
-                (int)__builtin_return_address(0) );
-
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-    spin_lock_bh( &blog_lock_g );
-#endif
-
-    skb_p->blog_p->rx.ct_p = ct_p;                  /* Pointer to conntrack */
-
-    ct = nf_ct_get(skb_p, &ctinfo);
-    blog_assertv( (ct == ct_p) );
-    skb_p->blog_p->rx.nf_dir = CTINFO2DIR(ctinfo);  /* Conntrack direction */
-
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-    spin_unlock_bh( &blog_lock_g );
-#endif
-}
-
-/*
- *------------------------------------------------------------------------------
- * Function     : blog_has_helper
- * Description  : Checks whether the nf_conn has a helper attached
- * Parameters   :
- *  ct_p        : Pointer to a nf_conn
- * Return Value : 1=helper attached, 0=no-helper 
- * -----------------------------------------------------------------------------
- */
-int blog_has_helper( struct nf_conn * ct_p )
-{
-    struct nf_conn_help * help;
-
-    blog_assertr( (ct_p != (struct nf_conn *)NULL), 0 );
-
-    help = nfct_help(ct_p);
-
-    if ( (help != (struct nf_conn_help *)NULL )
-         && (help->helper != (struct nf_conntrack_helper *)NULL) )
-    {
-        blog_print( "ABORT HELPER ct<0x%08x> helper<%s>",
-                    (int)ct_p, help->helper->name );
-        return 1;
-    }
-
-    return 0;
-}
-#endif
-
-/*
- *------------------------------------------------------------------------------
- * Function     : blog_dev
- * Description  : Record devices which the flow goes through
- * Parameters   :
- *  skb_p       : Pointer to a sk_buff
- *  dev_p       : Pointer to a net_device
- *  action      : indicate recv or xmit
- *  length      : length update
- *------------------------------------------------------------------------------
- */
-void blog_dev(const struct sk_buff * skb_p, const struct net_device * dev_p, 
-              BlogDir_t action, unsigned int length)
-{
-    int i;
-    Blog_t *blog_p = skb_p->blog_p;
-
-    blog_assertv( ( (skb_p != (const struct sk_buff *)NULL) && 
-                  (dev_p != (const struct net_device *)NULL) ) );
-    blog_print( "dev<0x%08x> skb<0x%08x> blog<0x%08x> action<%08x>",
-                (int)dev_p, (int)skb_p, (int)blog_p, action );
+    blog_assertv( (entity_type < BLOG_NET_ENTITY_MAX) );
+    blog_assertv( (net_p != (void *)NULL) );
 
     if ( unlikely(blog_p == BLOG_NULL) )
         return;
 
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-    spin_lock_bh( &blog_lock_g );
-#endif
+    blog_assertv( (_IS_BPTR_(blog_p)) );
 
-    for (i=0; i<MAX_VIRT_DEV; i++)
+    blog_print( "link<%s> skb<0x%08x> blog<0x%08x> net<0x%08x> %u %u [<%08x>]",
+                strBlogNetEntity[entity_type], (int)blog_p->skb_p, (int)blog_p,
+                (int)net_p, param1, param2, (int)__builtin_return_address(0) );
+
+    switch ( entity_type )
     {
-        /* A flow should not rx and tx with the same device!!  */
-        blog_assertv( (dev_p != DEVP_DETACH_DIR(blog_p->virt_dev_p[i])) );
-
-        if ( blog_p->virt_dev_p[i] == NULL )
+        case FLOWTRACK:
         {
-            blog_p->virt_dev_p[i] = DEVP_APPEND_DIR(dev_p, action);
-            blog_p->delta[i] = length - blog_p->tx.pktlen;
+#if defined(BLOG_NF_CONNTRACK)
+            blog_assertv( ((param1 == BLOG_PARAM1_DIR_ORIG) ||
+                           (param1 == BLOG_PARAM1_DIR_REPLY)) );
+
+            if ( unlikely(blog_p->rx.info.multicast) )
+                return;
+
+            BLOG_LOCK_BH();
+
+            blog_p->rx.ct_p = net_p; /* Pointer to conntrack */
+            /* Save flow direction */
+            blog_p->rx.nf_dir = param1;
+
+            BLOG_UNLOCK_BH();
+#endif
             break;
         }
+
+        case BRIDGEFDB:
+        {
+            blog_assertv( ((param1 == BLOG_PARAM1_SRCFDB) ||
+                           (param1 == BLOG_PARAM1_DSTFDB)) );
+
+            BLOG_LOCK_BH();
+
+            blog_p->fdb[param1] = net_p;
+
+            BLOG_UNLOCK_BH();
+
+            break;
+        }
+
+        case MCAST_FDB:
+        {
+            blog_assertv( (entity_type != MCAST_FDB) );
+            break;
+        }
+
+        case IF_DEVICE: /* link virtual interfaces traversed by flow */
+        {
+            int i;
+
+            blog_assertv( (param1 < BLOG_DIR_MAX) );
+
+            BLOG_LOCK_BH();
+
+            for (i=0; i<MAX_VIRT_DEV; i++)
+            {
+                /* A flow should not rx and tx with the same device!!  */
+                blog_assertv((net_p != DEVP_DETACH_DIR(blog_p->virt_dev_p[i])));
+
+                if ( blog_p->virt_dev_p[i] == NULL )
+                {
+                    blog_p->virt_dev_p[i] = DEVP_APPEND_DIR(net_p, param1);
+                    blog_p->delta[i] = param2 - blog_p->tx.pktlen;
+                    break;
+                }
+            }
+
+            BLOG_UNLOCK_BH();
+
+            blog_assertv( (i != MAX_VIRT_DEV) );
+            break;
+        }
+
+        default:
+            break;
     }
-
- #if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-    spin_unlock_bh( &blog_lock_g );
-#endif
-   
-    blog_assertv( ( i != MAX_VIRT_DEV ) );
+    return;
 }
-
-#if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)   
 
 /*
  *------------------------------------------------------------------------------
- * Function     : blog_flow [Up call to Netfilter]
- * Description  : Associates a traffic flow key with the blogged nf_conntack
+ * Function     : blog_notify
+ * Description  : Notify a Blog client (xx_hook) of an event.
  * Parameters   :
- *  blog_p      : Pointer to a Blog_t
- *  key         : Key of the traffic flow
+ *  event       : notification
+ *  net_p       : Pointer to a network stack entity
+ *  param1      : optional parameter 1
+ *  param2      : optional parameter 2
  *------------------------------------------------------------------------------
  */
-void blog_flow( Blog_t * blog_p, uint32_t key )
+void blog_notify( BlogNotify_t event, void * net_p,
+                  uint32_t param1, uint32_t param2 )
 {
-    blog_assertv( ((blog_p != BLOG_NULL) && _IS_BPTR_(blog_p)) );
-    blog_assertv( (blog_p->rx.ct_p != (struct nf_conn*)NULL) );
-    blog_print( "blog<0x%08x> ct<0x%08x> key<%u> [<%08x>]",
-                (int)blog_p, (int)blog_p->rx.ct_p, key,
-                (int)__builtin_return_address(0) );
-    blog_p->rx.ct_p->blog_key[ blog_p->rx.nf_dir ] = key;
-}
-#endif
+    blog_assertv( (event < BLOG_NOTIFY_MAX) );
+    blog_assertv( (net_p != (void *)NULL) );
 
-/*
- *------------------------------------------------------------------------------
- * Function     : blog_br_fdb [Down call from bridge]
- * Description  : Associate a net_bridge_fdb_entry with an skb's blog object
- *                See: br_handle_frame_finish() br_input.c
- * Parameters   :
- *  skb_p       : Pointer to a sk_buff
- *  fdb_src     : Pointer to a net_bridge_fdb_entry of packet source
- *  fdb_dst     : Pointer to a net_bridge_fdb_entry of packet destination
- *------------------------------------------------------------------------------
- */
-void blog_br_fdb( struct sk_buff * skb_p, struct net_bridge_fdb_entry * fdb_src,
-                  struct net_bridge_fdb_entry * fdb_dst )
-{
-    blog_assertv( ((fdb_src != (struct net_bridge_fdb_entry *)NULL) || 
-                   (fdb_dst != (struct net_bridge_fdb_entry *)NULL)) );
-    blog_assertv( (skb_p != (struct sk_buff *)NULL) );
-
-    if ( unlikely(skb_p->blog_p == BLOG_NULL) )
+    if ( unlikely(blog_xx_hook_g == (BlogNotifyHook_t)NULL) )
         return;
 
-    blog_assertv( (_IS_BPTR_(skb_p->blog_p)) );
+    blog_print( "notify<%s> net_p<0x%08x>"
+                " param1<%u:0x%08x> param2<%u:0x%08x> [<%08x>]",
+                strBlogNotify[event], (int)net_p,
+                param1, (int)param1, param2, (int)param2,
+                (int)__builtin_return_address(0) );
 
-    blog_print("skb<0x%08x> blog<0x%08x> fdb_src<0x%08x> fdb_dst<0x%08x>"
-               " [<%08x>]",
-               (int)skb_p, (int)skb_p->blog_p, (int)fdb_src, (int)fdb_dst,
-               (int)__builtin_return_address(0) );
+    BLOG_LOCK();
 
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-    spin_lock_bh( &blog_lock_g );
-#endif
+    blog_xx_hook_g( event, net_p, param1, param2 );
 
-    skb_p->blog_p->fdb_src = fdb_src;      /* Pointer to net_bridge_fdb_entry */
-    skb_p->blog_p->fdb_dst = fdb_dst;      /* Pointer to net_bridge_fdb_entry */
+    BLOG_UNLOCK();
 
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-    spin_unlock_bh( &blog_lock_g );
-#endif
+    return;
 }
+
 
 /*
  *------------------------------------------------------------------------------
- * Function     : blog_notify [Down call from Netfilter/bridge]
- * Description  : Invokes the bound notify function passing either 
- *                      the flow key(netfilter) or net_bridge_fdb_entry(bridge)
- *                See destroy_conntrack() in nf_conntrack_core.c
- *                       fdb_delete() in br_fdb.c
+ * Function     : blog_request
+ * Description  : Blog client requests an operation to be performed on a network
+ *                stack entity.
  * Parameters   :
- *  fdb_p       : Pointer to a bridge forward database that is being destroyed.
- *  ct_p        : Pointer to a conntrack that is being destroyed.
- *  event       : Notification event, see BlogNotify_t
+ *  request     : request type
+ *  net_p       : Pointer to a network stack entity
+ *  param1      : optional parameter 1
+ *  param2      : optional parameter 2
  *------------------------------------------------------------------------------
  */
-void blog_notify( struct net_bridge_fdb_entry * fdb_p, struct nf_conn * ct_p,
-                  uint32_t event )
+extern void br_fdb_refresh( struct net_bridge_fdb_entry *fdb );
+
+uint32_t blog_request( BlogRequest_t request, void * net_p,
+                       uint32_t param1, uint32_t param2 )
 {
-    if ( likely(blog_xx_hook_g != (BlogNotify_t)NULL) )
+    uint32_t ret;
+
+    blog_assertr( (request < BLOG_REQUEST_MAX), 0 );
+    blog_assertr( (net_p != (void *)NULL), 0 );
+
+#if defined(CC_BLOG_SUPPORT_DEBUG)
+    if ( (request!=FLOWTRACK_REFRESH) && (request!=BRIDGE_REFRESH) )
+#endif
+        blog_print( "request<%s> net_p<0x%08x>"
+                    " param1<%u:0x%08x> param2<%u:0x%08x>",
+                    strBlogRequest[request], (int)net_p,
+                    param1, (int)param1, param2, (int)param2);
+
+    switch ( request )
     {
-        blog_print( "fdb<0x%08x> ct<0x%08x> event<%s> [<%08x>]",
-                    (int)fdb_p, (int)ct_p, (event < BLOG_EVENT_MAX) ?
-                    strBlogEvent[event] : "UNKN_EVENT",
-                    (int)__builtin_return_address(0) );
+#if defined(BLOG_NF_CONNTRACK)
+        case FLOWTRACK_KEY_SET:
+            blog_assertr( ((param1 == BLOG_PARAM1_DIR_ORIG) ||
+                           (param1 == BLOG_PARAM1_DIR_REPLY)), 0 );
+            ((struct nf_conn *)net_p)->blog_key[param1] = param2;
+            return 0;
 
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-        spin_lock_irq( &blog_lock_g );
-#else
-        local_irq_disable();
+        case FLOWTRACK_KEY_GET:
+            blog_assertr( ((param1 == BLOG_PARAM1_DIR_ORIG) ||
+                           (param1 == BLOG_PARAM1_DIR_REPLY)), 0 );
+            ret = ((struct nf_conn *)net_p)->blog_key[param1];
+            break;
+
+#if defined(CONFIG_NF_DYNTOS) || defined(CONFIG_NF_DYNTOS_MODULE)
+        case FLOWTRACK_DSCP:
+            blog_assertr( ((param1 == BLOG_PARAM1_DIR_ORIG) ||
+                           (param1 == BLOG_PARAM1_DIR_REPLY)), 0 );
+            ret = ((struct nf_conn *)net_p)->dyntos.dscp[param1];
+            break;
 #endif
 
-        blog_xx_hook_g( fdb_p, ct_p, event );
+        case FLOWTRACK_CONFIRMED:    /* E.g. UDP connection confirmed */
+            ret = test_bit( IPS_CONFIRMED_BIT,
+                            &((struct nf_conn *)net_p)->status );
+            break;
 
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-        spin_unlock_irq( &blog_lock_g );
+        case FLOWTRACK_ASSURED:      /* E.g. TCP connection confirmed */
+            ret = test_bit( IPS_ASSURED_BIT,
+                            &((struct nf_conn *)net_p)->status );
+            break;
+
+        case FLOWTRACK_ALG_HELPER:
+        {
+            struct nf_conn * nfct_p;
+            struct nf_conn_help * help;
+
+            nfct_p = (struct nf_conn *)net_p;
+            help = nfct_help(nfct_p);
+
+            if ( (help != (struct nf_conn_help *)NULL )
+                && (help->helper != (struct nf_conntrack_helper *)NULL) )
+            {
+                blog_print( "HELPER ct<0x%08x> helper<%s>",
+                            (int)net_p, help->helper->name );
+                return 1;
+            }
+            return 0;
+        }
+
+        case FLOWTRACK_EXCLUDE:  /* caution: modifies net_p */
+            clear_bit(IPS_BLOG_BIT, &((struct nf_conn *)net_p)->status);
+            return 0;
+
+        case FLOWTRACK_REFRESH:
+        {
+            if ( blog_refresh_fn  )
+            {
+                uint32_t jiffies;
+
+                if ( param1 == IPPROTO_TCP )
+                    jiffies = blog_nat_tcp_def_idle_timeout;
+                else if ( param1 == IPPROTO_UDP )
+                    jiffies = blog_nat_udp_def_idle_timeout;
+                else
+                    jiffies = 60;   /* default: non-TCP|UDP timer refresh */
+
+                nfskb_p->nfct = (struct nf_conntrack *)net_p;
+                (*blog_refresh_fn)( net_p, 0, nfskb_p, jiffies, 0 );
+            }
+            return 0;
+        }
+
+#endif /* defined(BLOG_NF_CONNTRACK) */
+
+        case BRIDGE_REFRESH:
+        {
+            br_fdb_refresh( (struct net_bridge_fdb_entry *)net_p );
+            return 0;
+        }
+
+        case NETIF_PUT_STATS:
+        {
+            struct net_device * dev_p = (struct net_device *)net_p;
+            BlogStats_t * bstats_p = (BlogStats_t *) param1;
+            blog_assertr( (bstats_p != (BlogStats_t *)NULL), 0 );
+
+            blog_print("dev_p<0x%08x> rx_pkt<%lu> rx_byte<%lu> tx_pkt<%lu>"
+                       " tx_byte<%lu> multicast<%lu>", (int)dev_p,
+                        bstats_p->rx_packets, bstats_p->rx_bytes,
+                        bstats_p->tx_packets, bstats_p->tx_bytes,
+                        bstats_p->multicast);
+
+            if ( dev_p->put_stats )
+                dev_p->put_stats( dev_p, bstats_p );
+            return 0;
+        }
+        
+        case LINK_XMIT_FN:
+        {
+            struct net_device * dev_p = (struct net_device *)net_p;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
+            ret = (uint32_t)(dev_p->netdev_ops->ndo_start_xmit);
 #else
-        local_irq_enable();
+            ret = (uint32_t)(dev_p->hard_start_xmit);
 #endif
+            break;
+        }
+
+        case LINK_NOCARRIER:
+            ret = test_bit( __LINK_STATE_NOCARRIER,
+                            &((struct net_device *)net_p)->state );
+            break;
+
+        default:
+            return 0;
     }
+
+    blog_print("ret<%u:0x%08x>", ret, (int)ret);
+
+    return ret;
 }
+
 
 /*
  *------------------------------------------------------------------------------
- * Function     : blog_time [Up call to Netfilter]
- * Description  : Refresh the nf_conn associated with this blog.
- *   blog_p     : Pointer to a blog
+ * Function     : blog_filter
+ * Description  : Filter packets that need blogging.
+ *                E.g. To skip logging of control versus data type packet.
+ *   blog_p     : Received packet parsed and logged into a blog
+ * Returns      :
+ *   PKT_NORM   : If normal stack processing without logging
+ *   PKT_BLOG   : If stack processing with logging
  *------------------------------------------------------------------------------
  */
-
-#if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)   
-void blog_time( Blog_t * blog_p )
+BlogAction_t blog_filter( Blog_t * blog_p )
 {
-    if ( blog_refresh_fn  && (blog_p->rx.ct_p != (struct nf_conn *)NULL) )
-    {
-        uint32_t jiffies = 0;
+#if defined(CC_BLOG_SUPPORT_USER_FILTER)
+    blog_assertr( ((blog_p != BLOG_NULL) && (_IS_BPTR_(blog_p))), PKT_NORM );
+    blog_assertr( (blog_p->rx.info.hdrs != 0), PKT_NORM );
 
-        if ( blog_p->key.protocol == IPPROTO_TCP )
-            jiffies = blog_nat_tcp_def_idle_timeout;
-        else if ( blog_p->key.protocol == IPPROTO_UDP )
-            jiffies = blog_nat_udp_def_idle_timeout;
+    /*
+     * E.g. IGRS/UPnP using Simple Service Discovery Protocol SSDP over HTTPMU
+     *      HTTP Multicast over UDP 239.255.255.250:1900,
+     *
+     *  if ( ! RX_IPinIP(blog_p) && RX_IPV4(blog_p)
+     *      && (blog_p->rx.tuple.daddr == htonl(0xEFFFFFFA))
+     *      && (blog_p->rx.tuple.port.dest == 1900)
+     *      && (blog_p->key.protocol == IPPROTO_UDP) )
+     *          return PKT_NORM;
+     *
+     *  E.g. To filter IPv4 Local Network Control Block 224.0.0/24
+     *             and IPv4 Internetwork Control Block  224.0.1/24
+     *
+     *  if ( ! RX_IPinIP(blog_p) && RX_IPV4(blog_p)
+     *      && ( (blog_p->rx.tuple.daddr & htonl(0xFFFFFE00))
+     *           == htonl(0xE0000000) )
+     *          return PKT_NORM;
+     *  
+     */
 
-        nfskb_p->nfct = (struct nf_conntrack *)blog_p->rx.ct_p;
-        (*blog_refresh_fn)( blog_p->rx.ct_p, 0, nfskb_p, jiffies, 0 );
-        // blog_print( "blog<0x%08x> ct<0x%08x> [<%08x>]",
-        //            (int)blog_p, (int)blog_p->rx.ct_p,
-        //            (int)__builtin_return_address(0) );
-    }
-}
 #endif
-
-/*
- *------------------------------------------------------------------------------
- * Function     : blog_refresh_br [Up call to bridge]
- * Description  : Refresh the bridge forward entry associated with this blog.
- *   blog_p     : Pointer to a blog
- *------------------------------------------------------------------------------
- */
-extern void br_fdb_refresh( struct net_bridge_fdb_entry *fdb ); /* br_fdb.c */
-void blog_refresh_br( Blog_t * blog_p )
-{
-    if ( blog_p->fdb_src != (struct net_bridge_fdb_entry *)NULL )
-    {
-        br_fdb_refresh( blog_p->fdb_src );
-        // blog_print( "blog<0x%08x> fdb_src<0x%08x> [<%08x>]",
-        //             (int)blog_p, blog_p->fdb_src,
-        //             (int)__builtin_return_address(0) );
-    }
+    return PKT_BLOG;    /* continue in stack with logging */
 }
 
 /*
@@ -971,41 +1040,42 @@ void blog_refresh_br( Blog_t * blog_p )
  *------------------------------------------------------------------------------
  */
 inline
-BlogAction_t blog_finit(struct fkbuff * fkb_p, struct net_device * dev_p,
-                        uint32_t encap, uint32_t channel, uint32_t phyHdr )
+BlogAction_t blog_finit( struct fkbuff * fkb_p, void * dev_p,
+                         uint32_t encap, uint32_t channel, uint32_t phyHdr )
 {
-    BlogKey_t blogKey;
+    BlogHash_t blogHash;
     BlogAction_t action = PKT_NORM;
 
-    blogKey.match = 0U;     /* also clears hash, protocol = 0 */
+    blogHash.match = 0U;     /* also clears hash, protocol = 0 */
 
-    if ( unlikely(blog_rx_hook_g == (BlogHook_t)NULL) )
+    if ( unlikely(blog_rx_hook_g == (BlogDevHook_t)NULL) )
         goto bypass;
 
-    blogKey.l1_tuple.channel = (uint8_t)channel;
-    blogKey.l1_tuple.phy     = phyHdr;
+    blogHash.l1_channel = (uint8_t)channel;
+    blogHash.l1_phy     = phyHdr;
 
     blog_assertr( (phyHdr < BLOG_MAXPHY), PKT_NORM);
     blog_print( "fkb<0x%08x:%x> pData<0x%08x> length<%d> dev<0x%08x>"
                 " chnl<%u> %s PhyHdrLen<%u> key<0x%08x>",
-                (int)fkb_p, (fkb_p->in_skb_tag)? 1:0,
+                (int)fkb_p, _is_in_skb_tag_(fkb_p->flags),
                 (int)fkb_p->data, fkb_p->len, (int)dev_p,
                 channel, strBlogPhy[phyHdr],
                 (phyHdr <= BLOG_XTMPHY_PTM) ? rfc2684HdrLength[phyHdr] : 0,
-                blogKey.match );
+                blogHash.match );
 
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-    spin_lock_bh( &blog_lock_g );
+    BLOG_LOCK_BH();
+
+    action = blog_rx_hook_g( fkb_p, (void *)dev_p, encap, blogHash.match );
+
+#if defined(CC_BLOG_SUPPORT_USER_FILTER)
+    if ( action == PKT_BLOG )
+        action = blog_filter(fkb_p->blog_p);
 #endif
-
-    action = blog_rx_hook_g( fkb_p, dev_p, encap, blogKey.match );
 
     if ( unlikely(action == PKT_NORM) )
         fkb_release( fkb_p );
 
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-    spin_unlock_bh( &blog_lock_g );
-#endif
+    BLOG_UNLOCK_BH();
 
 bypass:
     return action;
@@ -1015,16 +1085,16 @@ bypass:
  * blog_sinit serves as a wrapper to blog_finit() by overlaying an fkb into a
  * skb and invoking blog_finit().
  */
-BlogAction_t blog_sinit(struct sk_buff * skb_p, struct net_device * dev_p,
-                        uint32_t encap, uint32_t channel, uint32_t phyHdr)
+BlogAction_t blog_sinit( struct sk_buff * skb_p, void * dev_p,
+                         uint32_t encap, uint32_t channel, uint32_t phyHdr )
 {
     struct fkbuff * fkb_p;
     BlogAction_t action = PKT_NORM;
 
-    if ( unlikely(blog_rx_hook_g == (BlogHook_t)NULL) )
+    if ( unlikely(blog_rx_hook_g == (BlogDevHook_t)NULL) )
         goto bypass;
 
-    blog_assertr( (phyHdr < BLOG_MAXPHY), PKT_NORM);
+    blog_assertr( (phyHdr < BLOG_MAXPHY), PKT_NORM );
     blog_print( "skb<0x%08x> pData<0x%08x> length<%d> dev<0x%08x>"
                 " chnl<%u> %s PhyHdrLen<%u>",
                 (int)skb_p, (int)skb_p->data, skb_p->len, (int)dev_p,
@@ -1033,15 +1103,17 @@ BlogAction_t blog_sinit(struct sk_buff * skb_p, struct net_device * dev_p,
 
     /* CAUTION: Tag that the fkbuff is from sk_buff */
     fkb_p = (FkBuff_t *) &skb_p->fkbInSkb;
-    fkb_p->in_skb_tag = FKB_IN_SKB;
+    fkb_p->flags = _set_in_skb_tag_(0); /* clear and set in_skb tag */
 
     action = blog_finit( fkb_p, dev_p, encap, channel, phyHdr );
 
     if ( action == PKT_BLOG )
     {
-         blog_assertr( (fkb_p->blog_p != BLOG_NULL), PKT_NORM);
+         blog_assertr( (fkb_p->blog_p != BLOG_NULL), PKT_NORM );
          fkb_p->blog_p->skb_p = skb_p;
     }
+    else
+        fkb_p->flags = 0;
 
 bypass:
     return action;
@@ -1068,10 +1140,10 @@ bypass:
  *                Blog object is disassociated and freed.
  *------------------------------------------------------------------------------
  */
-BlogAction_t blog_emit( void * nbuff_p, struct net_device * dev_p,
+BlogAction_t blog_emit( void * nbuff_p, void * dev_p,
                         uint32_t encap, uint32_t channel, uint32_t phyHdr )
 {
-    BlogKey_t blogKey;
+    BlogHash_t blogHash;
     struct sk_buff * skb_p;
     Blog_t * blog_p;
     BlogAction_t action = PKT_NORM;
@@ -1088,18 +1160,16 @@ BlogAction_t blog_emit( void * nbuff_p, struct net_device * dev_p,
 
     blog_assertr( (_IS_BPTR_(blog_p)), PKT_NORM );
 
-    blogKey.match = 0U;
+    blogHash.match = 0U;
 
-    if ( likely(blog_tx_hook_g != (BlogHook_t)NULL) )
+    if ( likely(blog_tx_hook_g != (BlogDevHook_t)NULL) )
     {
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-        spin_lock_bh( &blog_lock_g );
-#endif
+        BLOG_LOCK_BH();
 
-        blog_p->tx.dev_p = dev_p;                   /* Log device info */
+        blog_p->tx.dev_p = (void *)dev_p;           /* Log device info */
 
-        blogKey.l1_tuple.channel = (uint8_t)channel;
-        blogKey.l1_tuple.phy     = phyHdr;
+        blogHash.l1_channel = (uint8_t)channel;
+        blogHash.l1_phy     = phyHdr;
 
         blog_p->priority = skb_p->priority;         /* Log skb info */
         blog_p->mark = skb_p->mark;
@@ -1110,13 +1180,12 @@ BlogAction_t blog_emit( void * nbuff_p, struct net_device * dev_p,
             (int)skb_p, (int)blog_p, (int)skb_p->data, skb_p->len,
             (int)dev_p, channel, strBlogPhy[phyHdr],
             (phyHdr <= BLOG_XTMPHY_PTM) ? rfc2684HdrLength[phyHdr] : 0,
-            blogKey.match );
+            blogHash.match );
 
-        action = blog_tx_hook_g( skb_p, skb_p->dev, encap, blogKey.match );
+        action = blog_tx_hook_g( skb_p, (void*)skb_p->dev,
+                                 encap, blogHash.match );
 
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-        spin_unlock_bh( &blog_lock_g );
-#endif
+        BLOG_UNLOCK_BH();
     }
     blog_free( skb_p );                             /* Dis-associate w/ skb */
 
@@ -1126,51 +1195,22 @@ bypass:
 
 /*
  *------------------------------------------------------------------------------
- * Function     : blog_gstats
- * Description  : Get the statistics related to the blog.
- *   dev_p      : Pointer to a device
- *   bstats_p   : Pointer to a BlogStats_t
- *   clr        : Indicate whether reset the statistics or not
+ * Function     : blog_bind
+ * Description  : Override default rx and tx hooks.
+ *  blog_rx     : Function pointer to be invoked in blog_finit(), blog_sinit()
+ *  blog_tx     : Function pointer to be invoked in blog_emit()
+ *  blog_xx     : Function pointer to be invoked in blog_notify()
  *------------------------------------------------------------------------------
  */
-void blog_gstats( struct net_device * dev_p, BlogStats_t *bstats_p, 
-                  StatsClr_t clr )
+void blog_bind( BlogDevHook_t blog_rx, BlogDevHook_t blog_tx,
+                BlogNotifyHook_t blog_xx )
 {
-    if ( likely(blog_st_hook_g != (BlogStFnc_t)NULL) )
-    {
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-        spin_lock_bh( &blog_lock_g );
-#else
-        local_bh_disable();
-#endif
+    blog_print( "Bind Rx[<%08x>] Tx[<%08x>] Notify[<%08x>]",
+                (int)blog_rx, (int)blog_tx, (int)blog_xx );
 
-        blog_st_hook_g( dev_p, bstats_p, clr );
-
-#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
-        spin_unlock_bh( &blog_lock_g );
-#else
-        local_bh_enable();
-#endif
-    }
-}
-
-/*
- *------------------------------------------------------------------------------
- * Function     : blog_pstats
- * Description  : Update the statistics related to the blog.
- *   dev_p      : Pointer to a device
- *   bstats_p   : Pointer to a BlogStats_t
- *------------------------------------------------------------------------------
- */
-void blog_pstats( struct net_device * dev_p, BlogStats_t *bstats_p ) 
-{
-    blog_print("dev_p<0x%08x> rx_pkt<%lu> rx_byte<%lu> tx_pkt<%lu>"
-               " tx_byte<%lu> multicast<%lu>", (int)dev_p, 
-                bstats_p->rx_packets, bstats_p->rx_bytes, bstats_p->tx_packets,
-                bstats_p->tx_bytes, bstats_p->multicast);
-
-    if ( dev_p->put_stats )
-        dev_p->put_stats( dev_p, bstats_p );
+    blog_rx_hook_g = blog_rx;   /* Receive  hook */
+    blog_tx_hook_g = blog_tx;   /* Transmit hook */
+    blog_xx_hook_g = blog_xx;   /* Notify hook */
 }
 
 /*
@@ -1196,7 +1236,7 @@ void blog( struct sk_buff * skb_p, BlogDir_t dir, BlogEncap_t encap,
     blog_assertv( (_IS_BPTR_(skb_p->blog_p)) );
     blog_assertv( (data_p != (void *)NULL ) );
     blog_assertv( (len <= BLOG_HDRSZ_MAX) );
-    blog_assertv( (encap < PROTO_MAX ) );
+    blog_assertv( (encap < PROTO_MAX) );
 
     blog_p = skb_p->blog_p;
     blog_assertv( (blog_p->skb_p == skb_p) );
@@ -1206,45 +1246,45 @@ void blog( struct sk_buff * skb_p, BlogDir_t dir, BlogEncap_t encap,
     if ( encap == L3_IPv4 )    /* Log the IP Tuple */
     {
         BlogTuple_t * bTuple_p = &bHdr_p->tuple;
-        struct iphdr * ip_p    = (struct iphdr *)data_p;
+        BlogIpv4Hdr_t * ip_p   = (BlogIpv4Hdr_t *)data_p;
 
         /* Discontinue if non IPv4 or with IP options, or fragmented */
-        if ( (ip_p->version != 4) || (ip_p->ihl != 5)
-             || ( ip_p->frag_off & htons(IP_OFFSET | IP_MF)) )
+        if ( (ip_p->ver != 4) || (ip_p->ihl != 5)
+             || (ip_p->flagsFrag & htons(BLOG_IP_FRAG_OFFSET|BLOG_IP_FLAG_MF)) )
             goto skip;
 
-        if ( ip_p->protocol == IPPROTO_TCP )
+        if ( ip_p->proto == BLOG_IPPROTO_TCP )
         {
-            struct tcphdr * th_p;
-            th_p = (struct tcphdr *)( (uint8_t *)ip_p + sizeof(struct iphdr) );
-            if ( th_p->rst | th_p->fin )    /* Discontinue if TCP RST/FIN */
+            BlogTcpHdr_t * th_p;
+            th_p = (BlogTcpHdr_t*)( (uint8_t *)ip_p + BLOG_IPV4_HDR_LEN );
+
+            /* Discontinue if TCP RST/FIN */
+            if ( TCPH_RST(th_p) | TCPH_FIN(th_p) )
                 goto skip;
-            bTuple_p->port.source = th_p->source;
-            bTuple_p->port.dest = th_p->dest;
+            bTuple_p->port.source = th_p->sPort;
+            bTuple_p->port.dest = th_p->dPort;
         }
-        else if ( ip_p->protocol == IPPROTO_UDP )
+        else if ( ip_p->proto == BLOG_IPPROTO_UDP )
         {
-            struct udphdr * uh_p;
-            uh_p = (struct udphdr *)( (uint8_t *)ip_p + sizeof(struct iphdr) );
-            bTuple_p->port.source = uh_p->source;
-            bTuple_p->port.dest = uh_p->dest;
+            BlogUdpHdr_t * uh_p;
+            uh_p = (BlogUdpHdr_t *)( (uint8_t *)ip_p + BLOG_UDP_HDR_LEN );
+            bTuple_p->port.source = uh_p->sPort;
+            bTuple_p->port.dest = uh_p->dPort;
         }
         else
             goto skip;  /* Discontinue if non TCP or UDP upper layer protocol */
 
         bTuple_p->ttl = ip_p->ttl;
         bTuple_p->tos = ip_p->tos;
-        bTuple_p->check = ip_p->check;
-        bTuple_p->saddr = _read32_align16( (uint16_t *)&ip_p->saddr );
-        bTuple_p->daddr = _read32_align16( (uint16_t *)&ip_p->daddr );
-        blog_p->key.protocol = ip_p->protocol;
+        bTuple_p->check = ip_p->chkSum;
+        bTuple_p->saddr = blog_read32_align16( (uint16_t *)&ip_p->sAddr );
+        bTuple_p->daddr = blog_read32_align16( (uint16_t *)&ip_p->dAddr );
+        blog_p->key.protocol = ip_p->proto;
     }
-#ifdef CONFIG_BLOG_IPV6
     else if ( encap == L3_IPv6 )    /* Log the IPv6 Tuple */
     {
         printk("FIXME blog encap L3_IPv6 \n");
     }
-#endif
     else    /* L2 encapsulation */
     {
         register short int * d;
@@ -1288,8 +1328,6 @@ skip:   /* Discontinue further logging by dis-associating Blog_t object */
 }
 
 
-#if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)   
-
 /*
  *------------------------------------------------------------------------------
  * Function     : blog_nfct_dump
@@ -1300,6 +1338,7 @@ skip:   /* Discontinue further logging by dis-associating Blog_t object */
  */
 void blog_nfct_dump( struct sk_buff * skb_p, struct nf_conn * ct, uint32_t dir )
 {
+#if defined(BLOG_NF_CONNTRACK)
     struct nf_conn_help *help_p;
     struct nf_conn_nat  *nat_p;
     int bitix;
@@ -1312,7 +1351,7 @@ void blog_nfct_dump( struct sk_buff * skb_p, struct nf_conn * ct, uint32_t dir )
 #ifdef CONFIG_NF_NAT_NEEDED
     nat_p = nfct_nat(ct);
 #else
-    nat_p = (struct nf_conn_nat*)NULL;
+    nat_p = (struct nf_conn_nat *)NULL;
 #endif
 
     help_p = nfct_help(ct);
@@ -1339,8 +1378,8 @@ void blog_nfct_dump( struct sk_buff * skb_p, struct nf_conn * ct, uint32_t dir )
         if ( ct->status & (1 << bitix) )
             printk( "%s ", strIpctStatus[bitix] );
     printk( "]\n" );
+#endif /* defined(BLOG_NF_CONNTRACK) */
 }
-#endif //#if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)   
 
 
 /*
@@ -1357,9 +1396,9 @@ static void blog_netdev_dump( struct net_device * dev_p )
 {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
     int i;
-    printk( "\tDEVICE: %s dev<0x%08x> ndo_start_xmit[<%08x>]\n"
+    printk( "\tDEVICE: %s dev<0x%08x> ndo_start_xmit[<0x%08x>]\n"
             "\t  dev_addr[ ", dev_p->name,
-            (int)dev_p, dev_p->netdev_ops->ndo_start_xmit );
+            (int)dev_p, (int)dev_p->netdev_ops->ndo_start_xmit );
     for ( i=0; i<dev_p->addr_len; i++ )
         printk( "%02x ", *((uint8_t *)(dev_p->dev_addr) + i) );
     printk( "]\n" );
@@ -1373,7 +1412,7 @@ static void blog_netdev_dump( struct net_device * dev_p )
     for ( i=0; i<dev_p->addr_len; i++ )
         printk( "%02x ", *((uint8_t *)(dev_p->dev_addr) + i) );
     printk( "]\n" );
-#endif //LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30) */
 }
 
 /*
@@ -1386,14 +1425,14 @@ static void blog_netdev_dump( struct net_device * dev_p )
 static void blog_tuple_dump( BlogTuple_t * bTuple_p )
 {
     printk( "\tIPv4:\n"
-            "\t\tSrc" _IPPFMT_ " Dst" _IPPFMT_ "\n"
+            "\t\tSrc" BLOG_IPV4_ADDR_PORT_FMT
+             " Dst" BLOG_IPV4_ADDR_PORT_FMT "\n"
             "\t\tttl<%3u> tos<%3u> check<0x%04x>\n",
-            _IP4_(bTuple_p->saddr), bTuple_p->port.source,
-            _IP4_(bTuple_p->daddr), bTuple_p->port.dest,
+            BLOG_IPV4_ADDR(bTuple_p->saddr), bTuple_p->port.source,
+            BLOG_IPV4_ADDR(bTuple_p->daddr), bTuple_p->port.dest,
             bTuple_p->ttl, bTuple_p->tos, bTuple_p->check );
 }
  
-#if defined(CONFIG_BLOG_IPV6)
 /*
  *------------------------------------------------------------------------------
  * Function     : blog_tupleV6_dump
@@ -1404,14 +1443,13 @@ static void blog_tuple_dump( BlogTuple_t * bTuple_p )
 static void blog_tupleV6_dump( BlogTupleV6_t * bTupleV6_p )
 {
     printk( "\tIPv6:\n"
-            "\t\tSrc" _IP6PFMT_ "\n"
-            "\t\tDst" _IP6PFMT_ "\n"
+            "\t\tSrc" BLOG_IPV6_ADDR_PORT_FMT "\n"
+            "\t\tDst" BLOG_IPV6_ADDR_PORT_FMT "\n"
             "\t\thop_limit<%3u>\n",
-            _IP6_(bTupleV6_p->saddr), bTupleV6_p->port.source,
-            _IP6_(bTupleV6_p->daddr), bTupleV6_p->port.dest,
+            BLOG_IPV6_ADDR(bTupleV6_p->saddr), bTupleV6_p->port.source,
+            BLOG_IPV6_ADDR(bTupleV6_p->daddr), bTupleV6_p->port.dest,
             bTupleV6_p->hop_limit );
 }
-#endif
 
 /*
  *------------------------------------------------------------------------------
@@ -1420,7 +1458,7 @@ static void blog_tupleV6_dump( BlogTupleV6_t * bTupleV6_p )
  *  bHdr_p      : Pointer to logged header
  *------------------------------------------------------------------------------
  */
-void blog_l2_dump( BlogHeader_t * bHdr_p)
+void blog_l2_dump( BlogHeader_t * bHdr_p )
 {
     register int i, ix, length, offset = 0;
     BlogEncap_t type;
@@ -1432,20 +1470,18 @@ void blog_l2_dump( BlogHeader_t * bHdr_p)
 
         switch ( type )
         {
-            case PPP_1661   : length = sizeof(hProto_t);        break;
-            case PPPoE_2516 : length = sizeof(struct pppoe_hdr)
-                                     + sizeof(uint16_t);        break;
-            case VLAN_8021Q : length = sizeof(struct vlan_hdr); break;
-            case ETH_802x   : length = sizeof(struct ethhdr);   break;
+            case PPP_1661   : length = BLOG_PPP_HDR_LEN;    break;
+            case PPPoE_2516 : length = BLOG_PPPOE_HDR_LEN;  break;
+            case VLAN_8021Q : length = BLOG_VLAN_HDR_LEN;   break;
+            case ETH_802x   : length = BLOG_ETH_HDR_LEN;    break;
             case BCM_SWC    : 
-                    if ( *((uint16_t *)(bHdr_p->l2hdr + 12) ) 
-                            == TYPE_ETH_P_BCM2)
-                        length = sizeof(struct bcmhdr2);
-                    else
-                        length = sizeof(struct bcmhdr);
+                              if ( *((uint16_t *)(bHdr_p->l2hdr + 12) ) 
+                                   == BLOG_ETH_P_BRCM4TAG)
+                                  length = BLOG_BRCM4_HDR_LEN;
+                              else
+                                  length = BLOG_BRCM6_HDR_LEN;
+                              break;
 
-                    break;
- 
             case L3_IPv4    :
             case L3_IPv6    :
             case BCM_XPHY   :
@@ -1497,18 +1533,16 @@ void blog_dump( Blog_t * blog_p )
             "\t\tfdb_src<0x%08x> fdb_dst<0x%08x>\n"
             "\t\thash<%u> prot<%u> prio<0x%08x> mark<0x%08x> Mtu<%u>\n",
             (int)blog_p, (int)blog_p->skb_p, (int)blog_p->rx.ct_p,
-            blog_p->key.l1_tuple.channel,
-            rfc2684HdrLength[blog_p->key.l1_tuple.phy],
-            blog_p->key.l1_tuple.phy,
-            strBlogPhy[blog_p->key.l1_tuple.phy],
-            (int)blog_p->fdb_src, (int)blog_p->fdb_dst,
+            blog_p->key.l1_channel,
+            rfc2684HdrLength[blog_p->key.l1_phy],
+            blog_p->key.l1_phy,
+            strBlogPhy[blog_p->key.l1_phy],
+            (int)blog_p->fdb[0], (int)blog_p->fdb[1],
             blog_p->key.hash, blog_p->key.protocol,
             blog_p->priority, blog_p->mark, blog_p->minMtu);
 
-#if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)   
     if ( blog_p->rx.ct_p )
         blog_nfct_dump( blog_p->skb_p, blog_p->rx.ct_p, blog_p->rx.nf_dir );
-#endif
 
     printk( "  RX count<%u> channel<%02u> bmap<0x%x> phyLen<%u> phyHdr<%u> %s\n"
             "     hw_support<%u> wan_qdisc<%u> multicast<%u> fkbInSkb<%u>\n",
@@ -1533,38 +1567,15 @@ void blog_dump( Blog_t * blog_p )
     blog_l2_dump( &blog_p->tx );
     blog_virdev_dump( blog_p );
 
-#if defined(CONFIG_BLOG_IPV6)
     if ( blog_p->rx.info.bmap.L3_IPv6 )
         blog_tupleV6_dump( &blog_p->tupleV6 );
-#endif
 
-#if defined(CC_CONFIG_BLOG_DEBUG)
+#if defined(CC_BLOG_SUPPORT_DEBUG)
     printk( "\t\textends<%d> free<%d> used<%d> HWM<%d> fails<%d>\n",
             blog_extends, blog_cnt_free, blog_cnt_used, blog_cnt_hwm,
             blog_cnt_fails );
 #endif
 
-}
-
-/*
- *------------------------------------------------------------------------------
- * Function     : blog_bind
- * Description  : Override default rx and tx hooks.
- *  blog_rx     : Function pointer to be invoked in blog_finit(), blog_sinit()
- *  blog_tx     : Function pointer to be invoked in blog_emit()
- *  blog_st     : Function pointer to be invoked in blog_gstats()
- *  blog_xx     : Function pointer to be invoked in blog_notify()
- *------------------------------------------------------------------------------
- */
-void blog_bind( BlogHook_t blog_rx, BlogHook_t blog_tx, 
-                BlogStFnc_t blog_st, BlogNotify_t blog_xx )
-{
-    blog_print( "Bind Rx[<%08x>] Tx[<%08x>] Stats[<%08x>] Notify[<%08x>]",
-                (int)blog_rx, (int)blog_tx, (int)blog_st, (int)blog_xx );
-    blog_rx_hook_g = blog_rx;   /* Receive  hook */
-    blog_tx_hook_g = blog_tx;   /* Transmit hook */
-    blog_st_hook_g = blog_st;   /* Statistics hook */
-    blog_xx_hook_g = blog_xx;   /* Notify   hook */
 }
 
 /*
@@ -1596,68 +1607,83 @@ EXPORT_SYMBOL(strRfc2684);
 EXPORT_SYMBOL(rfc2684HdrLength);
 EXPORT_SYMBOL(rfc2684HdrData);
 
-EXPORT_SYMBOL(blog_refresh_fn);
-EXPORT_SYMBOL(blog_refresh_br);
-
-EXPORT_SYMBOL(blog_br_fdb);
-
-#if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)   
-EXPORT_SYMBOL(blog_nfct);
-EXPORT_SYMBOL(blog_time);
-EXPORT_SYMBOL(blog_flow);
-EXPORT_SYMBOL(blog_has_helper);
-#endif
-
-EXPORT_SYMBOL(blog_notify);
-EXPORT_SYMBOL(blog_gstats);
-EXPORT_SYMBOL(blog_pstats);
-EXPORT_SYMBOL(blog_dev);
-
-EXPORT_SYMBOL(blog_bind);
-
 #else   /* !defined(CONFIG_BLOG) */
 
 int blog_dbg = 0;
-int blog_mcast_g = 0; /* = CC_SUPPORT_BLOG_MCAST; */
-void blog_mcast(int enable) { blog_mcast_g = 0; /* = enable; */ }
+int blog_support_mcast_g = BLOG_MCAST_DISABLE; /* = CC_BLOG_SUPPORT_MCAST; */
+void blog_support_mcast(int enable) {blog_support_mcast_g = BLOG_MCAST_DISABLE;}
+
+blog_refresh_t blog_refresh_fn = (blog_refresh_t) NULL;
+
+#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
+spinlock_t blog_lock_g = SPIN_LOCK_UNLOCKED;      /* blogged packet flow */
+#endif
 
 /* Stub functions for Blog APIs that may be used by modules */
-void blog_put( Blog_t * blog_p ) { return; }
+Blog_t * blog_get( void ) { return BLOG_NULL; }
+void     blog_put( Blog_t * blog_p ) { return; }
+
+Blog_t * blog_skb( struct sk_buff * skb_p) { return BLOG_NULL; }
 Blog_t * blog_fkb( struct fkbuff * fkb_p ) { return BLOG_NULL; }
+
 Blog_t * blog_snull( struct sk_buff * skb_p ) { return BLOG_NULL; }
 Blog_t * blog_fnull( struct fkbuff * fkb_p ) { return BLOG_NULL; }
-void blog_free(struct sk_buff * skb_p) { return; }
-void blog_dump(Blog_t * blog_p) { return; }
-void blog_skip(struct sk_buff * skb_p) { return; }
-void blog_xfer(struct sk_buff * skb_p, const struct sk_buff * prev_p){ return; }
-void blog_clone(struct sk_buff * skb_p, const struct blog_t * prev_p){ return; }
 
-BlogAction_t blog_sinit(struct sk_buff * skb_p, struct net_device * dev_p,
-                        uint32_t encap, uint32_t channel, uint32_t phyHdr)
-{ return PKT_NORM; }
+void     blog_free( struct sk_buff * skb_p ) { return; }
 
-BlogAction_t blog_finit(struct fkbuff * fkb_p, struct net_device * dev_p,
-                       uint32_t encap, uint32_t channel, uint32_t phyHdr)
-{ return PKT_NORM; }
+void     blog_skip( struct sk_buff * skb_p ) { return; }
+void     blog_xfer( struct sk_buff * skb_p, const struct sk_buff * prev_p )
+         { return; }
+void     blog_clone( struct sk_buff * skb_p, const struct blog_t * prev_p )
+         { return; }
 
-BlogAction_t blog_emit(void * nbuff_p, struct net_device * dev_p,
-                       uint32_t encap, uint32_t channel, uint32_t phyHdr)
-{ return PKT_NORM; }
+void     blog_link( BlogNetEntity_t entity_type, Blog_t * blog_p,
+                    void * net_p, uint32_t param1, uint32_t param2 ) { return; }
 
-void blog(struct sk_buff * skb_p, BlogDir_t dir, BlogEncap_t encap,
-          size_t len, void * data_p)
-{ return; }
+void     blog_notify( BlogNotify_t event, void * net_p,
+                      uint32_t param1, uint32_t param2 ) { return; }
+
+uint32_t blog_request( BlogRequest_t event, void * net_p,
+                       uint32_t param1, uint32_t param2 ) { return 0; }
+
+BlogAction_t blog_filter( Blog_t * blog_p )
+         { return PKT_NORM; }
+
+BlogAction_t blog_sinit( struct sk_buff * skb_p, void * dev_p,
+                         uint32_t encap, uint32_t channel, uint32_t phyHdr )
+         { return PKT_NORM; }
+
+BlogAction_t blog_finit( struct fkbuff * fkb_p, void * dev_p,
+                        uint32_t encap, uint32_t channel, uint32_t phyHdr )
+         { return PKT_NORM; }
+
+BlogAction_t blog_emit( void * nbuff_p, void * dev_p,
+                        uint32_t encap, uint32_t channel, uint32_t phyHdr )
+         { return PKT_NORM; }
+
+void     blog_bind( BlogDevHook_t blog_rx, BlogDevHook_t blog_tx,
+                    BlogNotifyHook_t blog_xx ) { return; }
+
+void     blog( struct sk_buff * skb_p, BlogDir_t dir, BlogEncap_t encap,
+               size_t len, void * data_p ) { return; }
+
+void     blog_dump( Blog_t * blog_p ) { return; }
 
 #endif  /* else !defined(CONFIG_BLOG) */
 
 EXPORT_SYMBOL(blog_dbg);
-EXPORT_SYMBOL(blog_mcast_g);
-EXPORT_SYMBOL(blog_mcast);
+EXPORT_SYMBOL(blog_support_mcast_g);
+EXPORT_SYMBOL(blog_support_mcast);
+EXPORT_SYMBOL(blog_refresh_fn);
+
 #if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)   
 EXPORT_SYMBOL(blog_lock_g);
 #endif
 
+EXPORT_SYMBOL(blog_extend);
+EXPORT_SYMBOL(blog_get);
 EXPORT_SYMBOL(blog_put);
+EXPORT_SYMBOL(blog_skb);
 EXPORT_SYMBOL(blog_fkb);
 EXPORT_SYMBOL(blog_snull);
 EXPORT_SYMBOL(blog_fnull);
@@ -1666,7 +1692,13 @@ EXPORT_SYMBOL(blog_dump);
 EXPORT_SYMBOL(blog_skip);
 EXPORT_SYMBOL(blog_xfer);
 EXPORT_SYMBOL(blog_clone);
+EXPORT_SYMBOL(blog_link);
+EXPORT_SYMBOL(blog_notify);
+EXPORT_SYMBOL(blog_request);
+EXPORT_SYMBOL(blog_filter);
 EXPORT_SYMBOL(blog_sinit);
 EXPORT_SYMBOL(blog_finit);
 EXPORT_SYMBOL(blog_emit);
+EXPORT_SYMBOL(blog_bind);
+
 EXPORT_SYMBOL(blog);

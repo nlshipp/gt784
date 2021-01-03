@@ -968,6 +968,7 @@ static int do_rawv6_setsockopt(struct sock *sk, int level, int optname,
 
 	switch (optname) {
 		case IPV6_CHECKSUM:
+#if !defined(CONFIG_MIPS_BRCM)
 			if (inet_sk(sk)->num == IPPROTO_ICMPV6 &&
 			    level == IPPROTO_IPV6) {
 				/*
@@ -980,10 +981,11 @@ static int do_rawv6_setsockopt(struct sock *sk, int level, int optname,
 				 */
 				return -EINVAL;
 			}
+#endif
 
 			/* You may get strange result with a positive odd offset;
 			   RFC2292bis agrees with me. */
-			if (val > 0 && (val&1))
+			if (val > 0 && (val&1)) 
 				return(-EINVAL);
 			if (val < 0) {
 				rp->checksum = 0;

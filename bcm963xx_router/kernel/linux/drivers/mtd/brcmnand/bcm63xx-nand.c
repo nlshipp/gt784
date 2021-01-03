@@ -155,56 +155,88 @@ void* get_brcmnand_handle(void)
 static void __devinit 
 brcmnanddrv_setup_mtd_partitions(struct brcmnand_info* nandinfo, int *numParts)
 {
-    extern unsigned char _text;
-    NVRAM_DATA nvram;
-    struct mtd_info* mtd = &nandinfo->mtd;
-    unsigned long rootfs_ofs = *(unsigned long *) (&_text - 4);
-    int rootfs, rootfs_update;
+    int boot_from_nand = 1;
 
-    kerSysNvRamGet((char *)&nvram, sizeof(nvram), 0);
-    *numParts = 4;
-    nandinfo->parts = bcm63XX_nand_parts;
-
-    /* Root FS.  The CFE RAM boot loader saved the rootfs offset that the
-     * Linux image was loaded from at the location before the Linux image
-     * load address.
-     */
-    if( rootfs_ofs == nvram.ulNandPartOfsKb[NP_ROOTFS_2] )
+#if defined(CONFIG_BCM96368)
+    if( ((GPIO->StrapBus & MISC_STRAP_BUS_BOOT_SEL_MASK) >>
+        MISC_STRAP_BUS_BOOT_SEL_SHIFT) != MISC_STRAP_BUS_BOOT_NAND )
     {
-        rootfs = NP_ROOTFS_2;
-        rootfs_update = NP_ROOTFS_1;
+        boot_from_nand = 0;
+    }
+#elif defined(CONFIG_BCM96362) || defined(CONFIG_BCM96328) || defined(CONFIG_BCM96816)
+    if( ((MISC->miscStrapBus & MISC_STRAP_BUS_BOOT_SEL_MASK) >>
+        MISC_STRAP_BUS_BOOT_SEL_SHIFT) != MISC_STRAP_BUS_BOOT_NAND )
+    {
+        boot_from_nand = 0;
+    }
+#endif
+
+    if( boot_from_nand == 0 )
+    {
+        *numParts = 1;
+        nandinfo->parts = bcm63XX_nand_parts;
+
+        bcm63XX_nand_parts[0].name = "data";
+        bcm63XX_nand_parts[0].offset = 0;
+        bcm63XX_nand_parts[0].size = device_size(&(nandinfo->mtd));
+        bcm63XX_nand_parts[0].ecclayout = nandinfo->mtd.ecclayout;
+
+        PRINTK("Part[0] name=%s, size=%x, ofs=%x\n", bcm63XX_nand_parts[0].name,
+            bcm63XX_nand_parts[0].size, bcm63XX_nand_parts[0].offset);
     }
     else
     {
-        rootfs = NP_ROOTFS_1;
-        rootfs_update = NP_ROOTFS_2;
+        extern unsigned char _text;
+        NVRAM_DATA nvram;
+        struct mtd_info* mtd = &nandinfo->mtd;
+        unsigned long rootfs_ofs = *(unsigned long *) (&_text - 4);
+        int rootfs, rootfs_update;
+
+        kerSysNvRamGet((char *)&nvram, sizeof(nvram), 0);
+        *numParts = 4;
+        nandinfo->parts = bcm63XX_nand_parts;
+
+        /* Root FS.  The CFE RAM boot loader saved the rootfs offset that the
+         * Linux image was loaded from at the location before the Linux image
+         * load address.
+         */
+        if( rootfs_ofs == nvram.ulNandPartOfsKb[NP_ROOTFS_2] )
+        {
+            rootfs = NP_ROOTFS_2;
+            rootfs_update = NP_ROOTFS_1;
+        }
+        else
+        {
+            rootfs = NP_ROOTFS_1;
+            rootfs_update = NP_ROOTFS_2;
+        }
+
+        bcm63XX_nand_parts[0].offset = nvram.ulNandPartOfsKb[rootfs]*1024;
+        bcm63XX_nand_parts[0].size = nvram.ulNandPartSizeKb[rootfs]*1024;
+        bcm63XX_nand_parts[0].ecclayout = mtd->ecclayout;
+        bcm63XX_nand_parts[1].offset = nvram.ulNandPartOfsKb[rootfs_update]*1024;
+        bcm63XX_nand_parts[1].size = nvram.ulNandPartSizeKb[rootfs_update]*1024;
+        bcm63XX_nand_parts[1].ecclayout = mtd->ecclayout;
+
+        /* Data (psi, scratch pad) */
+        bcm63XX_nand_parts[2].offset = nvram.ulNandPartOfsKb[NP_DATA] * 1024;
+        bcm63XX_nand_parts[2].size = nvram.ulNandPartSizeKb[NP_DATA] * 1024;
+        bcm63XX_nand_parts[2].ecclayout = mtd->ecclayout;
+
+        /* Boot and NVRAM data */
+        bcm63XX_nand_parts[3].offset = nvram.ulNandPartOfsKb[NP_BOOT] * 1024;
+        bcm63XX_nand_parts[3].size = nvram.ulNandPartSizeKb[NP_BOOT] * 1024;
+        bcm63XX_nand_parts[3].ecclayout = mtd->ecclayout;
+
+        PRINTK("Part[0] name=%s, size=%x, ofs=%x\n", bcm63XX_nand_parts[0].name,
+            bcm63XX_nand_parts[0].size, bcm63XX_nand_parts[0].offset);
+        PRINTK("Part[1] name=%s, size=%x, ofs=%x\n", bcm63XX_nand_parts[1].name,
+            bcm63XX_nand_parts[1].size, bcm63XX_nand_parts[1].offset);
+        PRINTK("Part[2] name=%s, size=%x, ofs=%x\n", bcm63XX_nand_parts[2].name,
+            bcm63XX_nand_parts[2].size, bcm63XX_nand_parts[2].offset);
+        PRINTK("Part[3] name=%s, size=%x, ofs=%x\n", bcm63XX_nand_parts[3].name,
+            bcm63XX_nand_parts[3].size, bcm63XX_nand_parts[3].offset);
     }
-
-    bcm63XX_nand_parts[0].offset = nvram.ulNandPartOfsKb[rootfs]*1024;
-    bcm63XX_nand_parts[0].size = nvram.ulNandPartSizeKb[rootfs]*1024;
-    bcm63XX_nand_parts[0].ecclayout = mtd->ecclayout;
-    bcm63XX_nand_parts[1].offset = nvram.ulNandPartOfsKb[rootfs_update]*1024;
-    bcm63XX_nand_parts[1].size = nvram.ulNandPartSizeKb[rootfs_update]*1024;
-    bcm63XX_nand_parts[1].ecclayout = mtd->ecclayout;
-
-    /* Data (psi, scratch pad) */
-    bcm63XX_nand_parts[2].offset = nvram.ulNandPartOfsKb[NP_DATA] * 1024;
-    bcm63XX_nand_parts[2].size = nvram.ulNandPartSizeKb[NP_DATA] * 1024;
-    bcm63XX_nand_parts[2].ecclayout = mtd->ecclayout;
-
-    /* Boot and NVRAM data */
-    bcm63XX_nand_parts[3].offset = nvram.ulNandPartOfsKb[NP_BOOT] * 1024;
-    bcm63XX_nand_parts[3].size = nvram.ulNandPartSizeKb[NP_BOOT] * 1024;
-    bcm63XX_nand_parts[3].ecclayout = mtd->ecclayout;
-
-    PRINTK("Part[0] name=%s, size=%x, offset=%x\n", bcm63XX_nand_parts[0].name,
-        bcm63XX_nand_parts[0].size, bcm63XX_nand_parts[0].offset);
-    PRINTK("Part[1] name=%s, size=%x, offset=%x\n", bcm63XX_nand_parts[1].name,
-        bcm63XX_nand_parts[1].size, bcm63XX_nand_parts[1].offset);
-    PRINTK("Part[2] name=%s, size=%x, offset=%x\n", bcm63XX_nand_parts[2].name,
-        bcm63XX_nand_parts[2].size, bcm63XX_nand_parts[2].offset);
-    PRINTK("Part[3] name=%s, size=%x, offset=%x\n", bcm63XX_nand_parts[3].name,
-        bcm63XX_nand_parts[3].size, bcm63XX_nand_parts[3].offset);
 }
 #else
 /* 
@@ -397,6 +429,14 @@ static int __devinit brcmnanddrv_probe(struct platform_device *pdev)
 #if !defined(CONFIG_BCM96328)
     // Enable NAND data on MII ports.
     PERF->blkEnables |= NAND_CLK_EN;
+#endif
+#if defined(CONFIG_BCM96362)
+    if( ((MISC->miscStrapBus & MISC_STRAP_BUS_BOOT_SEL_MASK) >>
+        MISC_STRAP_BUS_BOOT_SEL_SHIFT) != MISC_STRAP_BUS_BOOT_NAND )
+    {
+        /* If not booting from NAND, need to set GPIOs to access NAND */
+        GPIO->GPIOBaseMode |= NAND_GPIO_OVERRIDE;
+    }
 #endif
 
     /* Enable controller to automatically read device id.  Possibly enable

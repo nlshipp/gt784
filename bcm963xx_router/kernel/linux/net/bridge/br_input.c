@@ -39,7 +39,7 @@ static void br_pass_frame_up(struct net_bridge *br, struct sk_buff *skb)
 	struct net_device *indev, *brdev = br->dev;
 
 #if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
-	blog_dev( skb, br->dev, DIR_RX, skb->len );
+	blog_link(IF_DEVICE, blog_ptr(skb), (void*)br->dev, DIR_RX, skb->len);
 #endif
 
 	brdev->stats.rx_packets++;
@@ -102,7 +102,10 @@ int br_handle_frame_finish(struct sk_buff *skb)
 	{
 		dst = __br_fdb_get(br, dest);
 #if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
-		blog_br_fdb(skb, __br_fdb_get(br, eth_hdr(skb)->h_source), dst);
+		blog_link(BRIDGEFDB, blog_ptr(skb),
+					(void*)__br_fdb_get(br, eth_hdr(skb)->h_source),
+					BLOG_PARAM1_SRCFDB, 0);
+		blog_link(BRIDGEFDB, blog_ptr(skb), (void*)dst, BLOG_PARAM1_DSTFDB, 0);
 #endif
 		if ((dst != NULL) && dst->is_local) 
 		{

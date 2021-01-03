@@ -1,4 +1,4 @@
-/* $Id: hysdn_defs.h,v 1.5.6.3 2001/09/23 22:24:54 kai Exp $
+/* $Id: hysdn_defs.h,v 1.1.1.1 2010/06/14 22:49:11 tliu Exp $
  *
  * Linux driver for HYSDN cards
  * global definitions and exported vars and functions.

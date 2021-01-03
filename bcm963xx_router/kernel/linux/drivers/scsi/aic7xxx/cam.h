@@ -29,7 +29,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: //depot/aic7xxx/linux/drivers/scsi/aic7xxx/cam.h#15 $
+ * $Id: cam.h,v 1.1.1.1 2010/06/14 22:49:15 tliu Exp $
  */
 
 #ifndef _AIC7XXX_CAM_H

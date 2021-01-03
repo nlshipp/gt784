@@ -36,7 +36,7 @@
 #endif
 
 
-#if defined(CONFIG_BCM96328)
-#include <6328_intr.h>
+#if defined(CONFIG_BCM96362)
+#include <6362_intr.h>
 #endif
 

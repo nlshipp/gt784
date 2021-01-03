@@ -101,10 +101,13 @@ typedef struct
    SINT32 stderrFd;  /**< Standard error of spawned process tied to this, -1 means /dev/null */
    SINT32 serverFd;  /**< Special hack for smd dynamic launch service.
                       *   This server fd, if not -1, is tied to CMS_DYNAMIC_LAUNCH_SERVER_FD */
-#if defined(CUSTOMER_ACTIONTEC)
+#if defined(AEI_VDSL_CUSTOMER_NCS)
 #ifdef SUPPORT_HTTPD_SSL
   SINT32 serverFd2; /*for httpd only*/
-  SINT32 eid;		/*which eid ?*/		  	
+  SINT32 eid;		/*which eid ?*/
+#ifdef AEI_VDSL_CUSTOMER_SASKTEL
+  SINT32 serverFd3; /* sasktel need another listening socket fd for ssl connection from tech user */
+#endif	
  #endif
  #endif
    SINT32 maxFd;      /**< Close all fd's up to and including this, but excluding

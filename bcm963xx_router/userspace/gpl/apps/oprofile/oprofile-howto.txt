@@ -1,0 +1,76 @@
+
+====Build OPROFILE====
+
+1. config the SDK to build oprofile
+for example, in QWEST Q1000 project, modify customers/QWEST/Q1000/target/96368GW
+
+# BRCM_KERNEL_OPROFILE is not set
+# BUILD_OPROFILE is not set
+
+change the above lines to:
+
+BRCM_KERNEL_OPROFILE=y
+BUILD_OPROFILE=y
+ 
+2. make clean and rebuild the image
+
+======Run oprofile (must be with USB drive)====
+
+Note:The USB drive must be formatted with Linux ext3 filesystem (mkfs), 
+as OProfile uses special file names not supported by FAT.
+
+1. modify the text range of kernel in op_init
+
+   ./targets/96368GW/op/get_kernel_range ./targets/96368GW/op/bin_symbols/vmlinux
+
+   replace the kernel range in file "targets/96368GW/op/op_init" with 
+   the output of the above command.
+
+2. copy ./targets/96368GW/op to USB drive
+
+3. burn the image (including cfe) built with oprofile into the CPE, 
+   plug in and then mount the USB drive
+
+   mkdir /mnt/usb1_1
+   mount -t ext3 /dev/sda4 /mnt/usb1_1   
+
+4. go to "op" directory in USB drive, create the necessary 
+   symbolic link to the USB drive
+
+   cd /mnt/usb1_1/op/
+   ./linktodisk
+
+5. use oprofile
+   a. op_init is to initialize the oprofile
+   b. op_start to start the oprofile
+   c. op_stop to stop the running oprofile
+   d. op_report to report profiled data
+
+   initialize the oprofile
+   ./op_init
+
+   start the oprofile
+   ./op_start
+
+   wait for the oprofile to collect the samples, samples are stored 
+   under directory /var/lib/oprofile which is a symbolic link to 
+   /mnt/usb1_1/opdata/oprofile in the USB drive.
+
+   to see the report
+   ./op_report
+
+   or you can directly use the command: opreport
+   ./opreport -l
+   ./opreport -f
+
+   to report samples of a specified application(eg: httpd)
+   ./opreport -l /bin/httpd
+
+   to stop the oprofile
+   ./op_stop
+
+   op_init/op_start/op_stop/op_report are simple scripts to show
+   how to setup/run/report oprofile. You can modify them according to 
+   their application. For detailed information of oprofile, please refer to 
+   the official oprofile website(http://oprofile.sourceforge.net), and
+   examples in http://oprofile.sourceforge.net/examples/

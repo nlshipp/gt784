@@ -83,6 +83,7 @@ static int cfi_flash_sched = 0; /* voluntary schedule() disabled by default */
 #define FLASH_PROG      4       /* program a unsigned short */
 #define FLASH_UBRESET   5       /* reset to read mode from unlock bypass mode */
 #define FLASH_SERASE    6       /* sector erase */
+#define FLASH_WRITE_BUF 7       /* write to buffer */
 
 /* Return codes from flash_status */
 #define STATUS_READY    0       /* ready for action */
@@ -123,6 +124,8 @@ static int cfi_flash_sched = 0; /* voluntary schedule() disabled by default */
 #define ID_I28F320C3B   0x88C5
 #define ID_I28F640J3	0x8916
 
+#define ID_M29W640FB   0x22FD
+
 #define CFI_FLASH_DEVICES                   \
          {{ID_AM29DL800T, "AM29DL800T"},    \
           {ID_AM29DL800B, "AM29DL800B"},    \
@@ -151,6 +154,7 @@ static int cfi_flash_sched = 0; /* voluntary schedule() disabled by default */
           {ID_I28F320C3T, "I28F320C3T"},    \
           {ID_I28F320C3B, "I28F320C3B"},    \
           {ID_I28F640J3,  "I28F640J3"},     \
+          {ID_M29W640FB, "STM29W640FB"},    \
           {0, ""}                           \
         }
 
@@ -172,6 +176,7 @@ struct flashinfo {
     long base;           /* offset from beginning of device */
     int bank;            /* 1 or 2 for DL; 1 for LV */
      } sec[MAXSECTORS];  /* per-sector info */
+     int write_buffer_size; /* max size of multi byte write */
 };
 
 /*
@@ -188,6 +193,7 @@ struct cfi_query {
       unsigned long sector_size;    /* byte size of sector */
       int num_sectors;      /* Num sectors of this size */
     } erase_block[8];       /* Max of 256, but 8 is good */
+    int write_buffer_size; /* max size of multi byte write */
 };
 
 struct flash_name_from_id {
@@ -209,9 +215,10 @@ static unsigned char *cfi_flash_get_memptr(unsigned short sector);
 static int cfi_flash_get_blk(int addr);
 static int cfi_flash_get_total_size(void);
 static void cfi_flash_command(int command, unsigned short sector, int offset,
-    unsigned short data);
+    unsigned short data, unsigned short *);
 static int cfi_flash_write(unsigned short sector, int offset, unsigned char *buf,
     int nbytes);
+static int cfi_flash_write_to_buffer(unsigned short sector, unsigned char *buf);
 static int cfi_flash_wait(unsigned short sector, int offset,unsigned short data);
 static unsigned short cfi_flash_get_device_id(void);
 static int cfi_flash_get_cfi(struct cfi_query *query, unsigned short *cfi_struct,
@@ -351,7 +358,7 @@ int cfi_flash_init(flash_device_info_t **flash_info)
     meminfo.sec[0].base = 0x00000;
     meminfo.sec[0].bank = 1;
         
-    cfi_flash_command(FLASH_RESET, 0, 0, 0);
+    cfi_flash_command(FLASH_RESET, 0, 0, 0, NULL);
 
     flash_cfi_dev.flash_device_id = device_id = cfi_flash_get_device_id();
     flash_cfi_dev.flash_device_name[0] = '\0';
@@ -378,6 +385,7 @@ int cfi_flash_init(flash_device_info_t **flash_info)
         case ID_AM29LV320MT:
         case ID_AM29LV200BT:
         case ID_MX29LV640BT:
+        case ID_M29W640FB:
             flashFamily = FLASH_AMD;
             break;
         case ID_SST39VF200A:
@@ -430,6 +438,7 @@ int cfi_flash_init(flash_device_info_t **flash_info)
         case ID_SST39VF200A:
         case ID_SST39VF400A:
         case ID_SST39VF800A:
+        case ID_M29W640FB:
             flipCFIGeometry = FALSE;
             break;
         case ID_AM29DL800T:
@@ -485,6 +494,8 @@ int cfi_flash_init(flash_device_info_t **flash_info)
         }
     }
 
+    meminfo.write_buffer_size = query.write_buffer_size;
+
     return (FLASH_API_OK);
 }
 
@@ -504,7 +515,7 @@ static int cfi_flash_sector_erase_int(unsigned short sector)
 #endif
 
     for( i = 0; i < 3; i++ ) {
-        cfi_flash_command(FLASH_SERASE, sector, 0, 0);
+        cfi_flash_command(FLASH_SERASE, sector, 0, 0, NULL);
         if (cfi_flash_wait(sector, 0, 0xffff) == STATUS_READY)
             break;
     }
@@ -606,12 +617,23 @@ static int cfi_flash_write_buf(unsigned short sector, int offset,
     int ret = FLASH_API_ERROR;
     int i;
     unsigned char *p = cfi_flash_get_memptr(sector) + offset;
+    int write_buf_method = 0;
+
+    if( meminfo.write_buffer_size != 0 && offset == 0 &&
+        (ID_M29W640FB != cfi_flash_get_device_id()) &&
+        numbytes == cfi_flash_get_sector_size(sector) )
+    {
+        write_buf_method = 1;
+    }
 
     /* After writing the flash block, compare the contents to the source
      * buffer.  Try to write the sector successfully up to three times.
      */
     for( i = 0; i < 3; i++ ) {
-        ret = cfi_flash_write(sector, offset, buffer, numbytes);
+        if( write_buf_method )
+            ret = cfi_flash_write_to_buffer(sector, buffer);
+        else
+            ret = cfi_flash_write(sector, offset, buffer, numbytes);
         if( !cfi_memcmp_sched( p, buffer, numbytes ) )
             break;
         /* Erase and try again */
@@ -722,10 +744,11 @@ static int cfi_flash_get_total_size(void)
 /* rather called through the API wrapper functions provided below.   */
 /*********************************************************************/
 static void cfi_flash_command(int command, unsigned short sector, int offset,
-    unsigned short data)
+    unsigned short data, unsigned short *dataptr)
 {
     volatile unsigned short *flashptr;
     volatile unsigned short *flashbase;
+    unsigned short i, len;
 
     flashptr = (unsigned short *) cfi_flash_get_memptr(sector);
     flashbase = (unsigned short *) cfi_flash_get_memptr(0);
@@ -785,6 +808,17 @@ static void cfi_flash_command(int command, unsigned short sector, int offset,
             flashptr[0x555] = 0xAA;
             flashptr[0x2AA] = 0x55;
             flashptr[0] = 0x30;
+            break;
+        case FLASH_WRITE_BUF:
+            flashptr[0x555] = 0xAA;       /* unlock 1 */
+            flashptr[0x2AA] = 0x55;       /* unlock 2 */
+            flashptr[0] = 0x25;
+            offset /= 2;
+            len = data / 2;               /* data is bytes to program */
+            flashptr[0] = len - 1;
+            for( i = 0; i < len; i++ )
+                flashptr[offset + i] = *dataptr++;
+            flashptr[0] = 0x29;
             break;
         default:
             break;
@@ -883,22 +917,48 @@ static int cfi_flash_write(unsigned short sector, int offset, unsigned char *buf
         return FLASH_API_ERROR;
     }
 
-    cfi_flash_command(FLASH_UB, 0, 0, 0);
+    cfi_flash_command(FLASH_UB, 0, 0, 0, NULL);
     while (nbytes > 0) {
-        cfi_flash_command(FLASH_PROG, sector, offset, *src);
+        cfi_flash_command(FLASH_PROG, sector, offset, *src, NULL);
         if (cfi_flash_wait(sector, offset, *src) != STATUS_READY)
             break;
         offset +=2;
         nbytes -=2;
         src++;
     }
-    cfi_flash_command(FLASH_UBRESET, 0, 0, 0);
+    cfi_flash_command(FLASH_UBRESET, 0, 0, 0, NULL);
 
 #ifndef _CFE_
     up(&cfi_flash_lock);
 #endif
     
     return (unsigned char*)src - buf;
+}
+
+/*********************************************************************/
+/* flash_write_to_buffer                                             */
+/*********************************************************************/
+static int cfi_flash_write_to_buffer(unsigned short sector, unsigned char *buf)
+{
+    int nbytes = cfi_flash_get_sector_size(sector);
+    int offset;
+
+#ifndef _CFE_
+    down(&cfi_flash_lock);
+#endif
+
+    for( offset = 0; offset < nbytes; offset += meminfo.write_buffer_size ) {
+        cfi_flash_command(FLASH_WRITE_BUF, sector, offset, (unsigned short)
+            meminfo.write_buffer_size, (unsigned short *) &buf[offset]);
+        if (cfi_flash_wait(sector, 0, 0) != STATUS_READY)
+            break;
+    }
+
+#ifndef _CFE_
+    up(&cfi_flash_lock);
+#endif
+    
+    return offset;
 }
 
 /*********************************************************************/
@@ -932,7 +992,7 @@ static int cfi_flash_wait(unsigned short sector, int offset, unsigned short data
         d1 ^= *flashptr;   /* read it again and see what toggled */
 
         if (d1 != 0) {
-            cfi_flash_command(FLASH_RESET, 0, 0, 0);
+            cfi_flash_command(FLASH_RESET, 0, 0, 0, NULL);
             return STATUS_TIMEOUT;
         }
     } else if (flashFamily == FLASH_INTEL) {
@@ -949,11 +1009,11 @@ static int cfi_flash_wait(unsigned short sector, int offset, unsigned short data
         } while (!(*flashptr & 0x80));
         if (*flashptr & 0x30) {
             flashptr[0] = 0x50;
-            cfi_flash_command(FLASH_RESET, 0, 0, 0);
+            cfi_flash_command(FLASH_RESET, 0, 0, 0, NULL);
             return STATUS_TIMEOUT;
         }
         flashptr[0] = 0x50;
-        cfi_flash_command(FLASH_RESET, 0, 0, 0);
+        cfi_flash_command(FLASH_RESET, 0, 0, 0, NULL);
     }
     
     return STATUS_READY;
@@ -971,14 +1031,14 @@ static unsigned short cfi_flash_get_device_id(void)
     
     fwp = (unsigned short *) cfi_flash_get_memptr(0);
     
-    cfi_flash_command(FLASH_READ_ID, 0, 0, 0);
+    cfi_flash_command(FLASH_READ_ID, 0, 0, 0, NULL);
     answer = *(fwp + 1);
     if (answer == ID_AM29LV320M) {
         answer = *(fwp + 0xe);
         answer = *(fwp + 0xf);
     }
     
-    cfi_flash_command(FLASH_RESET, 0, 0, 0);
+    cfi_flash_command(FLASH_RESET, 0, 0, 0, NULL);
     return( (unsigned short) answer );
 }
 
@@ -997,7 +1057,7 @@ static int cfi_flash_get_cfi(struct cfi_query *query, unsigned short *cfi_struct
     volatile unsigned short *fwp; /* flash window */
     int i=0, temp=0;
 
-    cfi_flash_command(FLASH_CFIQUERY, 0, 0, 0);
+    cfi_flash_command(FLASH_CFIQUERY, 0, 0, 0, NULL);
     
     if (cfi_struct == 0)
         fwp = (unsigned short *) cfi_flash_get_memptr(0);
@@ -1014,7 +1074,7 @@ static int cfi_flash_get_cfi(struct cfi_query *query, unsigned short *cfi_struct
     if( fwp[0x10] != 'Q' &&
         fwp[0x11] != 'R' &&
         fwp[0x12] != 'Y') {
-        cfi_flash_command(FLASH_RESET, 0, 0, 0);
+        cfi_flash_command(FLASH_RESET, 0, 0, 0, NULL);
         return(FLASH_API_ERROR);
     }
     
@@ -1032,8 +1092,14 @@ static int cfi_flash_get_cfi(struct cfi_query *query, unsigned short *cfi_struct
         query->erase_block[i].sector_size =
             256 * (256 * fwp[(0x30+(4*i))] + fwp[(0x2F+(4*i))]);
     }
+
+    /* TBD. Add support for other flash families. */
+    if(flashFamily == FLASH_AMD)
+        query->write_buffer_size = (1 << fwp[0x2a]);
+    else
+        query->write_buffer_size = 0;
     
-    cfi_flash_command(FLASH_RESET, 0, 0, 0);
+    cfi_flash_command(FLASH_RESET, 0, 0, 0, NULL);
     return(FLASH_API_OK);
 }
 

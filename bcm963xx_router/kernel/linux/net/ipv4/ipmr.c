@@ -67,6 +67,10 @@
 #define CONFIG_IP_PIMSM	1
 #endif
 
+#if defined(CONFIG_MIPS_BRCM)
+#include <linux/blog.h>
+#endif
+
 /* Big lock, protecting vif table, mrt cache and mroute socket state.
    Note that the changes are semaphored via rtnl_lock.
  */
@@ -807,6 +811,10 @@ static int ipmr_mfc_delete(struct net *net, struct mfcctl *mfc)
 			*cp = c->next;
 			write_unlock_bh(&mrt_lock);
 
+#if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
+			blog_notify(MCAST_CONTROL_EVT, (void*)c,
+						BLOG_PARAM1_MCAST_DEL, BLOG_PARAM2_MCAST_IPV4);
+#endif
 			ipmr_cache_free(c);
 			return 0;
 		}
@@ -860,6 +868,11 @@ static int ipmr_mfc_add(struct net *net, struct mfcctl *mfc, int mrtsock)
 	c->next = net->ipv4.mfc_cache_array[line];
 	net->ipv4.mfc_cache_array[line] = c;
 	write_unlock_bh(&mrt_lock);
+
+#if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
+	blog_notify(MCAST_CONTROL_EVT, (void*)c,
+				BLOG_PARAM1_MCAST_ADD, BLOG_PARAM2_MCAST_IPV4);
+#endif
 
 	/*
 	 *	Check to see if we resolved a queued list. If so we

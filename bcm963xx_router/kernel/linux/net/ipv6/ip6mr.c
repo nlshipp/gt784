@@ -50,6 +50,10 @@
 #include <linux/netfilter_ipv6.h>
 #include <net/ip6_checksum.h>
 
+#if defined(CONFIG_MIPS_BRCM)
+#include <linux/blog.h>
+#endif
+
 /* Big lock, protecting vif table, mrt cache and mroute socket state.
    Note that the changes are semaphored via rtnl_lock.
  */
@@ -716,6 +720,23 @@ static struct mfc6_cache *ip6mr_cache_find(struct net *net,
 		    ipv6_addr_equal(&c->mf6c_mcastgrp, mcastgrp))
 			break;
 	}
+
+#if defined(CONFIG_MIPS_BRCM) /* Added by Actiontec.Jean, for ipv6 ready mcast test */
+	if(c == NULL) {
+		struct in6_addr any_src;
+
+		memset( &any_src, 0, sizeof(struct in6_addr));
+		origin = &any_src;
+
+		line = MFC6_HASH(mcastgrp, origin);
+		for (c = net->ipv6.mfc6_cache_array[line]; c; c = c->next) {
+			if (ipv6_addr_equal( &c->mf6c_origin, origin) &&
+			    ipv6_addr_equal( &c->mf6c_mcastgrp, mcastgrp))
+				break;
+			}
+		}
+#endif /* CONFIG_MIPS_BRCM */
+
 	return c;
 }
 
@@ -965,6 +986,10 @@ static int ip6mr_mfc_delete(struct net *net, struct mf6cctl *mfc)
 			*cp = c->next;
 			write_unlock_bh(&mrt_lock);
 
+#if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
+			blog_notify(MCAST_CONTROL_EVT, (void*)c,
+						BLOG_PARAM1_MCAST_DEL, BLOG_PARAM2_MCAST_IPV6);
+#endif
 			ip6mr_cache_free(c);
 			return 0;
 		}
@@ -1146,6 +1171,11 @@ static int ip6mr_mfc_add(struct net *net, struct mf6cctl *mfc, int mrtsock)
 	c->next = net->ipv6.mfc6_cache_array[line];
 	net->ipv6.mfc6_cache_array[line] = c;
 	write_unlock_bh(&mrt_lock);
+
+#if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
+	blog_notify(MCAST_CONTROL_EVT, (void*)c,
+				BLOG_PARAM1_MCAST_ADD, BLOG_PARAM2_MCAST_IPV6);
+#endif
 
 	/*
 	 *	Check to see if we resolved a queued list. If so we
@@ -1652,8 +1682,17 @@ int ip6_mr_input(struct sk_buff *skb)
 	struct net *net = dev_net(skb->dev);
 
 	read_lock(&mrt_lock);
+#if defined(CONFIG_MIPS_BRCM) /* Added by Actiontec.Jean, for ipv6 ready test 1.1.10.J */
+	if( IPV6_ADDR_MC_SCOPE(&ipv6_hdr(skb)->daddr) < IPV6_ADDR_SCOPE_LINKLOCAL ) {
+		cache = NULL;
+	} else {
+#endif
+    
 	cache = ip6mr_cache_find(net,
 				 &ipv6_hdr(skb)->saddr, &ipv6_hdr(skb)->daddr);
+#if defined(CONFIG_MIPS_BRCM)
+	}
+#endif
 
 	/*
 	 *	No usable cache entry

@@ -19,6 +19,7 @@
 #if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BR_IGMP_SNOOP)
 #include <linux/igmp.h>
 #include <linux/in.h>
+#include <linux/blog.h>
 #endif
 
 #define BR_HASH_BITS 8

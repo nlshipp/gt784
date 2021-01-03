@@ -1,5 +1,5 @@
 dnl -*- mode: m4 -*-
-dnl $Id: configure.ac,v 1.1.1.1 2010/06/24 19:07:38 denny Exp $
+dnl $Id: configure.ac,v 1.1.1.1 2010/06/14 22:47:27 tliu Exp $
 
 AC_PREREQ(2.52)
 AC_INIT(ipsec-tools, 0.6.6)

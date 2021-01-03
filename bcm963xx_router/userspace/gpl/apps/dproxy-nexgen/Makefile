@@ -2,11 +2,9 @@
 # In most cases, you only need to modify this first section.
 #
 EXE=dnsproxy
-OBJS=dproxy.o dns_decode.o dns_list.o conf.o dns_construct.o dns_io.o dns_probe.o dns_dyn_cache.o
+OBJS=dproxy.o dns_decode.o dns_list.o conf.o dns_construct.o dns_io.o dns_probe.o dns_dyn_cache.o cache.o
 LIBS=-lcms_msg $(CMS_COMMON_LIBS)
 CUSTOM_CFLAGS=-DDNS_DYN_CACHE
-
-CFLAGS += $(ACTION_TEC_DFLAGS)
 
 all dynamic install: sanity_check $(EXE) generic_exe_install
 
@@ -67,7 +65,7 @@ endif
 # See Section 10.2 of Gnu Make manual
 # 
 $(EXE): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $(OBJS) -Wl,-rpath,$(CMS_LIB_RPATH) $(CMS_LIB_PATH) $(LIBS)
+	$(CC) -o $@ $(OBJS) -Wl,-rpath,$(CMS_LIB_RPATH) $(CMS_LIB_PATH) $(LIBS)
 
 
 

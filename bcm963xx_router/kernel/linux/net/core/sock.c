@@ -262,9 +262,9 @@ static void sock_disable_timestamp(struct sock *sk, int flag)
 		sock_reset_flag(sk, flag);
 		if (!sock_flag(sk, SOCK_TIMESTAMP) &&
 		    !sock_flag(sk, SOCK_TIMESTAMPING_RX_SOFTWARE)) {
-		net_disable_timestamp();
+			net_disable_timestamp();
+		}
 	}
-}
 }
 
 
@@ -1877,7 +1877,7 @@ void sock_enable_timestamp(struct sock *sk, int flag)
 				flag == SOCK_TIMESTAMP ?
 				SOCK_TIMESTAMPING_RX_SOFTWARE :
 				SOCK_TIMESTAMP))
-		net_enable_timestamp();
+			net_enable_timestamp();
 	}
 }
 

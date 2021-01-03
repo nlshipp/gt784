@@ -51,9 +51,9 @@
 
                 $RCSfile: EplPdok.c,v $
 
-                $Author: D.Krueger $
+                $Author: tliu $
 
-                $Revision: 1.8 $  $Date: 2008/10/17 15:32:32 $
+                $Revision: 1.1.1.1 $  $Date: 2010/06/14 22:49:24 $
 
                 $State: Exp $
 

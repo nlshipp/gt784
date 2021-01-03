@@ -600,6 +600,13 @@ config CONFIG_TRACEROUTE
 	help
 	  Utility to trace the route of IP packets
 
+config CONFIG_TRACEROUTE6
+	bool "traceroute6"
+	default n
+	depends on CONFIG_FEATURE_IPV6
+	help
+	  Utility to trace the route of IPV6 packets
+
 config CONFIG_FEATURE_TRACEROUTE_VERBOSE
 	bool "  Enable verbose output"
 	default n

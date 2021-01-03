@@ -1,6 +1,6 @@
 #
 # pppstats makefile
-# $Id: Makefile.linux,v 1.1.1.1 2010/06/24 19:07:37 denny Exp $
+# $Id: Makefile.linux,v 1.1.1.1 2010/06/14 22:47:27 tliu Exp $
 #
 
 PPPSTATSRCS = pppstats.c

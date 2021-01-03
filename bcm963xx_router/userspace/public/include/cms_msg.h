@@ -101,23 +101,27 @@ typedef enum
    CMS_MSG_DHCP6C_STATE_CHANGED      = 0x10000266, /**< Sent from dhcpv6 client when state changes, see also Dhcp6cStateChangeMsgBody */
    CMS_MSG_PING_STATE_CHANGED        = 0x10000267, /**< Ping state changed (completed, or stopped) */
    CMS_MSG_DHCPD_RELOAD		     = 0x10000268, /**< Sent to dhcpd to force it reload config file without restart */
-   CMS_MSG_DHCPD_DENY_VENDOR_ID	    = 0x10000269, /**< Sent from dhcpd to notify a denied request with some vendor ID */
-#ifdef CUSTOMER_ACTIONTEC
-   CMS_MSG_DHCPD_HOST_ACTIVE           = 0x1000026C, /**< Sent from mynetwork to ssk to notify lan host active state */
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+   CMS_MSG_DHCPD_RESERV              = 0x1000026E, /**< Sent to dhcpd to tell it the delete information of DHCP Reservation */
+   CMS_MSG_DHCPD_RESERV_STATUS       = 0x10000260, /**< Sent to dhcpd to tell it the value information of DHCP Reservation */
 #endif
-
+#if defined(FUNCTION_ACTIONTEC_QOS)
+   CMS_MSG_DO_EBTABLES    = 0x1000026B, //DO EBTABLES(will send cmd to dhcpd)
+CMS_MSG_DHCPD_MACS_TO_CMS = 0x1000026D, 
+#endif
+   CMS_MSG_DHCPD_DENY_VENDOR_ID	    = 0x10000269, /**< Sent from dhcpd to notify a denied request with some vendor ID */
    CMS_MSG_DHCPD_HOST_INFO           = 0x1000026A, /**< Sent from dhcpd to ssk to inform of lan host add/delete */
    CMS_MSG_DNSPROXY_RELOAD	     = 0x10000270, /**< Sent to dnsproxy to force it reload config file without restart */
    CMS_MSG_SNTP_STATE_CHANGED 	     = 0x10000271, /**< SNTP state changed */
    CMS_MSG_MCPD_RELOAD	             = 0x10000276, /**< Sent to mcpd to force it reload config file without restart */
    CMS_MSG_CONFIG_WRITTEN             = 0x10000280, /**< Event sent when a config file is written. */
+   
 
    CMS_MSG_SET_PPP_UP                 = 0x10000290, /* Sent to ppp when set ppp up manually */
    CMS_MSG_SET_PPP_DOWN               = 0x10000291, /* Sent to ppp when set ppp down manually */  
 
    CMS_MSG_DNSPROXY_DUMP_STATUS       = 0x100002A1, /* Tell dnsproxy to dump its current status */
    CMS_MSG_DNSPROXY_DUMP_STATS        = 0x100002A2, /* Tell dnsproxy to dump its statistics */
-   CMS_MSG_DNSPROXY_DISABLE_WEBLOG        = 0x100002A3, /* Tell dnsproxy to write its web log */
 
 #ifdef BRCM_WLAN
    CMS_MSG_WLAN_CHANGED          		     = 0x10000300,  /**< wlmngr jhc*/
@@ -138,7 +142,7 @@ typedef enum
    CMS_MSG_TR69_GETRPCMETHODS_DIAG = 0x10000806, /**< request tr69c send out a GetRpcMethods */
    CMS_MSG_DSL_LOOP_DIAG_COMPLETE  = 0x10000807, /**< dsl loop diagnostic completes */
 
-   CMS_MSG_START_APP         = 0x10000807, /**< request smd to start an app; pid is returned in the wordData */
+   CMS_MSG_START_APP         = 0x10000808, /**< request smd to start an app; pid is returned in the wordData */
    CMS_MSG_RESTART_APP       = 0x10000809, /**< request smd to stop and then start an app; pid is returned in the wordData */
    CMS_MSG_STOP_APP          = 0x1000080A, /**< request smd to stop an app */
    CMS_MSG_IS_APP_RUNNING    = 0x1000080B, /**< request to check if the the application is running or not */
@@ -159,10 +163,16 @@ typedef enum
    CMS_MSG_VALIDATE_CONFIG_FILE= 0x10000873,  /**< ask smd to validate the given config file. */
    CMS_MSG_WRITE_CONFIG_FILE   = 0x10000874,  /**< ask smd to write the config file. */
    CMS_MSG_VENDOR_CONFIG_UPDATE = 0x10000875,  /**<  the config file. */
-
+#if defined(AEI_VDSL_SIGNED_FIRMWARE)
+   CMS_MSG_VERIFY_AEI_IMAGE	= 0x10000876,  /**< verify the sending broadcom format image is an CMS_IMAGE_FORMAT_ACTIONTEC format image. */
+#endif
    CMS_MSG_GET_WAN_LINK_STATUS = 0x10000880,  /**< request current WAN LINK status. */
    CMS_MSG_GET_WAN_CONN_STATUS = 0x10000881,  /**< request current WAN Connection status. */
    CMS_MSG_GET_LAN_LINK_STATUS = 0x10000882,  /**< request current LAN LINK status. */
+   CMS_MSG_CHK_WAN_LINK_STATUS = 0x10000883,  /**< request to check WAN LINK status. */
+
+   CMS_MSG_WAN_IP_CONNECTED = 0x10000884,    /**< Notification that WAN IP Connection is successful */
+   CMS_MSG_WAN_PPP_CONNECTED = 0x10000885,    /**< Notification that WAN PPP Connection is successful */
 
    CMS_MSG_WATCH_WAN_CONNECTION= 0x10000890,  /**< request ssk to watch the dsl link status and then change the connectionStatus for bridge, static MER and ipoa */
    CMS_MSG_WATCH_DSL_LOOP_DIAG = 0x10000891,  /**< request ssk to watch the dsl loop diag and then update the stats */
@@ -176,15 +186,9 @@ typedef enum
    CMS_MSG_MOCA_WRITE_MRNONDEFSEQNUM= 0x100008B3, /**< mocad reporting moca reset non-def sequence number */
    CMS_MSG_MOCA_READ_MRNONDEFSEQNUM = 0x100008B4, /**< mocad reporting moca reset non-def sequence number */
    CMS_MSG_MOCA_NOTIFICATION        = 0x100008B5, /**< application reporting that it has updated moca parameters */
- 
+
    CMS_MSG_QOS_DHCP_OPT60_COMMAND   = 0x100008C0, /**< QoS Vendor Class ID classification command */
    CMS_MSG_QOS_DHCP_OPT77_COMMAND   = 0x100008C1, /**< QoS User   Class ID classification command */
-
-#ifdef CUSTOMER_ACTIONTEC
-   CMS_MSG_GET_LANHOSTS_RENEW = 0x100008A3,  /**< ask mynetwork to renew the lanhost table */
-   CMS_MSG_SET_LEASE_TO_SCRATCHPAD = 0x100008C2,  /**< ask mynetwork to write the LANhosts info into the flash*/
-   CMS_MSG_GET_LEASE_TO_SCRATCHPAD = 0x100008C3,  /**< ask XXX to read the LANhosts info from the flash*/ 
-#endif
    
    CMS_MSG_VOICE_CONFIG_CHANGED= 0x10002000,  /**< Voice Configuration parameter changed private event msg. */
    CMS_MSG_VODSL_BOUNDIFNAME_CHANGED = 0x10002001, /**< vodsl BoundIfName param has changed. */
@@ -228,32 +232,116 @@ typedef enum
 
    CMS_MSG_CMF_SEND_REQUEST = 0x10002301, /**< CMF File Send message request */
    CMS_MSG_CMF_SEND_RESPONSE = 0x10002302, /**< CMF File Send message response */
-   CMS_MSG_DO_ATM_OAMPING        = 0x10002305,
-#ifdef CUSTOMER_ACTIONTEC
-   CMS_MSG_SET_REMOTEGUI_TIMEOUT = 0x10002311,
-   CMS_MSG_SYNC_ADMIN_PASSWORD = 0x10002312,
-   CMS_MSG_SET_FIRSTUSEDATE = 0x10002313,
-   CMS_MSG_SET_STATUS = 0x10002314,
-   CMS_MSG_SNTP_DAY_LIGHT_TIMER = 0x10002315,
-#if defined(WLAN_RESTORE_DEFAULT)
-   CMS_MSG_WLAN_RESTORE_DEFAULT = 0x10002316,  /**< wlmngr Restore Default*/
-#endif
-#if defined(CUSTOMER_QNCS_DEFSETTING)
-   CMS_MSG_WRITE_CUSTOMER_CONFIG_FILE = 0x10002317, /**< save customer's default conf**/
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+	CMS_MSG_SET_PortMapping_LeaseDuration = 0x10002309,
+	CMS_MSG_GET_PortMapping_Remaining_Time = 0x10002310,
 #endif
 
-#if defined(CUSTOMER_VERIZON_BACKOFF)
-   CMS_MSG_CLEAR_PPP_AUTHCOUNT = 0x10002318, /**< clear ppp auth failed count**/
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+	CMS_MSG_WLAN_RESTORE_DEFAULT = 0x10002312,  /**< wlmngr Restore Default*/
+	CMS_MSG_SET_FIRSTUSEDATE = 0x10002313, /* ask ssk to write the FirstUseDate to mdm*/
+	CMS_MSG_SET_STATUS = 0x10002314,
 #endif
 
-#ifdef ACTION_TEC_WBA
-   CMS_MSG_WBA_INFORM  = 0x10002319, /**< wba status notification**/ 
+#if defined (DMP_CAPTIVEPORTAL_1)
+#if defined (AEI_VDSL_CUSTOMER_QWEST)
+   CMS_MSG_SET_ONE_TIME_REDIRECT_URL_FLAG = 0x10002308,
+#endif
 #endif
 
+//add by vincent 2010-12-22
+#if defined (AEI_VDSL_TR098_QWEST) || defined(AEI_VDSL_TR098_TELUS)
+   CMS_MSG_USER_INFCFG_CHANGED = 0x10002506,
+#endif
+
+
+#ifdef DMP_DOWNLOAD_1
+   CMS_MSG_TR143_DLD_DIAG_COMPLETED = 0x10002400,
+#endif
+#ifdef DMP_UPLOAD_1
+   CMS_MSG_TR143_UPLD_DIAG_COMPLETED = 0x10002401,
+#endif
+#ifdef DMP_UDPECHO_1
+   CMS_MSG_TR143_ECHO_DIAG_RESULT = 0x10002402,
+#endif
+
+#if defined(DMP_UPNPDISCBASIC_1) && defined (DMP_UPNPDISCADV_1)
+   CMS_MSG_UPNP_DISCOVERY_INFO = 0x10002403,   /*Send upnp device and service info*/
+#endif
+#ifdef DMP_PERIODICSTATSBASE_1
+   CMS_MSG_PERIODIC_STATISTICS_TIMER = 0x10002404,
+#endif
+#if defined (AEI_VDSL_CUSTOMER_BELLALIANT) || defined(AEI_VDSL_CUSTOMER_BELLCANADA)
+   CMS_MSG_TR69C_ENABLE_CWMP_FLAG = 0x10002405,
+#endif
+#if defined(DMP_TRACEROUTE_1)
+   CMS_MSG_TRACE_ROUTE_STATE_CHANGE = 0x10002406,
+#endif
+
+#ifdef DMP_SIMPLEFIREWALL_1
+   CMS_MSG_TR69_FIREWALL_LEVEL_CHANGED = 0x10002407,
+#endif
+
+#ifdef AEI_VDSL_CUSTOMER_NCS
+   CMS_MSG_GET_LANHOSTS_RENEW = 0x10002408,  /**< ask mynetwork to renew the lanhost table */
+      CMS_MSG_SET_LEASE_TO_SCRATCHPAD = 0x100008D0,  /**< ask mynetwork to write the LANhosts info into the flash*/
+   CMS_MSG_GET_LEASE_TO_SCRATCHPAD = 0x100008D1,  /**< ask XXX to read the LANhosts info from the flash*/ 
+   CMS_MSG_DHCPD_HOST_ACTIVE           = 0x1000026C, /**< Sent from mynetwork to ssk to notify lan host active state */
+   CMS_MSG_TR69_TIMER_VALUE_CHANGED = 0x10002419,
+#endif
+#if defined(AEI_VDSL_CUSTOMER_AUTO_DETEC_MULTIPLE_PHY) || defined(AEI_VDSL_WAN_AUTO_DETECT_ONE_PHY)
+   CMS_MSG_FORCE_WAN_LINK_CHANGE = 0x10002420,
+#endif
+#ifdef AEI_VDSL_DETECT_WAN_SERVICE
+   CMS_MSG_DETECT_WAN_SERVICE = 0x10002421,
+#endif
+#if defined(AEI_VDSL_HPNA) && defined(AEI_VDSL_WT107)
+   CMS_MSG_HPNA_STATE_CHANGED = 0x10002409,
+   CMS_MSG_HPNA_NODE_SAMPLE_COMPLETED = 0x10002410,
+   CMS_MSG_HPNA_NODE_MANUAL_SAMPLE = 0x10002411,
+#endif
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+	CMS_MSG_REMOTE_TIMEOUT_CHANGED = 0x10002412,
+#endif
+#if defined (AEI_VDSL_SMARTLED)
+	CMS_MSG_NSLOOKUP_TXT_RDATA  = 0x10002503,	
+#endif
+#ifdef AEI_VDSL_CUSTOMER_NCS
+#if defined (AEI_VDSL_TR098_QWEST)
+   CMS_MSG_SNTP_DAY_LIGHT_TIMER = 0x10002504,
+#endif
+   CMS_MSG_USER_AUTH_CHANGED = 0x10002505,
+#endif
+#if defined(AEI_VDSL_SMARTDMZ)
+	CMS_MSG_ARPING_DECT_EVENT  = 0x10002508,
+	CMS_MSG_ARPING_RETURN_DATA  = 0x10002509,	
+#endif
+#if defined(AEI_VDSL_TR098_TELUS)  
+	CMS_MSG_LHCM_IPINTERFACE_CHANGE  = 0x10002510,/*LANHostConfigManagement IP gateway change*/
+#endif
+#ifdef AEI_VDSL_CUSTOMER_TELUS
+   CMS_MSG_DHCP_LEASES_UPDATED = 0x10002511,
+   CMS_MSG_DHCPD_RELOAD_LEASE_FILE = 0x10002512,
+#endif
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+   CMS_MSG_DHCP_TIME_UPDATED       = 0x10002659,
+#endif
+#ifdef AEI_VDSL_CUSTOMER_TELUS
+	CMS_MSG_TR69_ALG_ENABLE = 0x10002513,
+	CMS_MSG_TR69_ALG_DISABLE = 0x10002514,
 #endif
 
 #ifdef AEI_CONTROL_LAYER
-   CMS_MSG_AEI_CTL_WATCH_WAN_CONNECTION = 0x10002506,
+   CMS_MSG_AEI_CTL_WATCH_WAN_CONNECTION = 0x10002515,
+#endif
+
+#if defined(AEI_VDSL_PORTBRIDGING)
+	CMS_MSG_TR69_PORTBRIDGING_ENABLE = 0x10002516,
+	CMS_MSG_TR69_PORTBRIDGING_DISABLE = 0x10002517,
+#endif
+#ifdef AEI_VDSL_CUSTOMER_QWEST
+   CMS_MSG_TSTATS_RESULT = 0x10002518,
+   CMS_MSG_TSTATS_REQUEST = 0x10002519,
 #endif
 } CmsMsgType;
 
@@ -338,6 +426,9 @@ typedef struct
    char mask[BUFLEN_32]; /**< New netmask, if addressAssigned==TRUE */
    char gateway[BUFLEN_32];    /**< New gateway, if addressAssigned==TRUE */
    char nameserver[BUFLEN_64]; /**< New nameserver, if addressAssigned==TRUE */
+#if defined(AEI_VDSL_CUSTOMER_TELUS)
+   unsigned int lease_time;
+#endif
 } DhcpcStateChangedMsgBody;
 
 
@@ -424,6 +515,14 @@ typedef enum {
    NETWORK_ACCESS_CONSOLE    = 3   /**< access from serial console */
 } NetworkAccessMode;
 
+#ifdef AEI_VDSL_CUSTOMER_NCS
+typedef enum {
+   DHCP_EVENT_NO_ACTION = 0,
+   DHCP_EVENT_ADD,
+   DHCP_EVENT_UPDATE,
+   DHCP_EVENT_DELETE
+} DhcpEventType;
+#endif
 
 /** Data body for CMS_MSG_DHCPD_HOST_INFO message type.
  *
@@ -439,17 +538,28 @@ typedef struct
                                      * LANDevice.{i}.Hosts.Host.{i}.addressSource */
    char interfaceType[BUFLEN_32];  /** type of interface used by LAN host, same values as 
                                      * LANDevice.{i}.Hosts.Host.{i}.InterfaceType */
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+   UBOOL8 active;                  /** the host is active or not , same value as */
+   int icon;                       /** Device Identifer according to DHCP option 12/60 */
+   char reservstatus[2];           /** DHCP Reservation Status */
+   DhcpEventType eventType;
+#endif									 	
    char hostName[BUFLEN_64];       /** Both dhcpd and data model specify hostname as 64 bytes */
    char oui[BUFLEN_8];             /** Host's manufacturing OUI */
    char serialNum[BUFLEN_64];      /** Host's serial number */
    char productClass[BUFLEN_64];   /** Host's product class */
-
-#ifdef CUSTOMER_ACTIONTEC
-   UBOOL8 active;                  /** the host is active or not , same value as 
-                                     * LANDevice.{i}.Hosts.Host.{i}.active*/ 
-#if defined(CUSTOMER_QWEST_Q1000)
-   int icon;			   /** Device Identifer according to DHCP option 12/60 */
+#if defined(FUNCTION_ACTIONTEC_QOS)
+   char clsname[BUFLEN_16];      /** Option 60 string for qos classification*/
+   char macs[BUFLEN_128];
+   char option60String[BUFLEN_16]; 
 #endif
+#if defined (AEI_VDSL_TR098_TELUS) || defined(AEI_VDSL_CUSTOMER_QWEST)
+   char userClassID[BUFLEN_256];
+   char venderClassID[BUFLEN_256];
+   char clientID[BUFLEN_256];
+#endif 
+#if defined(AEI_VDSL_CUSTOMER_TELUS)
+   UBOOL8 isStb;                  /** The lan host pc is stb or not */
 #endif
 
 } DhcpdHostInfoMsgBody;
@@ -524,7 +634,246 @@ typedef struct
    CmsEntityId requesterId;
 }PingDataMsgBody;
 
+/** Data body for CMS_MSG_TRACEROUTE_DATA message type.
+ *
+ */
+#if defined(DMP_TRACEROUTE_1)
+typedef enum 
+{
+	None = 0,
+	Requested = 1,
+	Complete = 2,
+	Error_CannotResolveHostName = 3,
+	Error_MaxHopCountExceeded = 4,
+}TraceRouteResult;
 
+typedef struct
+{
+	char hopHost[BUFLEN_256];
+	char hopHostAddress[BUFLEN_32];
+	UINT32 hopErrorCode;
+	char hopRTTimes[BUFLEN_16];
+}Route_Hops_t;
+
+typedef struct
+{
+	UINT32 responseTime;
+	UINT32 routeHopsNumberOfEntries;
+	CmsEntityId requesterId;
+	TraceRouteResult result;
+	Route_Hops_t routeHops[64];
+}TraceRouteDataMsgBody;
+#endif
+#ifdef DMP_DOWNLOAD_1
+/** Data body for CMS_MSG_TR143_DLD_DIAG_COMPLETED message type.
+ *
+ */
+typedef struct
+{
+   CmsEntityId requesterId;
+   char diagnosticsState[BUFLEN_32];
+   char romTime[BUFLEN_32];
+   char bomTime[BUFLEN_32];
+   char eomTime[BUFLEN_32];
+   UINT32 testBytesReceived;
+   UINT32 totalBytesReceived;
+   char tcpOpenRequestTime[BUFLEN_32];
+   char tcpOpenResponseTime[BUFLEN_32];
+#ifdef AEI_VDSL_CUSTOMER_QWEST
+   UINT32 X_ACTIONTEC_COM_PeriodOfFullLoading;
+   UINT32 X_ACTIONTEC_COM_TotalBytesReceivedUnderFullLoading;
+   UINT32 X_ACTIONTEC_COM_Throughput;
+#endif
+} DldDiagMsgBody;
+
+typedef struct
+{
+   char romTime[BUFLEN_32];
+   char bomTime[BUFLEN_32];
+   char eomTime[BUFLEN_32];
+   UINT32 testBytesReceived;
+   char tcpOpenRequestTime[BUFLEN_32];
+   char tcpOpenResponseTime[BUFLEN_32];
+} DldDiagThreadMsgBody;
+#endif
+
+#ifdef DMP_UPLOAD_1
+/** Data body for CMS_MSG_TR143_UPLD_DIAG_COMPLETED message type.
+ *
+ */
+typedef struct
+{
+   CmsEntityId requesterId;
+   char diagnosticsState[BUFLEN_32];
+   char romTime[BUFLEN_32];
+   char bomTime[BUFLEN_32];
+   char eomTime[BUFLEN_32];
+   UINT32 totalBytesSent;
+   char tcpOpenRequestTime[BUFLEN_32];
+   char tcpOpenResponseTime[BUFLEN_32];
+#ifdef AEI_VDSL_CUSTOMER_QWEST
+   UINT32 X_ACTIONTEC_COM_PeriodOfFullLoading;
+   UINT32 X_ACTIONTEC_COM_TotalBytesSentUnderFullLoading;
+   UINT32 X_ACTIONTEC_COM_Throughput;
+#endif
+} UpldDiagMsgBody;
+
+typedef struct
+{
+   char romTime[BUFLEN_32];
+   char bomTime[BUFLEN_32];
+   char eomTime[BUFLEN_32];
+   UINT32 totalBytesSent;
+   char tcpOpenRequestTime[BUFLEN_32];
+   char tcpOpenResponseTime[BUFLEN_32];
+} UpldDiagThreadMsgBody;
+#endif
+
+#ifdef DMP_UDPECHO_1
+/** Data body for CMS_MSG_TR143_ECHO_DIAG_RESULT message type.
+ *
+ */
+typedef struct
+{
+   UINT32 packetsReceived;
+   UINT32 packetsResponded;
+   UINT32 bytesReceived;
+   UINT32 bytesResponded;
+   char timeFirstPacketReceived[BUFLEN_32];
+   char timeLastPacketReceived[BUFLEN_32];
+} EchoDiagMsgBody;
+#endif
+
+#ifdef AEI_VDSL_HPNA
+#ifdef AEI_VDSL_WT107
+/** Data body for the CMS_MSG_HPNA_STATE_CHANGED message type.
+ *
+ */
+typedef struct
+{
+   UBOOL8 enable;
+   char status[BUFLEN_32];
+   char macAddr[BUFLEN_32];
+} LanHpnaIntfMsgBody;
+
+typedef struct
+{
+   UINT32 nodeId;
+   char macAddr[BUFLEN_32];
+   UBOOL8 isMaster;
+   UBOOL8 synced;
+   char chipID[BUFLEN_16];
+   char firmwareVersion[BUFLEN_64];
+   char firmwareSignature[BUFLEN_64];
+   char hardwareVersion[BUFLEN_32];
+   char manufacturer[BUFLEN_64];
+   char oui[BUFLEN_16];
+   char productClass[BUFLEN_64];
+   char serialNumber[BUFLEN_64];
+   UINT32 mtu;
+   UINT32 noiseMargin;
+   UINT32 defNonLarqper;
+} LanHpnaNodeMsgBody;
+
+typedef struct
+{
+    UINT32 bytesSent;
+    UINT32 bytesReceived;
+    UINT32 packetsSent;
+    UINT32 packetsReceived;
+    UINT32 broadcastPacketsSent;
+    UINT32 broadcastPacketsReceived;
+    UINT32 multicastPacketsSent;
+    UINT32 multicastPacketsReceived;
+    UINT32 packetsCrcErrored;
+    UINT32 packetsCrcErroredHost;
+    UINT32 packetsShortErrored;
+    UINT32 packetsShortHost;
+    UINT32 rxPacketsDropped;
+    UINT32 txPacketsDropped;
+    UINT32 controlRequestLocal;
+    UINT32 controlReplyLocal;
+    UINT32 controlRequestRemote;
+    UINT32 controlReplyRemote;
+    UINT32 packetsSentWire;
+    UINT32 broadcastPacketsSentWire;
+    UINT32 multicastPacketsSentWire;
+    UINT32 packetsInternalControl;
+    UINT32 broadcastPacketsInternalControl;
+    UINT32 packetsReceivedQueued;
+    UINT32 packetsReceivedForwardUnknown;
+    UINT32 nodeUtilization;
+} SampleStats;
+
+/** Data body for the CMS_MSG_HPNA_NODE_SAMPLE_COMPLETED message type.
+ *
+ */
+typedef struct
+{
+    char sampleTime[BUFLEN_32];
+    UINT32 nodeNum;
+    UINT32 channelNum;
+} LanHpnaSampleHeaderMsgBody;
+
+typedef struct
+{
+    UBOOL8 autoSample;
+    char macAddress[BUFLEN_32];
+    SampleStats stats;
+} LanHpnaNodeSampleMsgBody;
+
+typedef struct
+{
+    char hpnaSrcMac[BUFLEN_32];
+    char hpnaDestMac[BUFLEN_32];
+    char hostSrcMac[BUFLEN_32];
+    char hostDestMac[BUFLEN_32];
+    char phyRate[BUFLEN_32];
+    char baudRate[BUFLEN_32];
+    char snr[BUFLEN_32];
+    UINT32 packetsSent;
+    UINT32 packetsRecv;
+} LanHpnaChannelSampleMsgBody;
+#endif /* AEI_VDSL_WT107 */
+#endif /* AEI_VDSL_HPNA */
+
+#ifdef AEI_VDSL_CUSTOMER_TELUS
+/** Data body for the CMS_MSG_DHCP_LEASES_UPDATED message type.
+ *
+ */
+typedef struct
+{
+    char chaddr[BUFLEN_32];
+    UINT32 yiaddr;
+    UINT32 expires;
+    char hostname[BUFLEN_64];
+    UINT32 is_stb;
+} DhcpLeasesUpdatedMsgBody;
+#endif
+
+#ifdef AEI_VDSL_CUSTOMER_QWEST
+/** Data body for the CMS_MSG_TSTATS_RESULT message type.
+ *
+ */
+typedef struct
+{
+    char intfName[BUFLEN_32];
+    UINT32 unicastRecvDataRate;
+    UINT32 unicastSentDataRate;
+    UINT32 multicastRecvDataRate;
+    UINT32 multicastSentDataRate;
+    UBOOL8 success;
+} CmsTstatsResultMsgBody;
+
+/** Data body for the CMS_MSG_TSTATS_REQUEST message type.
+ *
+ */
+typedef struct
+{
+    char intfName[BUFLEN_32];
+    UINT32 interval;
+} CmsTstatsRequestMsgBody;
+#endif
 
 /** Data body for the CMS_MSG_WATCH_WAN_CONNECTION message type.
  *
@@ -586,6 +935,27 @@ typedef struct
    char description[BUFLEN_256];      /**< description of config file */
 } vendorConfigUpdateMsgBody;
 
+#ifdef AEI_VDSL_CUSTOMER_NCS
+typedef enum
+{
+  USER_ENABLE_CHANGED = 0,
+  USER_NAME_CHANGED,
+  USER_PASSWORD_CHANGED,
+  USER_REMOTE_ENABLE_CHANGED, 
+  USER_LOCAL_ENABLE_CHANGED 
+} UserChangedType;
+
+/** Data body for the CMS_MSG_USER_AUTH_CHANGED message type.
+ *
+ */
+typedef struct
+{
+   UserChangedType type;
+   char username[BUFLEN_128];
+} UserAuthMsgBody;
+#endif
+
+
 /*!\SNTP state defines 
  */
 #define SNTP_STATE_DISABLED                0   
@@ -594,6 +964,99 @@ typedef struct
 #define SNTP_STATE_FAIL_TO_SYNCHRONIZE     3
 #define SNTP_STATE_ERROR                   4
 
+/*send upnp msg to ssk*/
+#if defined(DMP_UPNPDISCBASIC_1) && defined (DMP_UPNPDISCADV_1)
+typedef enum
+{
+	UPNP_DIS_ROOT_DEVICE=0,
+	UPNP_DIS_DEVICE=1,
+	UPNP_DIS_SERVICE=2,
+}UPnPDisType;
+
+typedef struct
+{
+	UPnPDisType upnpDisType;
+	UINT32 numOfEntries;
+	char status[BUFLEN_32];
+	char UUID[BUFLEN_40];
+	char USN[BUFLEN_256];
+	UINT32 leaseTime;
+	char location[BUFLEN_256];
+	char server[BUFLEN_256];
+}UPnPDiscoveryInfo;
+#endif
+
+#ifdef DMP_PERIODICSTATSBASE_1
+/** Data body for the CMS_MSG_PERIODIC_STATISTICS_TIMER message type.
+ *
+ */
+typedef struct
+{
+   UBOOL8 enable;
+   UINT32 sampleInterval;
+   char sampleName[BUFLEN_128];
+} PeriodicStatsMsgBody;
+#endif
+
+
+#ifdef AEI_VDSL_CUSTOMER_NCS
+/** Data body for the CMS_MSG_REMOTE_TIMEOUT_CHANGED message type.
+ *
+ */
+typedef struct
+{
+   UINT32 index;
+   UINT32 timeout;
+} RemoteTimeoutMsgBody;
+#endif
+
+#if defined(AEI_VDSL_TR098_QWEST) //hk_tr098_q2000
+typedef enum
+{
+	INET_LED_OFF = 0,
+	INET_LED_RED,
+	INET_LED_GREEN,
+	INET_LED_AMBER,
+}LedColor;
+
+typedef enum
+{
+	INET_LED_NONE = 0,
+	INET_LED_FLASH,
+	INET_LED_BLINK,
+	INET_LED_ALTER,
+}LedAction;
+
+typedef struct
+{
+	LedColor color;
+	LedAction action;
+}InetLedControlBody;
+#endif
+#ifdef AEI_VDSL_DETECT_WAN_SERVICE
+#define INTERFACE_LEN 10
+#define FDETECTSERVICE "/var/detectService"
+#define FWANINTERFACE   "/var/baseL3ifName"
+#define FDETECTL2INFO "/var/detectl2info"
+#define L2DetectRunningFile "/var/L2DetectRunningFile"
+
+#define MODE_ALL_OFF  0
+#define MODE_L2_ADSL 1
+#define MODE_L2_VDSL 2
+#define MODE_L3 4
+#define MODE_L2_ETH 8
+#define MODE_ALL_ON 15
+#define L3IFNAME  "ptm0.31"
+#define ETH_L3IFNAME  "ewan0.31"
+
+typedef struct 
+{
+	SINT32 wanServiceType;
+	char wanInterface[INTERFACE_LEN];
+	SINT32 mode;
+	SINT32  vlanId;
+}detectWANServiceBody;
+#endif
 /** Initialize messaging system.
  *
  * This function should be called early in startup.

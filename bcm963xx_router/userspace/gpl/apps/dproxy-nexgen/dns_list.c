@@ -22,11 +22,6 @@ int dns_list_add(dns_request_t *r)
   memcpy(new, r, sizeof(*r));
   new->expiry = time(NULL) + DNS_TIMEOUT;
   new->switch_on_timeout = 1;
-#ifdef CUSTOMER_VERIZON
-  new->timeout = time(NULL) + DNS_SERVER_TIMEOUT;
-  new->pri_try_count = 0;
-  new->sec_try_count = 0;
-#endif  
   new->prev = NULL;
   new->next = dns_request_list;
 
@@ -39,7 +34,6 @@ int dns_list_add(dns_request_t *r)
   dns_list_count++;
   return 1;
 }
-
 
 /*****************************************************************************/
 dns_request_t *dns_list_find_by_id(dns_request_t *req)

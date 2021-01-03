@@ -52,9 +52,9 @@
 
                 $RCSfile: demo_main.c,v $
 
-                $Author: D.Krueger $
+                $Author: tliu $
 
-                $Revision: 1.10 $  $Date: 2008/11/19 18:11:43 $
+                $Revision: 1.1.1.1 $  $Date: 2010/06/14 22:49:24 $
 
                 $State: Exp $
 

@@ -58,9 +58,11 @@
 #define XTMRT_CMD_UNSET_TX_QUEUE            11
 #define XTMRT_CMD_GET_NETDEV_TXCHANNEL      12
 #define XTMRT_CMD_GLOBAL_UNINITIALIZATION   13
+#define XTMRT_CMD_TOGGLE_PORT_DATA_STATUS_CHANGE	  14
 
-#define XTMRTCB_CMD_BONDING_INTF_STARTED    1
-#define XTMRTCB_CMD_BONDING_INTF_STOPPED    2
+#define XTMRT_CMD_PORT_DATA_STATUS_DISABLED  0
+#define XTMRT_CMD_PORT_DATA_STATUS_ENABLED   1
+
 #define XTMRTCB_CMD_CELL_RECEIVED           3
 
 typedef UINT32 XTMRT_HANDLE;
@@ -80,6 +82,12 @@ typedef struct XtmrtGlobalInitParms
     UINT32 *pulMibRxPacketCount;
     UINT32 *pulRxCamBase ;
 
+    /* BCM6358, BCM6338 */
+    UINT32 *pulIrqBase;
+    UINT32 *pulRxQueueBase;
+    UINT32 *pulTxQueueAddrBase;
+    UINT32 *pulTxQueueHtlBase;
+    PXTM_INTERFACE_STATS pIntfStats;
 } XTMRT_GLOBAL_INIT_PARMS, *PXTMRT_GLOBAL_INIT_PARMS;
 
 typedef struct XtmrtCreateNetworkDevice
@@ -108,6 +116,9 @@ typedef struct XtmrtCellHdlr
     void *pContext;
 } XTMRT_CELL_HDLR, *PXTMRT_CELL_HDLR;
 
+#define XTM_HIGH_SUB_PRIORITY       MAX_SUB_PRIORITIES-1
+#define XTM_LOW_SUB_PRIORITY        0
+
 typedef struct XtmrtTransmitQueueId
 {
     UINT32 ulPortId;
@@ -118,7 +129,6 @@ typedef struct XtmrtTransmitQueueId
     UINT32 ulQueueSize;
     UINT32 ulQueueIndex;
     UINT32 ulBondingPortId;      /* Read-only */
-    UINT32 ulPrimaryShaperIndex; /* Read-only */
 } XTMRT_TRANSMIT_QUEUE_ID, *PXTMRT_TRANSMIT_QUEUE_ID;
 
 typedef struct XtmrtLinkStatusChange
@@ -127,8 +137,11 @@ typedef struct XtmrtLinkStatusChange
     UINT32 ulLinkUsRate;
     UINT32 ulLinkDsRate;
     UINT32 ulLinkDataMask ;
+    UINT32 ulOtherLinkUsRate ;
+    UINT32 ulOtherLinkDsRate ;
+    UINT32 ulTrafficType ;
     UINT32 ulTransmitQueueIdsSize;
-    XTMRT_TRANSMIT_QUEUE_ID TransitQueueIds[MAX_TRANSMIT_QUEUES];
+    XTMRT_TRANSMIT_QUEUE_ID TransmitQueueIds[MAX_TRANSMIT_QUEUES];
     UINT8 ucTxVcid ;
     UINT32 ulRxVcidsSize ;
     UINT8 ucRxVcids [MAX_VCIDS];
@@ -140,15 +153,17 @@ typedef struct XtmrtNetdevTxchannel
     void * pDev;
 } XTMRT_NETDEV_TXCHANNEL, *PXTMRT_NETDEV_TXCHANNEL;
 
+typedef struct XtmrtTogglePortDataStatusChange
+{
+    UINT32 ulPortId;
+    UINT32 ulPortDataStatus ;
+} XTMRT_TOGGLE_PORT_DATA_STATUS_CHANGE, *PXTMRT_TOGGLE_PORT_DATA_STATUS_CHANGE;
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
 int bcmxtmrt_request(XTMRT_HANDLE hDev, UINT32 ulCmd, void *pParm);
-#if defined(CONFIG_BCM_FAP) || defined(CONFIG_BCM_FAP_MODULE)
-int bcmxtmrt_close( struct net_device *dev );
-void bcmxtmrt_update_hw_stats(void * flow_p, unsigned int hits, unsigned int octets);
-#endif
 
 #if defined(__cplusplus)
 }

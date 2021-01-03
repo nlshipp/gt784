@@ -235,26 +235,27 @@ int cmsLog_readPartial(int ptr, char* buffer)
    return (oal_readLogPartial(ptr, buffer));
 }
 
-#if defined(CUSTOMER_QNCS) || defined (CUSTOMER_VERIZON)
 LogCategory categories[] =
 {
-   { LOG_CATE_DSL, "DSL Link", "DSL-Link" },
-   { LOG_CATE_PPP, "PPP Link", "PPP-Link,pppd,pppoed" },
-   { LOG_CATE_RFC1483, "RFC1483 Link", "RFC1483-Link" },
-   { LOG_CATE_SYSTEM, "System Event", "System-Event,kernel,igmp" },
-   { LOG_CATE_TR64, "TR-064", "TR-064,tr64c" },
-   { LOG_CATE_TR69, "TR-069", "TR-069,tr69c" },
-   { LOG_CATE_ETHERNET, "Ethernet", "Ethernet" },
-   { LOG_CATE_WIRELESS, "Wireless", "Wireless" },
-   { LOG_CATE_DHCP, "DHCP", "DHCP,udhcpd,dhcpc,dhcpd" },
-   { LOG_CATE_FIREWALL, "Firewall", "Firewall" },
-   { LOG_CATE_LAN, "LAN Device", "LAN-Device" },
-   { LOG_CATE_QOS, "QoS", "QoS" },
-   { LOG_CATE_WANVLAN, "WAN VLAN", "WAN-VLAN" },
-   { LOG_CATE_WPS, "WPS", "WPS" },
-   { LOG_CATE_WMM, "WMM", "WMM" },
-   { LOG_CATE_REBOOT, "System Reboot", "System-Reboot" },
-   { LOG_CATE_RESTORE, "System Restore", "System-Restore" }
+   { LOG_CATE_DSL, "DSL Link",{"DSL-Link"}},
+   { LOG_CATE_PPP, "PPP Link", {"PPP-Link","pppd","pppoed","PPP"} },
+   { LOG_CATE_RFC1483, "RFC1483 Link", {"RFC1483-Link"} },
+   { LOG_CATE_SYSTEM, "System Event",{"System-Event","kernel","igmp"}},
+   { LOG_CATE_TR64, "TR-064",{"TR-064","tr64c"}},
+   { LOG_CATE_TR69, "TR-069", {"TR-069","tr69c"} },
+   { LOG_CATE_ETHERNET, "Ethernet", {"Ethernet","DNS"}},
+   { LOG_CATE_WIRELESS, "Wireless", {"Wireless","802.11"}},
+   { LOG_CATE_DHCP, "DHCP", {"DHCP","udhcpd","dhcpc","dhcpd"} },
+   { LOG_CATE_FIREWALL, "Firewall", {"Firewall"} },
+   { LOG_CATE_LAN, "LAN Device", {"LAN-Device","lan-client"}},
+   { LOG_CATE_QOS, "QoS", {"QoS"} },
+   { LOG_CATE_WANVLAN, "WAN VLAN", {"WAN-VLAN"} },
+   { LOG_CATE_WPS, "WPS", {"WPS"} },
+   { LOG_CATE_WMM, "WMM", {"WMM"} },
+   { LOG_CATE_REBOOT, "System Reboot", {"System-Reboot"} },
+   { LOG_CATE_RESTORE, "System Restore", {"System-Restore"} },
+   { LOG_CATE_UPNP, "UPnP", {"UPnP"} },
+   { LOG_CATE_HPNA, "HPNA", {"HomePNA"} }
 };
 
 void log_syslog(CmsLogLevel level, CmsLogCategory logCategory, const char *pFmt, ... )
@@ -276,4 +277,3 @@ void log_syslog(CmsLogLevel level, CmsLogCategory logCategory, const char *pFmt,
 
    va_end(ap);
 }
-#endif /* CUSTOMER_QNCS */

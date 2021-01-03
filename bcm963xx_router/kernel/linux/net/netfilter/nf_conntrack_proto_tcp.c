@@ -1011,16 +1011,31 @@ static int tcp_packet(struct nf_conn *ct,
 		 old_state, new_state);
 
 	ct->proto.tcp.state = new_state;
+
 #if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
+
 	if( th->fin )       /* Abort and make this conntrack not BLOG eligible */
 	{
-		blog_notify(NULL, ct, BLOG_EVENT_STOP);
+		if ( (ct->blog_key[IP_CT_DIR_ORIGINAL] != BLOG_KEY_NONE) ||
+			 (ct->blog_key[IP_CT_DIR_REPLY] != BLOG_KEY_NONE) )
+		{
+			blog_notify(DESTROY_FLOWTRACK, (void*)ct,
+						(uint32_t)ct->blog_key[IP_CT_DIR_ORIGINAL],
+						(uint32_t)ct->blog_key[IP_CT_DIR_REPLY]);
+
+			/* Safe: In case blog client does not set key to 0 explicilty */
+			ct->blog_key[IP_CT_DIR_ORIGINAL] = BLOG_KEY_NONE;
+			ct->blog_key[IP_CT_DIR_REPLY]    = BLOG_KEY_NONE;
+		}
+
 		clear_bit(IPS_BLOG_BIT, &ct->status);
+
 	}
 	if ( ct->proto.tcp.state !=  TCP_CONNTRACK_ESTABLISHED )
 	{
-		blog_free( (struct sk_buff *)skb ); /* abort blogging this packet */
+		blog_skip((struct sk_buff *)skb); /* abort blogging this packet */
 	}
+
 #endif
 
 	if (old_state != new_state

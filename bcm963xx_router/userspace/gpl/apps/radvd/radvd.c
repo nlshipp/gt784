@@ -1,5 +1,5 @@
 /*
- *   $Id: radvd.c,v 1.1.1.1 2010/06/24 19:07:15 denny Exp $
+ *   $Id: radvd.c,v 1.3 2010/10/27 00:44:22 szheng Exp $
  *
  *   Authors:
  *    Pedro Roque		<roque@di.fc.ul.pt>
@@ -286,11 +286,13 @@ main(int argc, char *argv[])
 			process(sock, IfaceList, msg, len, 
 				&rcv_addr, pkt_info, hoplimit);
 
+#if 1	/* Disable comment-out Again @ Tue Oct 26 17:54:42 CST 2010 */
+/* AEI_IPV6_DEPLOY for Tunnelbroker.net DEMO only @ Fri Oct 22 14:42:15 CST 2010 by Sam */
 		if (sigterm_received || sigint_received) {
 			stop_adverts();
 			break;
 		}
-
+#endif
 		if (sighup_received)
 		{
 			reload_config();		

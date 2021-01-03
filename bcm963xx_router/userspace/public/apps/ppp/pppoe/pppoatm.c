@@ -69,21 +69,39 @@ int setdevname_pppoatm(const char *cp)
 {
 	struct sockaddr_atmpvc addr;
 // brcm begin
+   char *pvc;
 //	extern struct stat devstat;
 // brcm end
+
 	if (device_got_set)
 		return 0;
 	info("PPPoATM setdevname_pppoatm");
+
+// brcm begin
+   if ((pvc = strchr(cp, '.')) == NULL)
+      return 0;
+// brcm end
+
 	memset(&addr, 0, sizeof addr);
-	if (text2atm(cp, (struct sockaddr *) &addr, sizeof(addr),
+//	if (text2atm(cp, (struct sockaddr *) &addr, sizeof(addr),
+//	    T2A_PVC | T2A_NAME) < 0)
+//		return 0;
+
+// brcm begin
+	if (text2atm(pvc+1, (struct sockaddr *) &addr, sizeof(addr),
 	    T2A_PVC | T2A_NAME) < 0)
 		return 0;
-// brcm begin
+   
+	strncpy(devnam, cp, (pvc-cp));
+   devnam[pvc-cp] = '\0';
+
 //	if (!dev_set_ok())
 //		return -1;
 // brcm end
+
 	memcpy(&pvcaddr, &addr, sizeof pvcaddr);
-	strlcpy(devnam, cp, sizeof devnam);
+//	strlcpy(devnam, cp, sizeof devnam);
+
 // brcm begin
 //	devstat.st_mode = S_IFSOCK;
 // brcm end

@@ -6,7 +6,7 @@
  * LICENSE follows the described one in lzma.txt.
  */
 
-/* $Id: module.c,v 1.5 2006/11/27 03:54:58 jro Exp $ */
+/* $Id: module.c,v 1.1.1.1 2010/06/14 22:49:40 tliu Exp $ */
 
 #include <linux/init.h>
 #include <linux/module.h>
@@ -31,6 +31,6 @@ module_exit(unlzma_exit);
 #endif
 
 MODULE_LICENSE("GPL");
-MODULE_VERSION("$Id: module.c,v 1.5 2006/11/27 03:54:58 jro Exp $");
+MODULE_VERSION("$Id: module.c,v 1.1.1.1 2010/06/14 22:49:40 tliu Exp $");
 MODULE_DESCRIPTION("LZMA uncompress. "
 		   "A tiny wrapper for LzmaDecode.c in LZMA SDK from www.7-zip.org.");

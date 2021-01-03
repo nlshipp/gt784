@@ -573,10 +573,42 @@ static int have_callable_console(void)
  * See the vsnprintf() documentation for format string extensions over C99.
  */
 
+#if defined(AEI_VDSL_QOS_SINK)
+/* Hack printk to parse for number of flows since no source code available to obtain flow number */
+#include <linux/netdevice.h>
+extern int actiontec_cmf_flag;
+extern int actiontec_cmf_ret;
+#endif
+
 asmlinkage int printk(const char *fmt, ...)
 {
 	va_list args;
 	int r;
+
+#if defined(AEI_VDSL_QOS_SINK)
+	if(actiontec_cmf_flag==1)
+	{
+		/* this hack only works with SDK6 since args are shifted around in flowcache module */
+		if (strstr(fmt,"IP-Flow Learning"))  
+		//if (!strncmp(fmt,"/tFlow",5))     
+		{			
+			unsigned int u = 0;
+			/* cannot use &fmt+5 since that caused a kernel panic */
+			va_start(args, fmt);
+			va_arg(args,int);
+			va_arg(args,int);
+			va_arg(args,int);
+			va_arg(args,int);
+			u = va_arg(args,int);
+			va_end(args);
+			if(u >=4095)
+				actiontec_cmf_ret=1;
+			else if(atomic_read(&init_net.ct.count) < 1024) 
+				actiontec_cmf_ret=0;
+		}
+                return 0;
+	}
+#endif
 
 	va_start(args, fmt);
 	r = vprintk(fmt, args);

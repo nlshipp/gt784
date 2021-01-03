@@ -10,7 +10,7 @@
 #include <net/icmp.h>
 #include <net/protocol.h>
 
-#ifdef CONFIG_BLOG
+#if defined(CONFIG_MIPS_BRCM)
 #include <linux/blog.h>
 #endif
 

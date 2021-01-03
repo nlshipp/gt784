@@ -179,6 +179,10 @@ CmsRet flashImage(char *imagePtr, UINT32 imageLen, CmsImageFormat format)
        return CMSRET_INVALID_IMAGE;
     }
 
+#ifdef AEI_VDSL_CUSTOMER_TELUS
+    devCtl_boardIoctl(BOARD_IOCTL_LED_CTRL, 0, NULL, kLedPower, kLedStateSlowBlinkContinues, NULL);
+#endif
+
     if (format == CMS_IMAGE_FORMAT_FLASH)  
     {
         cmsLog_notice("Flash whole image...");
@@ -214,7 +218,7 @@ CmsRet flashImage(char *imagePtr, UINT32 imageLen, CmsImageFormat format)
     rootfsAddr = (unsigned long) strtoul((char *) pTag->rootfsAddress, NULL, 10);
     rootfsSize = atoi((char *) pTag->rootfsLen);
     cmsLog_debug("cfeSize=%d kernelSize=%d rootfsSize=%d", cfeSize, kernelSize, rootfsSize);
-    
+   
     if (cfeAddr) 
     {
         printf("Flashing CFE...\n");
@@ -370,7 +374,7 @@ UBOOL8 cmsImg_isConfigFileLikely(const char *buf)
    const char *dslCpeConfig = "<DslCpeConfig";
    UINT32 len, i;
    UBOOL8 likely=FALSE;
-   
+
    if (strncmp(buf, "<?xml version", strlen(header)) == 0)
    {
       len = strlen(dslCpeConfig);
@@ -415,19 +419,13 @@ CmsRet cmsImg_writeImage(char *imagePtr, UINT32 imageLen, void *msgHandle)
 CmsRet cmsImg_writeValidatedImage(char *imagePtr, UINT32 imageLen, CmsImageFormat format, void *msgHandle)
 {
    CmsRet ret=CMSRET_SUCCESS;
-#ifdef ACTION_TEC_TR69C
-   UINT32 normal_reboot = 1;
-#endif
+   
    switch(format)
    {
    case CMS_IMAGE_FORMAT_BROADCOM:
    case CMS_IMAGE_FORMAT_FLASH:
       // BcmNtwk_unInit(); mwang_todo: is it important to let Wireless do some
       // uninit before we write the flash image?
-#ifdef ACTION_TEC_TR69C
-      if (cmsPsp_set ("isNormalReboot", (char *) &normal_reboot, sizeof (UINT32)) != CMSRET_SUCCESS)
-         cmsLog_error("cmsPsp_set isNormalReboot failed\n");
-#endif
       ret = flashImage(imagePtr, imageLen, format);
       break;
       
@@ -442,19 +440,10 @@ CmsRet cmsImg_writeValidatedImage(char *imagePtr, UINT32 imageLen, CmsImageForma
           * to flash, thus wiping out what we just written.
           */
          cmsLog_debug("config file download written, request reboot");
-#ifdef CUSTOMER_VERIZON
-         if(cmsMsg_getHandleEid(msgHandle) == EID_HTTPD || cmsMsg_getHandleEid(msgHandle) == EID_HTTPSD) break; // do reboot in the GUI
-#endif
          cmsUtil_sendRequestRebootMsg(msgHandle);
       }
       break;
       
-#if defined(CUSTOMER_QNCS_DEFSETTING)
-   case CMS_IMAGE_FORMAT_CUSTOMER_XML_CFG:
-      ret = sendConfigMsg(imagePtr, imageLen, msgHandle, CMS_MSG_WRITE_CUSTOMER_CONFIG_FILE);
-      break;
-#endif
-
    default:
        cmsLog_error("Unrecognized image format=%d", format);
        ret = CMSRET_INVALID_IMAGE;
@@ -464,48 +453,42 @@ CmsRet cmsImg_writeValidatedImage(char *imagePtr, UINT32 imageLen, CmsImageForma
    return ret;
 }
 
- 
-#ifdef CUSTOMER_QNCS_DEFSETTING
-UBOOL8 cmsImg_isCustomConfigFileLikely(const char *buf)
+#if defined(AEI_VDSL_SIGNED_FIRMWARE)
+static CmsRet verifyImageTobeAEIFormat(const char *imagePtr, UINT32 imageLen, void *msgHandle, CmsImageFormat format)
 {
-   const char *header = "<?xml version";
-   const char *firmware_version = "<Def_Header version";
-   UINT32 len, i;
-   UBOOL8 likely=FALSE;
-   
-   if (strncmp(buf, "<?xml version", strlen(header)) == 0)
+   char *buf=NULL;
+   char *body=NULL;
+   CmsMsgHeader *msg;
+   CmsRet ret;
+
+   if ((buf = cmsMem_alloc(sizeof(CmsMsgHeader) + imageLen, ALLOC_ZEROIZE)) == NULL)
    {
-      len = strlen(firmware_version);
-      for (i=20; i<50 && !likely; i++)
-      {
-         if (strncmp(&(buf[i]), firmware_version, len) == 0)
-         {
-            likely = TRUE;
-         }
-      }
+      cmsLog_error("failed to allocate %d bytes for msg CMS_MSG_VERIFY_AEI_IMAGE", 
+                   sizeof(CmsMsgHeader) + imageLen);
+      return CMSRET_RESOURCE_EXCEEDED;
    }
    
-   cmsLog_debug("returning likely=%d", likely);
+   msg = (CmsMsgHeader *) buf;
+   body = (char *) (msg + 1);
+    
+   msg->type = CMS_MSG_VERIFY_AEI_IMAGE;
+   msg->wordData = format;
+   msg->src = cmsMsg_getHandleEid(msgHandle);
+   msg->dst = EID_SMD;
+   msg->flags_request = 1;
+   msg->dataLength = imageLen;
    
-   return likely;
+   memcpy(body, imagePtr, imageLen);
+
+   ret = cmsMsg_sendAndGetReply(msgHandle, msg);
+   
+   cmsMem_free(buf);
+   
+   return ret;
 }
- 
-CmsRet save_CustomConf(cfgBuf, cfgLen)
-{
-    CmsRet ret;
-    FILE *fp = NULL;
-    char filename[32] = "/data/customer_default.cfg";
-    if ((fp = fopen(filename, "w"))== NULL)
-    {
-        cmsLog_error("open %s failed", filename);
-        return CMSRET_INTERNAL_ERROR;
-    }
-    fwrite(cfgBuf, 1, cfgLen, fp);
-    fclose(fp);
-      
-    return CMSRET_SUCCESS;
-}
+
 #endif
+
 
 CmsImageFormat cmsImg_validateImage(const char *imageBuf, UINT32 imageLen, void *msgHandle)
 {
@@ -516,13 +499,9 @@ CmsImageFormat cmsImg_validateImage(const char *imageBuf, UINT32 imageLen, void 
    {
       return CMS_IMAGE_FORMAT_INVALID;
    }
-
-#ifdef ENCRYPT_CONFIG   
-   if (imageLen > CMS_CONFIG_FILE_DETECTION_LENGTH && imageLen < 800*1024) /* just check the image size not too large for a config here*/
-#else
+  
    if (imageLen > CMS_CONFIG_FILE_DETECTION_LENGTH &&
        cmsImg_isConfigFileLikely(imageBuf))
-#endif
    {
       cmsLog_debug("possible CMS XML config file format detected");
       ret = sendConfigMsg(imageBuf, imageLen, msgHandle, CMS_MSG_VALIDATE_CONFIG_FILE);
@@ -532,23 +511,6 @@ CmsImageFormat cmsImg_validateImage(const char *imageBuf, UINT32 imageLen, void 
          return CMS_IMAGE_FORMAT_XML_CFG;
       }
    } 
-#ifdef CUSTOMER_QNCS_DEFSETTING
-   else if (imageLen > CMS_CONFIG_FILE_DETECTION_LENGTH &&
-            cmsImg_isCustomConfigFileLikely(imageBuf))
-   {
-        cmsLog_debug("possible customer's XML config file format detected");
-#if (INC_NAND_FLASH_DRIVER==1)        
-        save_CustomConf(imageBuf, imageLen);
-        if (ret == CMSRET_SUCCESS)
-        { 
-            cmsLog_debug("CMS XML config format verified.");
-            return CMS_IMAGE_FORMAT_CUSTOMER_XML_CFG;
-        }
-#else
-        return CMS_IMAGE_FORMAT_CUSTOMER_XML_CFG;
-#endif
-   }
-#endif
    
    cmsLog_debug("not a config file");
    
@@ -614,6 +576,34 @@ CmsImageFormat cmsImg_validateImage(const char *imageBuf, UINT32 imageLen, void 
          }
       }
    }
+
+#if defined(AEI_VDSL_SIGNED_FIRMWARE)
+   if (result == CMS_IMAGE_FORMAT_FLASH)
+   {
+
+      unsigned long offset=0;
+      ret = devCtl_boardIoctl(BOARD_IOCTL_GET_FS_OFFSET, 0, NULL, 0, 0, (void *)&offset);
+     // cmsLog_error("#####fs_offset(%x)\n",offset);
+      ret = verifyImageTobeAEIFormat(imageBuf+offset, 256, msgHandle, result);
+	  if (ret == CMSRET_SUCCESS)
+      {
+          result=CMS_IMAGE_FORMAT_FLASH;
+      }
+      else
+          result=CMS_IMAGE_FORMAT_INVALID;
+
+   }
+   if (result == CMS_IMAGE_FORMAT_BROADCOM)
+   {
+      ret = verifyImageTobeAEIFormat(imageBuf, 256, msgHandle, result);
+	  if (ret == CMSRET_SUCCESS)
+      {
+          result=CMS_IMAGE_FORMAT_BROADCOM;
+      }
+      else
+          result=CMS_IMAGE_FORMAT_INVALID;
+   } 
+#endif
 
    cmsLog_debug("returning image format %d", result);
 
@@ -709,12 +699,6 @@ void cmsImg_sendLoadDoneMsg(void *msgHandle)
 /* using a cmsUtil_ prefix because this can be used in non-upload scenarios */
 void cmsUtil_sendRequestRebootMsg(void *msgHandle)
 {
-#ifdef ACTION_TEC_TR69C
-   static UINT32 normal_reboot = 1;
-   if (cmsPsp_set ("isNormalReboot", (char *) &normal_reboot, sizeof (UINT32)) != CMSRET_SUCCESS)
-      cmsLog_error("cmsPsp_set isNormalReboot failed\n");
-#endif
-
    CmsMsgHeader msg = EMPTY_MSG_HEADER;
 
    msg.type = CMS_MSG_REBOOT_SYSTEM;

@@ -18,7 +18,7 @@
  *
  * Copyright (c) 2004 Topspin Communications.  All rights reserved.
  *
- * $Id$
+ * $Id: if_infiniband.h,v 1.1.1.1 2010/06/14 22:48:48 tliu Exp $
  */
 
 #ifndef _LINUX_IF_INFINIBAND_H

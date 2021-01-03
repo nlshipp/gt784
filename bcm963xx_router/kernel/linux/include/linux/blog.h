@@ -1,6 +1,10 @@
 #ifndef __BLOG_H_INCLUDED__
 #define __BLOG_H_INCLUDED__
 
+                /*--------------------------------*/
+                /* Blog.h and Blog.c for Linux OS */
+                /*--------------------------------*/
+
 /*
 <:copyright-gpl
 
@@ -27,97 +31,247 @@
  *
  * File Name  : blog.h
  *
- * Description: This file implements the interface for debug logging of protocol
- *              header information of a packet buffer as it traverses the Linux
- *              networking stack. The header information is logged into a
- *              buffer log 'Blog_t' object associated with the sk_buff that
- *              is managing the packet. Logging is only performed when a sk_buff
- *              has an associated Blog_t object.
+ * Description:
  *
- *              Uses the nbuff APIs for isolation of OS native networking buffer
- *              e.g. Linux sk_buff and VxWorks BSD style mbuf.
+ * A Blog is an extension of the native OS network stack's packet context.
+ * In Linux a Blog would be an extansion of the Linux socket buffer (aka skbuff)
+ * or a network device driver level packet context FkBuff. The nbuff layer
+ * provides a transparent access SHIM to the underlying packet context, may it
+ * be a skbuff or a fkbuff. In a BSD network stack, a packet context is the
+ * BSD memory buffer (aka mbuff).
  *
- *              For Linux:
- *              When an sk_buff is cloned or copied, the associated Blog_t
- *              object is transfered to the new sk_buff.
+ * Blog layer provides Blog clients a SHIM to the native OS network stack:
+ * Blog clients may be impleted to:
+ *  - debug trace a packet as it passes through the network stack,
+ *  - develop traffic generators (loop) at the network device driver level.
+ *  - develop network driver level promiscuous mode bound applications and use
+ *    the Blog SHIM to isolate themselves from the native OS network constructs
+ *    or proprietery network constructs such as Ethernet bridges, VLAN network
+ *    interfaces, IGMP, firewall and connection tracking systems.
  *
- *              Interface to log receive and transmit net_device specific 
- *              information is also provided.
+ * As such, Blog provides an extension of the packet context and contains the
+ * received and transmitted packets data and parsed information. Parsing results
+ * are saved to describe, the type of layer 1, 2, 3 and 4 headers seen, whether
+ * the packet was a unicast, broadcast or multicast, a tunnel 4in6 or 6in4 etc.
  *
- *              Logging includes L3 IPv4 tuple information and L4 port number.
+ * Blog views a receive or transmit end-point to be any construct that can
+ * described by a end point context and a handler op. An end-point could hence
+ * be a:
+ *  - a network device (Linux net_device with hard start transmit handler),
+ *  - a link or queue in the network stack (e.g. a Linux Traffic Control queue
+ *    or a netlink or raw socket queue),
+ *  - a file system logging interface and its logging handler,
+ *  - a virtual interface to some hardware block that provides some hardware
+ *    assisted functionality (e.g. IPSEC acceleration or checksum offloading
+ *    or GSO block),
+ *  - a raw interface to an external hardware test traffic generator using say
+ *    a DMA mapped packet reception or transmission.
  *
- *              Mechanism to skip further logging, when non-interesting scenario
- *              such as, non-ipv4, ipv4 flow has associated helper, etc is also
- *              provided.
+ * Blog clients are hence applications that provide value added capability by
+ * binding at such end-points.
  *
- *              The three main interfaces are: blog_init(), blog_emit(), blog().
+ * A simple Blog client application is a loop traffic generator that simply
+ * acts as a sink of packets belonging to a specific "l3 flow" and mirrors
+ * them to another interface or loops them back into the stack by serving as a
+ * source to a receive network device, while measuring the packet processing
+ * datapath performance in the native OS network stack/proprietary constructs.
+ * Such a loop traffic generator could be used to inject N cells/packets
+ * that cycle through the system endlessly, serving as background traffic while
+ * a few flows are studied from say a QOS perspective.
  *
- *              Two versions of blog_init interfaces are:
- *                  blog_sinit(struct sk_buff * skb_p, ...)
- *                  blog_finit(struct fkbuff * fkb_p, ...)
+ * Another example of a Blog client is a proxy accelerator (hardware / software)
+ * that is capable of snooping on specific flows and accelerating them while
+ * bypassing the native OS network stack and/or proprietery constructs. It is
+ * however required that the native OS constructs can co-exist. E.g. it may be
+ * necessary to refresh a network bridge's ARL table, or a connection/session
+ * tracker, or update statistics, when individual packets bypass such network
+ * constructs. A proxy accelerator may also reside between a Rx network device
+ * a hardware IPSEC accelerator block and a Tx network device.
  *
- *              blog_init() will setup the L1 coarse key<channel,phy> and invoke
- *              the receive blog hook. If a NULL receive hook is configured,
- *              then PKT_NORM is returned. The receive hook may allocate a
- *              Blog_t object and associate with the FkBuff_t. The caller of
- *              blog_init is responsible to free the Blog_t object if the packet
- *              is not passed up to the stack via netif_receive_skb(), using
- *              the api fkb_put().
+ * Blog layer provides a logical composite SHIM to the network constructs
+ * Linux or proprietery, allowing 3rd party network constructs to be seemlesly
+ * supported in the native OS.  E.g a network stack that uses a proprietery
+ * session tracker with firewalling capability would need to be transparently
+ * accessed, so that a Blog client may refresh the session tracking object when
+ * packets bypass the network stack.
  *
- *              blog_emit() will invoke the transmit blog hook and subsequently
- *              dis-associate the Blog_t object from the skb, and recycle.
+ * For each OS (eCOS, Linux, BSD) a blog.c implementation file is provided that
+ * implements the OS specific SHIM. Support for 3rd-party network constructs
+ * would need to be defined in the blog.c . E.g. for Linux, if a proprietery
+ * session tracker replaces the Linux netfilter connection tracking framework,
+ * then the void * ct_p and the corresponding query/set operations would need to
+ * be implemented. The Blog clients SHOULD NOT rely on any function other than
+ * those specifically defined allowing a coexistence of the Blog client and the
+ * native construct. In the example of a ct_p, for all practice and purposes,
+ * the void *, could have been a key or a handle to a connection tracking object
  *
- *              Physical Network devices may be instrumented as follows:
- *              - prior to netif_receive_skb() invoke blog_init().
- *              - in hard_start_xmit, prior to initiating a dma transfer,
- *                invoke blog_emit().
+ * Likewise, the Blog client may save need to save a client key with the
+ * network constuct. Again a client key may be a pointer to a client object or
+ * simply a hash key or some handle semantics.
  *
- *              A receive and transmit blog hook is provided. These hooks
- *              may be initialized to do some basic processing when a packet
- *              is received or transmitted via a physical network device. By
- *              default, these hooks are NULL and hence no logging occurs.
- *              PS. blog_init() will associate a Blog_t only if the rx hook is
- *              defined.
- *              The receive hook may return an action PKT_DONE signifying that
- *              the packet has been consumed and no further processing via an
- *              skb is needed.
+ * The logical SHIM is defined as follows:
  *
- *              The receive function may be used to prototype various form of
- *              DOS/LAND attacks, experimental rate control algorithms, tracing
- *              and network monitoring tools, traffic generators, etc.
+ * __doc_include_if_linux__
  *
- *              blog() may be inserted in various L2 protocol decoders/encoders
- *              to record the L2 header information. blog() may also be used to
- *              record the IP tuple.
+ * 1. Extension of a packet context with a logging context:
+ * ========================================================
+ *   Explicit APIS to allocate/Free a Blog structure, and bind to the packet
+ *   context, may it be a skbuff or a fkbuff. Support for transferring a
+ *   Blog_t structure from one packet context to another during the course of
+ *   a packet in the network stack involving a packet context clone/copy is
+ *   also included. The release and recycling of Blog_t structures when a 
+ *   packet context is freed are also providied.
+ *   Binding is bi-directional: packet context <-- --> Blog_t
+ * 
  *
- *              While blog may be used as a simple tracing tool, a traffic
- *              generator to analyze the networking path may be envisioned,
- *              wherein one (or more) packets are recycled from tx to rx.
- *              A connection may be tracked by netfilter conntrack which
- *              expects packets to keep itself refreshed. If the traffic
- *              needs to hold on to the packets to insert a burst followed
- *              by very large idle periods, it should refresh the conntrack.
- *              Likewise a conntrack may be destroyed, and the traffic flow
- *              would be notified using a flow key saved in the conntrack.
+ * 2. Associating native OS or 3rd-party network constructs: blog_link()
+ * ==========================================================================
+ *   Examples of network constructs
+ *      "dev"   - Network device 
+ *      "ct"    - Connection or session tracker
+ *      "fdb"   - Network bridge forwarding database entity
  *
- * Engineering: The data structues are defined to pack each blog into 9 16byte
- *              cachelines. Layout organized for data locality.
+ *   Association is pseudo bi-directional, using "void *" binding in a Blog_t to
+ *   a network construct. In the reverse, a network construct will link to a
+ *   Blog client entity using a Key concept. Two types of keys are currently
+ *   employed, a BlogFlowKey and a BlogGroupKey. 
  *
- * Implementation: Most internal Blog APIs operate on sk_buff.
- *              fkbuff variant APIs that are provided are:
- *                  blog_fkb(), blog_fnull(), blog_finit()
+ *   A BlogFlowKey would typically refer to a single unidirectional packet
+ *   stream defined by say all packets belonging to a unidirectional IPv4 flow,
+ *   whereas a BlogGroupKey could be used to represent a single downstream
+ *   multicast stream (IP multicast group) that results in replicated streams
+ *   pertaining to multiple clients joining a the IPv4 multicast group.
+ *
+ *   Likewise, one may represent a single unidirectional IPv4 UDP flow using
+ *   BlogFlowKey, and the reverse direction IPv4 UDP reply flow
+ *   using another BlogFlowKey, and represent the mated pair using a
+ *   BlogGroupKey.
+ *
+ *   In a Blog traffic generator client, where in several IPv4 UDP flows, each
+ *   represented independently using a BlogFlowKey, allows for a set of them
+ *   (background downstream stress traffic) to be managed as a group using a
+ *   BlogGroupKey.
+ *
+ *   Designer Note:
+ *   A network construct may be required to save a BlogFlowKey and/or
+ *   BlogGroupKey to complete the reverse binding between a network construct
+ *   and the Blog client application. An alternate approach would be to save
+ *   a pointer to the Blog_t in the network construct with an additional
+ *   dereference through the keys saved within the Blog_t object.
+ *
+ *   A BlogFlowKey and a BlogGroupKey is a 32bt sized unit and can serve either
+ *   as a pointer (32bit processor) or a index or a hash key or ...
+ *
+ *
+ * 3. Network construct and Blog client co-existence call backs:
+ * =============================================================
+ *
+ * blog_notify():
+ * ==============
+ * A network construct may notify a Blog client of a change of status and may
+ * be viewed as a "downcall" from specialized network construct to a Blog client
+ * E.g. if a connection/session tracking system deems that a flow needs to be
+ * deleted or say it itself is being destroyed, then it needs to notify the Blog
+ * client. This would allow the Blog client to cleanup any association with the
+ * network construct.
+ * Ability for a Blog client to receive general system wide notifications of
+ * changes, to include, network interfaces or link state changes, protocol stack
+ * service access point changes, etc.
+ * Designer Note: Linux notification list?
+ *
+ * blog_request():
+ * ===============
+ * A Blog client may request a change in state in the network construct and may
+ * be viewed as a "upcall" from the Blog client into the network construct. A
+ * timer refresh of the bridge fdb or connection tracking object, or a query
+ * whether the session tracker has successfully established (e.g. a TCP 3-way
+ * handshake has completed, or a IGMP client was permitted to join a group, or a
+ * RTSP session was successful) a uni-driectional or bi-directional flow.
+ *
+ *
+ * 4. Network end-point binding of Blog client
+ * ===========================================
+ *
+ * blog_init(), blog_sinit(), blog_finit():
+ * ========================================
+ * __comment_if_linux__ : This function is invoked by a Linux network device on
+ * packet reception to pass the packet to a Blog client application.
+ *
+ * Pass a packet context to a Blog client at a "RX" network device either using
+ * a skbuff or a fkbuff packet context. Blog client MAY ONLY ACCESS fkbuff
+ * fields. As per the nbuff specification, a FkBuff may be considered as a
+ * base class and a skbuff is a derived class, inheriting the base class members
+ * of the base class, fkbuff. The basic fields of a packet context are a pointer
+ * to the received packet's data, data length, a set of reserved fields to carry
+ * layer 1 information, queue priority, etc, and packet context and or packet
+ * recycling. The layer 1 information is described in terms of channels and
+ * and link layer phy preambles. A channel could be an ATM VCI, a DSL queue, a
+ * PON Gem Port. A Phy could describe the LINK layer type and or a preamble for
+ * instance a RFC2684 header in the DSL world.
+ *
+ * blog_[s|f]init() will setup the L1 coarse key<channel,phy> and invokes a Blog
+ * client's receive hook. A Blog client may consume the packet bypassing the
+ * native OS network stack, may suggest that the packet context be extended by
+ * a Blog_t structure or may deem that the packet is of not interest. As such
+ * the Blog client will return PKT_DONE, PKT_BLOG or PKT_NORM, respectively. In
+ * case no Blog client has been registered for receiving packets (promiscuous)
+ * driectly from RX network devices, then the packet will follow a normal data
+ * path within the network stack (PKT_NORM).
+ *
+ * Designer Note: Blog clients MAY NOT use fields not defined in FkBuff.
+ * 
+ *
+ * blog_emit():
+ * ============
+ * __comment_if_linux__ : This function is invoked by a Linux network device
+ * prior to packet transmission to pass the packet to a Blog client application.
+ *
+ * Pass a packet context to a Blog client at a "TX" network device either using
+ * a skbuff or a fkbuff packet context. The same restrictions on a Blog client
+ * pertaining to packet field context access as defined in the blog_init()
+ * variant of APIs is applicable to blog_emit(). A Blog client may also return
+ * PKT_NORM or PKT_DONE, to indicate normal processing, or packet consumption.
+ *
+ * Designer Note: blog_emit() will ONLY pass those packets to Blog clients that
+ * have a packet context extended with a Blog_t structure. Hence skbuffs or
+ * fkbuffs that do not have a Blog_t extension will not be handed to the Blog
+ * client. Do we need blog_semit/blog_femit variants.
+ *
+ *
+ * 5. Binding Blog client applications: blog_bind()
+ * ================================================
+ * blog_bind() enables a "single" client to bind into the network stack by
+ * specifying a network device packet reception handler, a network device packet
+ * transmission handler, network stack to blog client notify hook.
+ *
+ *
+ * 6. Miscellanous
+ * ===============
+ * - Blog_t management.
+ * - Data-filling a Blog_t.
+ * - Protocol Header specifications independent of OS.
+ * - Debug printing.
+ *
+ *
+ * __end_include_if_linux__
  *
  *  Version 1.0 SKB based blogging
  *  Version 2.0 NBuff/FKB based blogging (mbuf)
  *  Version 2.1 IPv6 Support
+ *  Version 3.0 Restructuring Blog SHIM to support eCOS, Linux and proprietery
+ *              network constructs
  *
  *******************************************************************************
  */
 
-#define BLOG_VERSION                "v2.1"
+#define BLOG_VERSION            "v3.0"
 
-#include <linux/autoconf.h>         /* LINUX kernel configuration */
-#include <linux/types.h>            /* LINUX ISO C99 7.18 Integer types */
+#if defined(__KERNEL__)                 /* Kernel space compilation           */
+#include <linux/types.h>                /* LINUX ISO C99 7.18 Integer types   */
+#else                                   /* User space compilation             */
+#include <stdint.h>                     /* C-Lib ISO C99 7.18 Integer types   */
+#endif
+#include <linux/blog_net.h>             /* IEEE and RFC standard definitions  */
 
 #ifndef NULL_STMT
 #define NULL_STMT                   do { /* NULL BODY */ } while (0)
@@ -126,77 +280,187 @@
 #undef  BLOG_DECL
 #define BLOG_DECL(x)                x,
 
+/* Forward declarations */
+struct blog_t;
+typedef struct blog_t Blog_t;
+#define BLOG_NULL                   ((Blog_t*)NULL)
+#define BLOG_KEY_NONE               0
+
+/* __bgn_include_if_linux__ */
+
+struct sk_buff;                         /* linux/skbuff.h                     */
+struct fkbuff;                          /* linux/nbuff.h                      */
+
+/* See RFC 4008 */
+extern uint32_t blog_nat_tcp_def_idle_timeout;
+extern uint32_t blog_nat_udp_def_idle_timeout;
+
+/*
+ * Linux Netfilter Conntrack registers it's conntrack refresh function which
+ * will be invoked to refresh a conntrack when packets belonging to a flow
+ * managed by Linux conntrack are bypassed by a Blog client.
+ */
+typedef void (*blog_refresh_t)(void * ct_p, uint32_t ctinfo,
+                               struct sk_buff * skb_p,
+                               uint32_t jiffies, int do_acct);
+extern blog_refresh_t blog_refresh_fn;
+/* __end_include_if_linux__ */
+
+
 /*
  *------------------------------------------------------------------------------
- * Layer 2 encapsulations logged.
- * Implementation constraint: max 8 proto types.
+ * Denotes whether a packet is consumed and freed by a Blog client application,
+ * whether a packet needs to be processed normally within the network stack or
+ * whether a packet context is extended with a Blog_t object.
+ *------------------------------------------------------------------------------
+ */
+typedef enum {
+        BLOG_DECL(PKT_DONE)             /* Packet consumed and freed          */
+        BLOG_DECL(PKT_NORM)             /* Continue normal stack processing   */
+        BLOG_DECL(PKT_BLOG)             /* Continue stack with blogging       */
+        BLOG_DECL(BLOG_ACTION_MAX)
+} BlogAction_t;
+
+/*
+ *------------------------------------------------------------------------------
+ * Denotes the direction in the network stack when a packet is processed by a
+ * virtual network interface/network device.
+ *------------------------------------------------------------------------------
+ */
+typedef enum {
+        BLOG_DECL(DIR_RX)               /* Receive path in network stack      */
+        BLOG_DECL(DIR_TX)               /* Transmit path in network stack     */
+        BLOG_DECL(BLOG_DIR_MAX)
+} BlogDir_t;
+
+/*
+ *------------------------------------------------------------------------------
+ * Denotes the type of Network entity associated with a Blog_t.
+ *
+ * BlogNetEntity_t may be linked to a blog using blog_link to make the Blog_t
+ * point to the BlogNetEntity_t. A reverse linking from the BlogNetEntity_t to
+ * Blog_t is only possible via a key (if necessary when a one to one association
+ * between the BlogNetEntity_t and a Blog exists. For instance, there is a
+ * one to one association between a Flow Connection Tracker and a Blog. In fact
+ * a Linux Netfilter Connection Tracking object manages a bi-directional flow
+ * and thus may have 2 keys to reference the corresponding Blog_t. However, a
+ * network device (physical end device or a virtual device) may have multiple
+ * Flows passing through it and hence no one-to-one association exists. In this
+ * can a Blog may have a link to a network device, but the reverse link (via a
+ * key) is not saved in the network device.
+ *
+ * Linking a BlogNetEntity_t to a blog is done via blog_link() whereas saving
+ * a reference key into a BlogNetEntity_t is done via blog_request() by the
+ * Blog client application, if needed.
+ *
+ *------------------------------------------------------------------------------
+ */
+
+/* FLOWTRACK: param1 is ORIG=0 or REPLY=1 direction */
+#define BLOG_PARAM1_DIR_ORIG    0U
+#define BLOG_PARAM1_DIR_REPLY   1U
+
+/* BRIDGEFDB: param1 is src|dst */
+#define BLOG_PARAM1_SRCFDB      0U
+#define BLOG_PARAM1_DSTFDB      1U
+
+/* IF_DEVICE: param1 is direction RX or TX, param 2 is minMtu */
+
+typedef enum {
+        BLOG_DECL(FLOWTRACK)            /* Flow (connection|session) tracker  */
+        BLOG_DECL(BRIDGEFDB)            /* Bridge Forwarding Database entity  */
+        BLOG_DECL(MCAST_FDB)            /* Multicast Client FDB entity        */
+        BLOG_DECL(IF_DEVICE)            /* Virtual Interface (network device) */
+        BLOG_DECL(BLOG_NET_ENTITY_MAX)
+} BlogNetEntity_t;
+
+/*
+ *------------------------------------------------------------------------------
+ * Denotes a type of notification sent from the network stack to the Blog client
+ * See blog_notify(BlogNotify_t, void *, uint32_t param1, uint32_t param2);
+ *------------------------------------------------------------------------------
+ */
+
+/* MCAST_CONTROL_EVT: param1 is add|del, and param2 is IPv4|IPv6 */
+#define BLOG_PARAM1_MCAST_ADD       0U
+#define BLOG_PARAM1_MCAST_DEL       1U
+#define BLOG_PARAM2_MCAST_IPV4      0U
+#define BLOG_PARAM2_MCAST_IPV6      1U
+
+/* LINK_STATE_CHANGE: param1 */
+#define BLOG_PARAM1_LINK_STATE_UP   0U
+#define BLOG_PARAM1_LINK_STATE_DOWN 1U
+
+/* FETCH_NETIF_STATS: param1 */
+#define BLOG_PARAM1_NO_CLEAR        0U
+#define BLOG_PARAM1_DO_CLEAR        1U
+
+typedef enum {
+        BLOG_DECL(DESTROY_FLOWTRACK)    /* Session/connection is deleted      */
+        BLOG_DECL(DESTROY_BRIDGEFDB)    /* Bridge FDB has aged                */
+        BLOG_DECL(MCAST_CONTROL_EVT)    /* Mcast client joins a group event   */
+        BLOG_DECL(DESTROY_NETDEVICE)    /* Network device going down          */
+        BLOG_DECL(LINK_STATE_CHANGE)    /* Physical network link event        */
+        BLOG_DECL(FETCH_NETIF_STATS)    /* Fetch accumulated stats            */
+        BLOG_DECL(DYNAMIC_TOS_EVENT)    /* Dynamic TOS change event           */
+        BLOG_DECL(BLOG_NOTIFY_MAX)
+} BlogNotify_t;
+
+
+/*
+ *------------------------------------------------------------------------------
+ * Denotes a type of request from a Blog client to a network stack entity.
  *------------------------------------------------------------------------------
  */
 
 typedef enum {
-        BLOG_DECL(BCM_XPHY)         /* e.g. BLOG_XTMPHY, BLOG_GPONPHY */
-        BLOG_DECL(BCM_SWC)          /* BRCM LAN Switch Tag/Header */
-        BLOG_DECL(ETH_802x)         /* Ethernet */
-        BLOG_DECL(VLAN_8021Q)       /* Vlan 8021Q (incld stacked) */
-        BLOG_DECL(PPPoE_2516)       /* PPPoE RFC 2516 */
-        BLOG_DECL(PPP_1661)         /* PPP RFC 1661 */
-        BLOG_DECL(L3_IPv4)          /* L3 IPv4 */
-        BLOG_DECL(L3_IPv6)          /* L3 IPv6 */
+        BLOG_DECL(FLOWTRACK_KEY_SET)    /* Set Client key into Flowtracker    */
+        BLOG_DECL(FLOWTRACK_KEY_GET)    /* Get Client key into Flowtracker    */
+        BLOG_DECL(FLOWTRACK_DSCP_GET)   /* Get DSCP from Flow tracker: DYNTOS */
+        BLOG_DECL(FLOWTRACK_CONFIRMED)  /* Test whether session is confirmed  */
+        BLOG_DECL(FLOWTRACK_ASSURED)    /* Test whether session is assured    */
+        BLOG_DECL(FLOWTRACK_ALG_HELPER) /* Test whether flow has an ALG       */
+        BLOG_DECL(FLOWTRACK_EXCLUDE)    /* Clear flow candidacy by Client     */
+        BLOG_DECL(FLOWTRACK_REFRESH)    /* Refresh a flow tracker             */
+        BLOG_DECL(BRIDGE_REFRESH)       /* Refresh a Bridge FDB entry         */
+        BLOG_DECL(NETIF_PUT_STATS)      /* Push accumulated stats to devices  */
+        BLOG_DECL(LINK_XMIT_FN)         /* Fetch device link transmit function*/
+        BLOG_DECL(LINK_NOCARRIER)       /* Fetch device link carrier          */
+        BLOG_DECL(BLOG_REQUEST_MAX)
+} BlogRequest_t;
+
+
+/*----- LinkType: First header type ------------------------------------------*/
+/* Used by network drivers to determine the Layer 1 encapsulation or LinkType */
+typedef enum {
+        BLOG_DECL(TYPE_ETH)             /* LAN: ETH, WAN: EoA, MER, PPPoE     */
+        BLOG_DECL(TYPE_PPP)             /*           WAN: PPPoA               */
+        BLOG_DECL(TYPE_IP)              /*           WAN: IPoA                */
+} BlogLinkType_t;
+
+
+/*
+ *------------------------------------------------------------------------------
+ * Clean this up.
+ *------------------------------------------------------------------------------
+ */
+
+#define BLOG_ENCAP_MAX          6       /* Maximum number of L2 encaps        */
+#define BLOG_HDRSZ_MAX          32      /* Maximum size of L2 encaps          */
+
+typedef enum {
+        BLOG_DECL(BCM_XPHY)             /* e.g. BLOG_XTMPHY, BLOG_GPONPHY     */
+        BLOG_DECL(BCM_SWC)              /* BRCM LAN Switch Tag/Header         */
+        BLOG_DECL(ETH_802x)             /* Ethernet                           */
+        BLOG_DECL(VLAN_8021Q)           /* Vlan 8021Q (incld stacked)         */
+        BLOG_DECL(PPPoE_2516)           /* PPPoE RFC 2516                     */
+        BLOG_DECL(PPP_1661)             /* PPP RFC 1661                       */
+        BLOG_DECL(L3_IPv4)              /* L3 IPv4                            */
+        BLOG_DECL(L3_IPv6)              /* L3 IPv6                            */
         BLOG_DECL(PROTO_MAX)
 } BlogEncap_t;
 
-                                            /* First encapsulation type */
-#define TYPE_ETH                    0x0000  /* LAN: ETH, WAN: EoA, MER, PPPoE */
-#define TYPE_PPP                    0x0001  /*           WAN: PPPoA */
-#define TYPE_IP                     0x0002  /*           WAN: IPoA */
 
-                                            /* Ethernet Encapsulations */
-#define TYPE_ETH_P_IP               0x0800  /* IPv4 in Ethernet */
-#define TYPE_ETH_P_IPV6             0x86DD  /* IPv6 in Ethernet */
-#define TYPE_ETH_P_8021Q            0x8100  /* VLAN in Ethernet */
-#define TYPE_ETH_P_8021AD           0x88A8
-#define TYPE_ETH_P_PPP_DIS          0x8863  /* PPPoE Discovery in Ethernet */
-#define TYPE_ETH_P_PPP_SES          0x8864  /* PPPoE Session in Ethernet */
-#define TYPE_ETH_P_BCM              0x8874  /* BCM Switch Hdr */
-#define TYPE_ETH_P_BCM2             0x888A  /* BCM Switch Hdr for ext switch */
-#define TYPE_ETH_P_MPLS_UC          0x8847  /* MPLS Unicast */
-#define TYPE_ETH_P_MPLS_MC          0x8848  /* MPLS Multicast */
-
-                                            /* PPP Encapsulations */
-#define TYPE_PPP_IP                 0x0021  /* IPv4 in PPP */
-#define TYPE_PPP_IPV6               0x0057  /* IPv6 in PPP */
-#define TYPE_PPP_IPCP               0x8021  /* PPP IP Control Protocol */
-#define TYPE_PPP_LCP                0xC021  /* PPP Link Control Protocol */
-#define TYPE_PPP_MP                 0x003D  /* PPP Multilink Protocol */
-#define TYPE_PPP_IPV6CP             0x8057  /* PPP IPv6 Control Protocol */
-#define TYPE_PPP_MPLSCP             0x80FD  /* PPP MPLS Control Protocol */
-#define TYPE_PPP_MPLS_UC            0x0281  /* PPP MPLS Unicast */
-#define TYPE_PPP_MPLS_MC            0x0283  /* PPP MPLS Multicast */
-
-
-typedef enum {
-        BLOG_DECL(PKT_DONE)         /* packet consumed and freed */
-        BLOG_DECL(PKT_NORM)         /* continue normal stack processing */
-        BLOG_DECL(PKT_BLOG)         /* continue stack with blogging */
-} BlogAction_t;
-
-typedef enum {
-        BLOG_DECL(BSTATS_CLR)
-        BLOG_DECL(BSTATS_NOCLR)
-} StatsClr_t;
-
-typedef enum {
-        BLOG_DECL(DIR_RX)           /* Receive path */
-        BLOG_DECL(DIR_TX)           /* Transmit path */
-        BLOG_DECL(DIR_MAX)
-} BlogDir_t;
-
-
-typedef enum {
-    BLOG_DECL(BLOG_EVENT_STOP)      /* Destruction of a flow */
-    BLOG_DECL(BLOG_EVENT_DTOS)      /* Dynamic tos change notification */
-    BLOG_DECL(BLOG_EVENT_MAX)
-} BlogEvent_t;
 
 /*
  *------------------------------------------------------------------------------
@@ -218,6 +482,12 @@ typedef enum {
         BLOG_DECL(RFC2684_MAX)
 } Rfc2684_t;
 
+
+/*
+ *------------------------------------------------------------------------------
+ * Denotes the type of physical interface and the presence of a preamble.
+ *------------------------------------------------------------------------------
+ */
 typedef enum {
     BLOG_DECL(BLOG_PHY_NONE)
     BLOG_DECL(BLOG_XTMPHY_LLC_SNAP_ETHERNET)
@@ -234,22 +504,16 @@ typedef enum {
     BLOG_DECL(BLOG_MAXPHY)
 } BlogPhy_t;
 
-/* Forward declarations */
-struct sk_buff;
-struct net_device;
-struct nf_conn;
-struct net_bridge_fdb_entry;
-struct blog_t;
-typedef struct blog_t Blog_t;
 
-struct fkbuff;  /* linux/nbuff.h */
 
-#define BLOG_NULL                   ((Blog_t*)NULL)
-
-/* RFC 4008 */
-extern uint32_t blog_nat_tcp_def_idle_timeout;
-extern uint32_t blog_nat_udp_def_idle_timeout;
-
+/*
+ *------------------------------------------------------------------------------
+ * Logging of a maximum 4 "virtual" network devices that a flow can traverse.
+ * Virtual devices are interfaces that do not perform the actual DMA transfer.
+ * E.g. an ATM interface would be referred to as a physical interface whereas
+ * a ppp interface would be referred to as a Virtual interface.
+ *------------------------------------------------------------------------------
+ */
 #define MAX_VIRT_DEV           4
 
 #define DEV_DIR_MASK           0x3u
@@ -264,10 +528,9 @@ extern uint32_t blog_nat_udp_def_idle_timeout;
  * Device pointer conversion between with and without embeded direction info
  *------------------------------------------------------------------------------
  */
-#define DEVP_APPEND_DIR(ptr,dir) \
-            ( (struct net_device *) ((uint32_t)(ptr)   | (uint32_t)(dir)) )
-#define DEVP_DETACH_DIR(ptr)       \
-            ( (struct net_device *) ((uint32_t)(ptr) & (uint32_t)DEV_PTR_MASK) )
+#define DEVP_APPEND_DIR(ptr,dir) ((void *)((uint32_t)(ptr) | (uint32_t)(dir)))
+#define DEVP_DETACH_DIR(ptr)     ((void *)((uint32_t)(ptr) & (uint32_t) \
+                                                              DEV_PTR_MASK))
 
 /*
  *------------------------------------------------------------------------------
@@ -275,70 +538,95 @@ extern uint32_t blog_nat_udp_def_idle_timeout;
  *------------------------------------------------------------------------------
  */
 typedef struct{
-    unsigned long	rx_packets;		/* total blog packets received	*/
-    unsigned long	tx_packets;		/* total blog packets transmitted	*/
-    unsigned long	rx_bytes;		/* total blog bytes received 	*/
-    unsigned long	tx_bytes;		/* total blog bytes transmitted	*/
-    unsigned long	multicast;		/* total blog multicast packets	*/
-}BlogStats_t;
+    unsigned long	rx_packets;		        /* total blog packets received	  */
+    unsigned long	tx_packets;		        /* total blog packets transmitted */
+    unsigned long	rx_bytes;		        /* total blog bytes received 	  */
+    unsigned long	tx_bytes;		        /* total blog bytes transmitted	  */
+    unsigned long	multicast;		        /* total blog multicast packets	  */
+} BlogStats_t;
+
+
+/*
+ *------------------------------------------------------------------------------
+ * Multicast Support for IPv4 and IPv6 Control
+ * See blog_support_mcast_g, and blog_support_mcast()
+ *------------------------------------------------------------------------------
+ */
+#define BLOG_MCAST_DISABLE          0
+#define BLOG_MCAST_IPV4             1
+#define BLOG_MCAST_IPV6             2
+
+
+/*
+ * =============================================================================
+ * CAUTION: OS and network stack may be built without CONFIG_BLOG defined.
+ * =============================================================================
+ */
 
 #if defined(CONFIG_BLOG)
 
-/* LAB ONLY: Design development */
-// #define CC_CONFIG_BLOG_COLOR
-// #define CC_CONFIG_BLOG_DEBUG
+/*
+ *------------------------------------------------------------------------------
+ *
+ *              Section: Blog Conditional Compiles CC_BLOG_SUPPORT_...
+ *
+ * These conditional compiles are not controlled by a system wide build process.
+ * E.g. CONFIG_BLOG_MCAST is a system wide build configuration
+ *      CC_BLOG_SUPPORT_MCAST is a blog defined build configuration
+ *
+ * Do not use any CONFIG_ or CC_BLOG_SUPPORT_ in Blog_t structure definitions.
+ *
+ *------------------------------------------------------------------------------
+ */
 
-#define BLOG_ENCAP_MAX              6       /* Maximum number of L2 encaps */
-#define BLOG_HDRSZ_MAX              32      /* Maximum size of L2 encaps */
+/* LAB ONLY: Design development, uncomment to enable */
+/* #define CC_BLOG_SUPPORT_COLOR */
+/* #define CC_BLOG_SUPPORT_DEBUG */
 
-#define BLOG_ENET_MTU               1500    /* Initial minMtu value */
 
 /*
+ * -----------------------------------------------------------------------------
  * Engineering constants: Pre-allocated pool size 400 blogs Ucast+Mcast
  *
  * Extensions done in #blogs carved from a 2x4K page (external fragmentation)
- * IPv6: Blog size = 208, 8192/208 = 39 extension 80bytes internal fragmentation
- * IPv4: Blog size = 160, 8192/160 = 51 extension 32bytes internal fragmentation
+ * Blog size = 240, 8192/240 = 34 extension 32 internal fragmentation
  *
- * Number of extensions engineered to permit approximately another 400 blogs.
+ * Number of extensions engineered to permit approximately another 4096 blogs.
+ * -----------------------------------------------------------------------------
  */
-#define CC_SUPPORT_BLOG_EXTEND              /* Conditional compile            */
+#define CC_BLOG_SUPPORT_EXTEND              /* Conditional compile            */
 #define BLOG_POOL_SIZE_ENGG         400     /* Pre-allocated pool size        */
 
-#if defined(CONFIG_BLOG_IPV6)
-#define BLOG_EXTEND_SIZE_ENGG       39      /* Number of Blog_t per extension */
-#define BLOG_EXTEND_MAX_ENGG        10      /* Maximum extensions allowed     */
-#else
-#define BLOG_EXTEND_SIZE_ENGG       51      /* Number of Blog_t per extension */
-#define BLOG_EXTEND_MAX_ENGG         8      /* Maximum extensions allowed     */
-#endif
+#define BLOG_EXTEND_SIZE_ENGG       34      /* Number of Blog_t per extension */
+#define BLOG_EXTEND_MAX_ENGG        120     /* Maximum extensions allowed    
+                                               includes up to 4096 flows      */
 
 
-/* Support blogging of multicast packets */
+/*
+ * -----------------------------------------------------------------------------
+ * Support blogging of multicast packets.
+ *
+ * When Multicast support is enabled system wide, the default to be used may
+ * be set in CC_BLOG_SUPPORT_MCAST which gets saved in blog_support_mcast_g.
+ * One may change the default (at runtime) by invoking blog_support_mcast().
+ * -----------------------------------------------------------------------------
+ */
 #ifdef CONFIG_BLOG_MCAST
-#define CC_SUPPORT_BLOG_MCAST          1
+#define CC_BLOG_SUPPORT_MCAST        BLOG_MCAST_IPV4 + BLOG_MCAST_IPV6
 #else
-#define CC_SUPPORT_BLOG_MCAST          0
+#define CC_BLOG_SUPPORT_MCAST        BLOG_MCAST_DISABLE
 #endif
-extern int blog_mcast_g;
-extern void blog_mcast(int enable);
+extern int blog_support_mcast_g;
+extern void blog_support_mcast(int enable);
 
-typedef uint16_t hProto_t;
+/* To enable user filtering, see blog_filter(), invoked in blog_finit() */
+/* #define CC_BLOG_SUPPORT_USER_FILTER */
 
-struct bcmhdr {
-    uint32_t brcm_tag;
-    uint16_t h_proto;
-} __attribute__((packed));
-
-struct bcmhdr2 {
-    uint16_t brcm_tag;
-    uint16_t h_proto;
-} __attribute__((packed));
-
-
-extern const uint8_t rfc2684HdrLength[];
-extern const uint8_t rfc2684HdrData[][16];
-extern const char    * strRfc2684[];    /* for debug printing */
+/*
+ * -----------------------------------------------------------------------------
+ *                      Section: Definition of a Blog_t
+ * -----------------------------------------------------------------------------
+ */
 
 typedef struct {
     uint8_t             channel;        /* e.g. port number, txchannel, ... */
@@ -392,10 +680,9 @@ struct blogTuple_t {
 } ____cacheline_aligned;
 typedef struct blogTuple_t BlogTuple_t;
 
-#if defined(CONFIG_BLOG_IPV6)
 #define NEXTHDR_IPV4 IPPROTO_IPIP
 
-#define HDRS_IPinIP     (( 1 << L3_IPv4 ) | ( 1 << L3_IPv6 )) // 0xC0
+#define HDRS_IPinIP     (( 1 << L3_IPv4 ) | ( 1 << L3_IPv6 )) /* 0xC0 */
 #define RX_IPinIP(b)    (((b)->rx.info.hdrs & HDRS_IPinIP)==HDRS_IPinIP)
 #define TX_IPinIP(b)    (((b)->tx.info.hdrs & HDRS_IPinIP)==HDRS_IPinIP)
 #define RX_IPV6(b)      ((b)->rx.info.bmap.L3_IPv6)
@@ -469,9 +756,6 @@ typedef struct Ipv6ExtHdr {
     uint32_t    word1;
 } Ipv6ExtHdr_t; /* First Octet */
 
-#endif  /* defined(CONFIG_BLOG_IPV6) */
-
-
 /*
  *------------------------------------------------------------------------------
  * Buffer to log Layer 2 and IP Tuple headers.
@@ -483,8 +767,8 @@ struct blogHeader_t {
     BlogTuple_t         tuple;          /* L3+L4 IP Tuple log */
 
     union {
-        struct net_device * dev_p;
-        struct nf_conn    * ct_p;
+        void            * dev_p;        /* physical network device */
+        void            * ct_p;         /* Flow connection/session tracker */
     };
 
     union {
@@ -506,21 +790,20 @@ struct blogHeader_t {
 
 typedef struct blogHeader_t BlogHeader_t;           /* L2 and L3+4 tuple */
 
-/* Coarse key: L1, L3, L4 hash */
-union blogKey_t {
+/* Coarse hash key: L1, L3, L4 hash */
+union blogHash_t {
     uint32_t        match;
     struct {
-        uint8_t     hash;               /* Hash of Rx IP tuple */
         uint8_t     protocol;           /* IP protocol */
-
+        uint8_t     l1_channel;         /* L1 Tuple Channel */
         struct {
-            uint8_t channel;
-            uint8_t phy;
-        } l1_tuple;
+            uint16_t l1_phy:6;          /* L1 Tuple PHY */
+            uint16_t hash:10;           /* Hash of Rx IP tuple */
+        };
     };
 };
 
-typedef union blogKey_t BlogKey_t;
+typedef union blogHash_t BlogHash_t;
 
 /*
  *------------------------------------------------------------------------------
@@ -535,32 +818,140 @@ struct blog_t {
         struct blog_t   * blog_p;       /* Free list of Blog_t */
         struct sk_buff  * skb_p;        /* Associated sk_buff */
     };
-    BlogKey_t           key;            /* Coarse search key */
+    BlogHash_t          key;            /* Coarse hash search key */
     uint32_t            mark;           /* NF mark value on tx */
     uint32_t            priority;       /* Tx  priority */
 
-    struct net_bridge_fdb_entry * fdb_src;
-    struct net_bridge_fdb_entry * fdb_dst;
+    void                * fdb[2];       /* fdb_src and fdb_dst */
     int8_t              delta[MAX_VIRT_DEV];  /* octet delta info */
     uint32_t            minMtu;
 
     /* pointers to the devices which the flow goes thru */
-    struct net_device * virt_dev_p[MAX_VIRT_DEV];
+    void                * virt_dev_p[MAX_VIRT_DEV];
+
+    BlogTupleV6_t       tupleV6;        /* L3+L4 IP Tuple log */
 
     BlogHeader_t        tx;             /* Transmit path headers */
     BlogHeader_t        rx;             /* Receive path headers */
 
-#if defined(CONFIG_BLOG_IPV6)
-    BlogTupleV6_t       tupleV6;        /* L3+L4 IP Tuple log */
-#endif
-
+    uint32_t            reserved[3];
+    uint32_t            dev_xmit;
 } ____cacheline_aligned;
+
+
+extern const char       * strBlogAction[];
+extern const char       * strBlogEncap[];
+extern const char       * strRfc2684[];
+extern const uint8_t    rfc2684HdrLength[];
+extern const uint8_t    rfc2684HdrData[][16];
+
+
+#endif /* defined(CONFIG_BLOG) */
+
+/*
+ * -----------------------------------------------------------------------------
+ * Blog functional interface
+ * -----------------------------------------------------------------------------
+ */
 
 
 /*
  * -----------------------------------------------------------------------------
+ * Section 1. Extension of a packet context with a logging context
+ * -----------------------------------------------------------------------------
+ */
+
+#if defined(CONFIG_BLOG)
+#define blog_ptr(skb_p)         skb_p->blog_p
+#else
+#define blog_ptr(skb_p)         BLOG_NULL
+#endif
+
+/* When a pool is exhausted this function may be invoked to extend the pool. */
+uint32_t blog_extend( uint32_t num );
+
+/* Allocate or deallocate a Blog_t */
+Blog_t * blog_get(void);
+void     blog_put(Blog_t * blog_p);
+
+/* Allocate a Blog_t and associate with sk_buff or fkbuff */
+extern Blog_t * blog_skb(struct sk_buff  * skb_p);
+extern Blog_t * blog_fkb(struct fkbuff  * fkb_p);
+
+/* Clear association of Blog_t with sk_buff */
+extern Blog_t * blog_snull(struct sk_buff * skb_p);
+extern Blog_t * blog_fnull(struct fkbuff  * fkb_p);
+
+/* Clear association of Blog_t with sk_buff and free Blog_t object */
+extern void blog_free(struct sk_buff * skb_p);
+
+/* Disable further logging. Dis-associate with skb and free Blog object */
+extern void blog_skip(struct sk_buff * skb_p);
+
+/* Transfer association of a Blog_t object between two sk_buffs. */
+extern void blog_xfer(struct sk_buff * skb_p, const struct sk_buff * prev_p);
+
+/* Duplicate a Blog_t object for another skb. */
+extern void blog_clone(struct sk_buff * skb_p, const struct blog_t * prev_p);
+
+
+/*
+ *------------------------------------------------------------------------------
+ *  Section 2. Associating native OS or 3rd-party network constructs
+ *------------------------------------------------------------------------------
+ */
+
+extern void blog_link(BlogNetEntity_t entity_type, Blog_t * blog_p,
+                      void * net_p, uint32_t param1, uint32_t param2);
+
+/*
+ *------------------------------------------------------------------------------
+ * Section 3. Network construct and Blog client co-existence call backs
+ *------------------------------------------------------------------------------
+ */
+
+extern void blog_notify(BlogNotify_t event, void * net_p,
+                        uint32_t param1, uint32_t param2);
+
+extern uint32_t blog_request(BlogRequest_t event, void * net_p,
+                        uint32_t param1, uint32_t param2);
+
+/*
+ *------------------------------------------------------------------------------
+ * Section 4. Network end-point binding of Blog client
  *
- * Blog defines four hooks:
+ * If rx hook is defined,
+ *  blog_sinit(): initialize a fkb from skb, and pass to hook
+ *          if packet is consumed, skb is released.
+ *          if packet is blogged, the blog is associated with skb.
+ *  blog_finit(): pass to hook
+ *          if packet is to be blogged, the blog is associated with fkb.
+ *
+ * If tx hook is defined, invoke tx hook, dis-associate and free Blog_t
+ *------------------------------------------------------------------------------
+ */
+extern BlogAction_t blog_sinit(struct sk_buff *skb_p, void * dev_p,
+                             uint32_t encap, uint32_t channel, uint32_t phyHdr);
+
+extern BlogAction_t blog_finit(struct fkbuff *fkb_p, void * dev_p,
+                             uint32_t encap, uint32_t channel, uint32_t phyHdr);
+
+extern BlogAction_t blog_emit(void * nbuff_p, void * dev_p,
+                             uint32_t encap, uint32_t channel, uint32_t phyHdr);
+
+/*
+ * -----------------------------------------------------------------------------
+ * User defined filter invoked invoked in the rx hook. A user may override the
+ * Blog action defined by the client.
+ * -----------------------------------------------------------------------------
+ */
+extern BlogAction_t blog_filter(Blog_t * blog_p);
+
+/*
+ * -----------------------------------------------------------------------------
+ * Section 5. Binding Blog client applications:
+ *
+ * Blog defines three hooks:
  *
  *  RX Hook: If this hook is defined then blog_init() will pass the packet to
  *           the Rx Hook using the FkBuff_t context. L1 and encap information
@@ -572,162 +963,34 @@ struct blog_t {
  *           bound Tx hook.
  *
  *  NotifHook: When blog_notify is invoked, the bound hook is invoked. Based on
- *           event type the bound application may perform a custom action. E.g.
- *           Use Stop event, to stop associated traffic flow when a conntrack
- *           is destroyed. 
- *
- *  StatsHook: When blog_gstats() is invoked, the bound hook is invoked.
- *            Use of Stats hook to record statistics of associated traffic.
+ *           event type the bound Blog client may perform a custom action.
  *
  * -----------------------------------------------------------------------------
  */
-typedef BlogAction_t (* BlogHook_t)(void * fkb_skb_p, struct net_device * dev_p,
-                                    uint32_t encap, uint32_t blogKey);
-typedef void (* BlogNotify_t)(struct net_bridge_fdb_entry * fdb_p,
-                              struct nf_conn * ct_p, uint32_t event);
-typedef void (* BlogStFnc_t)(struct net_device * dev_p, BlogStats_t *stats, 
-                             StatsClr_t clr);
-extern void blog_bind(BlogHook_t rx_hook, BlogHook_t tx_hook,
-                      BlogStFnc_t stats_hook, BlogNotify_t xx_hook);
+typedef BlogAction_t (* BlogDevHook_t)(void * fkb_skb_p, void * dev_p,
+                                       uint32_t encap, uint32_t blogHash);
+
+typedef void (* BlogNotifyHook_t)(BlogNotify_t notification, void * net_p,
+                                  uint32_t param1, uint32_t param2);
+
+extern void blog_bind(BlogDevHook_t rx_hook,    /* Client Rx netdevice handler*/
+                      BlogDevHook_t tx_hook,    /* Client Tx netdevice handler*/
+                      BlogNotifyHook_t xx_hook  /* Client notification handler*/
+                     );
+
 
 /*
  * -----------------------------------------------------------------------------
- * Blog functional interface
+ * Section 6. Miscellanous
  * -----------------------------------------------------------------------------
  */
-
-/*
- *------------------------------------------------------------------------------
- * BLOG to Netfilter Conntrack interface for flows tracked by Netfilter.
- * Associate a nf_conn with an skb's blog object.
- * Associate a traffic flow key with each direction of a blogged conntrack.
- * - Down call blog_notify() invoked when a conntrack is destroyed.
- * - Up   call blog_time() invoke to refresh a conntrack.
- *------------------------------------------------------------------------------
- */
-
-/* Log a Netfilter Conntrack and events into a blog on nf_conntrack_in */
-extern void blog_nfct(struct sk_buff * skb_p, struct nf_conn * nfct_p);
-
-/* chech whether nf_conn helper is attached */
-extern int blog_has_helper( struct nf_conn * ct_p );
-
-/* Log a bridge forward info into a blog at br_handle_frame_finish */
-extern void blog_br_fdb(struct sk_buff * skb_p, 
-                        struct net_bridge_fdb_entry* fdb_src,
-                        struct net_bridge_fdb_entry* fdb_dst);
-/*
- * Bind a traffic flow to blogged conntrack using a 16bit traffic flow key.
- */
-extern void blog_flow(Blog_t * blog_p, uint32_t key);
-extern void blog_notify(struct net_bridge_fdb_entry * fdb_p,
-                        struct nf_conn * nfct_p, uint32_t event);
-/* Get the statistics of the associated traffic */
-extern void blog_gstats(struct net_device * dev_p, BlogStats_t *bstats_p, 
-                        StatsClr_t clr);
-
-/* Update the statistics of the associated traffic */
-extern void blog_pstats(struct net_device * dev_p, BlogStats_t *bstats_p ); 
-
-/* Refresh a blogged conntrack on behalf of associated traffic flow */
-extern void blog_time(Blog_t * blog_p);
-typedef void (*blog_refresh_t)(struct nf_conn * nfct, uint32_t ctinfo,
-                               struct sk_buff * skb_p,
-                               uint32_t jiffies, int do_acct);
-extern blog_refresh_t blog_refresh_fn;
-
-/* Refresh a blogged bridge forward entry on behalf of associated flow */
-extern void blog_refresh_br( Blog_t * blog_p );
-
-#define BLOG(skb_p, dir, encap, len, hdr_p)                         \
-        do {                                                        \
-            if ( skb_p->blog_p )                                    \
-                blog( skb_p, dir, encap, len, hdr_p );              \
-        } while(0)
-
-/* Debug display of enums */
-extern const char * strBlogAction[];
-extern const char * strBlogEncap[];
-
-#else   /* else ! defined(CONFIG_BLOG) */
-
-#define blog_nfct(skb, nfct)                    NULL_STMT
-#define blog_has_helper(blog, nfct)             NULL_STMT
-#define blog_refresh_br(blog)                   NULL_STMT
-#define blog_br_fdb(skb, fdb_src, fdb_dst)      NULL_STMT
-#define blog_flow(blog, key)                    NULL_STMT
-#define blog_notify(fdb,nfct,event)             NULL_STMT
-#define blog_time(blog)                         NULL_STMT
-#define blog_gstats(dev,stats,clr)              NULL_STMT
-#define blog_pstats(dev,stats)                  NULL_STMT
-
-#define BLOG(skb, dir, encap, len, hdr)         NULL_STMT
-
-#define blog_bind(rx_hook, tx_hook, stats_hook, xx_hook)  NULL_STMT
-
-#endif  /* ! defined(CONFIG_BLOG) */
-
-/* Free a Blog_t */
-void blog_put(Blog_t * blog_p);
-
-/* Allocate a Blog_t and associate with sk_buff or fkbuff */
-extern Blog_t * blog_fkb(struct fkbuff  * fkb_p);
-
-/* Clear association of Blog_t with sk_buff */
-extern Blog_t * blog_snull(struct sk_buff * skb_p);
-extern Blog_t * blog_fnull(struct fkbuff  * fkb_p);
-
-/* Clear association of Blog_t with sk_buff and free Blog_t object */
-extern void blog_free(struct sk_buff * skb_p);
-
-/* Dump a Blog_t object */
-extern void blog_dump(Blog_t * blog_p);
-
-/* Disable further logging. Dis-associate with skb and free Blog object */
-extern void blog_skip(struct sk_buff * skb_p);
-
-/*
- * Transfer association of a Blog_t object between two sk_buffs or from fkbuff.
- * May be used to implement transfer of Blog_t object from one sk_buff to
- * another, e.g. to permit Blogging when sk_buffs are cloned. Currently,
- * when an sk_buff is cloned, any associated non-multicast blog-t object 
- * is cleared and freed explicitly !!!
- */
-extern void blog_xfer(struct sk_buff * skb_p, const struct sk_buff * prev_p);
-
-/* Duplicate a Blog_t object for another skb. */
-extern void blog_clone(struct sk_buff * skb_p, const struct blog_t * prev_p);
-
-/*
- *------------------------------------------------------------------------------
- * If rx hook is defined,
- *  blog_sinit(): initialize a fkb from skb, and pass to hook
- *          if packet is consumed, skb is released.
- *          if packet is blogged, the blog is associated with skb.
- *  blog_finit(): pass to hook
- *          if packet is to be blogged, the blog is associated with fkb.
- *------------------------------------------------------------------------------
- */
-extern BlogAction_t blog_sinit(struct sk_buff *skb_p, struct net_device * dev_p,
-                             uint32_t encap, uint32_t channel, uint32_t phyHdr);
-extern BlogAction_t blog_finit(struct fkbuff *fkb_p, struct net_device * dev_p,
-                             uint32_t encap, uint32_t channel, uint32_t phyHdr);
-
-/*
- *------------------------------------------------------------------------------
- * If tx hook is defined, invoke tx hook, dis-associate and free Blog_t
- *------------------------------------------------------------------------------
- */
-extern BlogAction_t blog_emit(void * nbuff_p, struct net_device * dev_p,
-                             uint32_t encap, uint32_t channel, uint32_t phyHdr);
-
-/* Log devices which the flow goes through */
-extern void blog_dev(const struct sk_buff * skb_p, 
-                     const struct net_device * dev_p,
-                     BlogDir_t action, unsigned int length);
 
 /* Logging of L2|L3 headers */
 extern void blog(struct sk_buff * skb_p, BlogDir_t dir, BlogEncap_t encap,  
                  size_t len, void * data_p);
+
+/* Dump a Blog_t object */
+extern void blog_dump(Blog_t * blog_p);
+
 
 #endif /* defined(__BLOG_H_INCLUDED__) */

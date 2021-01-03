@@ -12,7 +12,7 @@
 # PARTICULAR PURPOSE.
 
 #
-#   $Id: Makefile,v 1.1.1.1 2010/06/24 19:07:15 denny Exp $
+#   $Id: Makefile,v 1.1.1.1 2010/06/14 22:47:22 tliu Exp $
 #
 #   Authors:
 #    Lars Fenneberg		<lf@elemental.net>	 

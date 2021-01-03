@@ -16,7 +16,7 @@
  * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * $Id: pppd.h,v 1.2.2.1 2011/02/25 16:58:04 yzhang Exp $
+ * $Id: pppd.h,v 1.3 2011/03/17 13:39:55 lzhang Exp $
  */
 
 /*
@@ -64,7 +64,10 @@
 #define MAXNAMELEN	256	/* max length of hostname or name for auth */
 #define MAXSECRETLEN	256	/* max length of password or secret */
 #define MAXSRVNAMELEN	256
-
+#ifdef AEI_VDSL_CUSTOMER_NCS
+#define MAXACNAMELEN    256
+extern char	pppoe_ac_name[];
+#endif
 #define IFC_PPP_SESSION_LEN         18          /**< pppoe session length */
 
 /*
@@ -648,9 +651,6 @@ extern void save_session_info(unsigned char *remote_addr, int sid);
 extern int get_sock_intf(const char *devnam);
 extern char oldsession[MAXPATHLEN];  /* Mac address and session ID of the previous session */
 extern char pppoe_srv_name[];
-#ifdef FOLLOW_TR098
-extern char pppoe_ac_name[];
-#endif
 extern int srvdisc;
 extern int setdevname_pppol2tp(const char *cp);
 extern int isPppL2tp;

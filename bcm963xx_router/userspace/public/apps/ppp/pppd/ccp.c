@@ -25,7 +25,7 @@
  * OR MODIFICATIONS.
  */
 
-#define RCSID	"$Id: ccp.c,v 1.1.1.1 2010/06/24 19:07:37 denny Exp $"
+#define RCSID	"$Id: ccp.c,v 1.1.1.1 2010/06/14 22:47:27 tliu Exp $"
 
 #include <stdlib.h>
 #include <string.h>

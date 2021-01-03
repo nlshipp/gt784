@@ -23,6 +23,9 @@
 
 /*
  * $Log: NCR5380.h,v $
+ * Revision 1.1.1.1  2010/06/14 22:49:13  tliu
+ *  broadcom SDK 4.6.2
+ *
  */
 
 #ifndef NCR5380_H

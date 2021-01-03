@@ -53,6 +53,10 @@
 #include <net/net_namespace.h>
 #include <net/netns/generic.h>
 
+#if defined(CONFIG_MIPS_BRCM)
+#include <linux/blog.h>
+#endif
+
 #define PPP_VERSION	"2.4.2"
 
 /*
@@ -579,6 +583,8 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	struct npioctl npi;
 	int unit, cflags;
 	struct slcompress *vj;
+        char real_dev_name[IFNAMSIZ];
+        struct net_device *real_dev;
 	void __user *argp = (void __user *)arg;
 	int __user *p = argp;
 
@@ -659,6 +665,32 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			break;
 		ppp->mru = val;
 		err = 0;
+		break;
+
+	case PPPIOCSREALDEV:
+                copy_from_user(real_dev_name, argp, IFNAMSIZ);
+                real_dev_name[IFNAMSIZ-1] = '\0'; /* NULL terminate, just in case */
+
+                real_dev = dev_get_by_name(&init_net, real_dev_name);
+                if(real_dev == NULL)
+                {
+                    printk(KERN_ERR "PPP: Invalid Real Device Name : %s\n", real_dev_name);
+                    err = -EINVAL;
+                    break;
+                }
+
+                err = netdev_path_add(ppp->dev, real_dev);
+                if(err)
+                {
+                    printk(KERN_ERR "PPP: Failed to add %s to Interface path (%d)",
+                           ppp->dev->name, err);
+                }
+                else
+                {
+                    netdev_path_dump(ppp->dev);
+                }
+
+                dev_put(real_dev);
 		break;
 
 	case PPPIOCSFLAGS:
@@ -1011,8 +1043,7 @@ ppp_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	return 0;
 }
 
-#if defined(CONFIG_MIPS_BRCM)
-#ifdef CONFIG_BLOG
+#if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
 static inline BlogStats_t *ppp_dev_get_bstats(struct net_device *dev)
 {
 	struct ppp *ppp = netdev_priv(dev);
@@ -1041,7 +1072,9 @@ static struct net_device_stats * ppp_dev_collect_stats(struct net_device *dev_p)
 	bStats_p = ppp_dev_get_bstats(dev_p);
 
 	memset(&bStats, 0, sizeof(BlogStats_t));
-	blog_gstats(dev_p, &bStats, BSTATS_NOCLR);
+
+	blog_notify(FETCH_NETIF_STATS, (void*)dev_p,
+				(uint32_t)&bStats, BLOG_PARAM1_NO_CLEAR);
 
 	memcpy( cStats_p, dStats_p, sizeof(struct net_device_stats) );
 	cStats_p->rx_packets += ( bStats.rx_packets + bStats_p->rx_packets );
@@ -1085,15 +1118,15 @@ static void ppp_dev_clear_stats(struct net_device * dev_p)
 	cStats_p = ppp_dev_get_cstats(dev_p); 
 	bStats_p = ppp_dev_get_bstats(dev_p);
 
-	blog_gstats(dev_p, NULL, BSTATS_CLR);
+	blog_notify(FETCH_NETIF_STATS, (void*)dev_p, 0, BLOG_PARAM1_DO_CLEAR);
+
 	memset(bStats_p, 0, sizeof(BlogStats_t));
 	memset(dStats_p, 0, sizeof(struct net_device_stats));
 	memset(cStats_p, 0, sizeof(struct net_device_stats));
 
 	return;
 }
-#endif
-#endif
+#endif	/* defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG) */
 
 static int
 ppp_net_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
@@ -1155,6 +1188,7 @@ static void ppp_setup(struct net_device *dev)
 	dev->tx_queue_len = 3;
 	dev->type = ARPHRD_PPP;
 	dev->flags = IFF_POINTOPOINT | IFF_NOARP | IFF_MULTICAST;
+        dev->priv_flags = IFF_PPP;
 	dev->features |= NETIF_F_NETNS_LOCAL;
 #ifdef CONFIG_BLOG
 	dev->put_stats = ppp_dev_update_stats;
@@ -1337,7 +1371,7 @@ ppp_send_frame(struct ppp *ppp, struct sk_buff *skb)
 	}
 
 #if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
-	blog_dev( skb, ppp->dev, DIR_TX, skb->len - 2 );
+	blog_link(IF_DEVICE, blog_ptr(skb), (void*)ppp->dev, DIR_TX, skb->len - 2 );
 #endif
 
 	++ppp->dev->stats.tx_packets;
@@ -1935,7 +1969,7 @@ ppp_receive_nonmp_frame(struct ppp *ppp, struct sk_buff *skb)
 	}
 
 #if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
-	blog_dev( skb, ppp->dev, DIR_RX, skb->len - 2 );
+	blog_link(IF_DEVICE, blog_ptr(skb), (void*)ppp->dev, DIR_RX, skb->len - 2 );
 #endif
 
 	++ppp->dev->stats.rx_packets;
@@ -2928,6 +2962,7 @@ init_ppp_file(struct ppp_file *pf, int kind)
 static void ppp_shutdown_interface(struct ppp *ppp)
 {
 	struct ppp_net *pn;
+        int err;
 
 	pn = ppp_pernet(ppp->ppp_net);
 	mutex_lock(&pn->all_ppp_mutex);
@@ -2935,6 +2970,13 @@ static void ppp_shutdown_interface(struct ppp *ppp)
 	/* This will call dev_close() for us. */
 	ppp_lock(ppp);
 	if (!ppp->closing) {
+                err = netdev_path_remove(ppp->dev);
+                if(err)
+                {
+                    printk(KERN_ERR "PPP: Failed to remove %s from Interface path (%d)",
+                           ppp->dev->name, err);
+                    netdev_path_dump(ppp->dev);
+                }
 		ppp->closing = 1;
 		ppp_unlock(ppp);
 		unregister_netdev(ppp->dev);

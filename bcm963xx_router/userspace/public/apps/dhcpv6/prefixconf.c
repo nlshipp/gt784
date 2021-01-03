@@ -60,16 +60,11 @@
 #include "timer.h"
 #include "dhcp6c_ia.h"
 #include "prefixconf.h"
-#ifndef AEI_CONTROL_LAYER
+
 // brcm
 #include "cms_msg.h"
 extern void *msgHandle;
-#else
-#include "tsl_common.h"
-#include "ctl_msg.h"
-#include "dbussend_msg.h"
-extern dbussend_hdl_st *ctlMsgHandle;
-#endif
+
 TAILQ_HEAD(siteprefix_list, siteprefix);
 struct iactl_pd {
 	struct iactl common;
@@ -127,15 +122,12 @@ static int add_ifprefix __P((struct siteprefix *,
 
 extern struct dhcp6_timer *client6_timo __P((void *));
 static int pd_ifaddrconf __P((ifaddrconf_cmd_t, struct dhcp6_ifprefix *ifpfx));
-#ifndef AEI_CONTROL_LAYER
+
 #if 1 //brcm
 static void sendPrefixEventMessage __P((ifaddrconf_cmd_t, struct siteprefix *));
 extern Dhcp6cStateChangedMsgBody dhcp6cMsgBody;
 #endif
-#else
-static void sendPrefixEventMessage __P((ifaddrconf_cmd_t, struct siteprefix *));
-extern CtlDhcp6cStateChangedMsgBody ctldhcp6cMsgBody;
-#endif
+
 int
 update_prefix(ia, pinfo, pifc, dhcpifp, ctlp, callback)
 	struct ia *ia;
@@ -933,7 +925,7 @@ int bcmSystemEx(char *command, int printFlag)
 
 }  /* End of bcmSystemEx() */
 
-#ifndef AEI_CONTROL_LAYER
+
 inline void sendPrefixEventMessage(ifaddrconf_cmd_t cmd, struct siteprefix *sp)
 {
    dhcp6cMsgBody.prefixAssigned = TRUE;
@@ -946,18 +938,5 @@ inline void sendPrefixEventMessage(ifaddrconf_cmd_t cmd, struct siteprefix *sp)
    return;
 }  /* End of sendPrefixEventMessage() */
 
-#else
-inline void sendPrefixEventMessage(ifaddrconf_cmd_t cmd, struct siteprefix *sp)
-{
-   ctldhcp6cMsgBody.prefixAssigned = TSL_B_TRUE;
-   ctldhcp6cMsgBody.prefixCmd      = cmd;
-   sprintf(ctldhcp6cMsgBody.sitePrefix, "%s/%d", in6addr2str(&sp->prefix.addr, 0), sp->prefix.plen);
-   ctldhcp6cMsgBody.prefixPltime = sp->prefix.pltime;
-   ctldhcp6cMsgBody.prefixVltime = sp->prefix.vltime;
-
-   dprintf(LOG_NOTICE, FNAME, "DHCP6C_PREFIX_CHANGED");
-   return;
-}  /* End of sendPrefixEventMessage() */
-#endif
 #endif
 

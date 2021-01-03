@@ -129,7 +129,7 @@ old_postuninstall_cmds=""
 LTCC="gcc"
 
 # LTCC compiler flags.
-LTCFLAGS="  -O2 -DGNU -I/opt/bcm963xx/bcmdrivers/opensource/include/bcm963xx -I/opt/bcm963xx/shared/opensource/include/bcm963xx -I."
+LTCFLAGS="  -O2 -DGNU -I/home/xxia/sdk6/TDS/bcm462/bcmdrivers/opensource/include/bcm963xx -I/home/xxia/sdk6/TDS/bcm462/shared/opensource/include/bcm963xx -I."
 
 # Take the output of nm and produce a listing of raw symbols and C names.
 global_symbol_pipe="sed -n -e 's/^.*[	 ]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[	 ][	 ]*\\([_A-Za-z][_A-Za-z0-9]*\\)\$/\\1 \\2 \\2/p'"
@@ -213,10 +213,10 @@ finish_eval=""
 hardcode_into_libs=yes
 
 # Compile-time system search path for libraries.
-sys_lib_search_path_spec="/usr/lib/gcc/i386-redhat-linux/4.3.0 /usr/lib /lib"
+sys_lib_search_path_spec="/usr/lib/gcc/i686-redhat-linux/4.6.0 /usr/lib /lib"
 
 # Run-time system search path for libraries.
-sys_lib_dlsearch_path_spec="/lib /usr/lib /usr/lib/mysql /usr/lib/qt-3.3/lib /usr/lib/tcl8.5 /usr/lib/xulrunner-1.9pre "
+sys_lib_dlsearch_path_spec="/lib /usr/lib /usr/lib/atlas /usr/lib/xulrunner-2 "
 
 # Whether dlopen is supported.
 dlopen_support=unknown
@@ -254,7 +254,7 @@ wl="-Wl,"
 pic_flag=" -fPIC -DPIC"
 
 # Compiler flag to prevent dynamic linking.
-link_static_flag="-static"
+link_static_flag=""
 
 # Does compiler simultaneously support -c and -o options?
 compiler_c_o="yes"

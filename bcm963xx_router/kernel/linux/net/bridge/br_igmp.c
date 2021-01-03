@@ -209,7 +209,8 @@ int br_igmp_mc_fdb_add(struct net_bridge *br,
 	spin_unlock_bh(&br->mcl_lock);
 
 #if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
-	blog_notify(NULL, NULL, BLOG_EVENT_STOP);
+	blog_notify(MCAST_CONTROL_EVT, (void*)mc_fdb,
+				BLOG_PARAM1_MCAST_ADD, BLOG_PARAM2_MCAST_IPV4);
 #endif
 
 	if (!br->start_timer) {
@@ -247,10 +248,11 @@ void br_igmp_mc_fdb_remove_grp(struct net_bridge *br, struct net_bridge_port *pr
 	list_for_each_entry_rcu(dst, &br->mc_list, list) {
 	    if ((dst->grp.s_addr == grp->s_addr) && (dst->dst == prt)) {
 		list_del_rcu(&dst->list);
-		kfree(dst);
 #if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
-		blog_notify(NULL, NULL, BLOG_EVENT_STOP);
+		blog_notify(MCAST_CONTROL_EVT, (void*)dst,
+					BLOG_PARAM1_MCAST_DEL, BLOG_PARAM2_MCAST_IPV4);
 #endif
+		kfree(dst);
 	    }
 	}
 	rcu_read_unlock();
@@ -274,12 +276,12 @@ int br_igmp_mc_fdb_remove(struct net_bridge *br,
 	if ((mc_fdb = br_mc_fdb_get(br, prt, grp, rep, mode, src))) {
 	    spin_lock_bh(&br->mcl_lock);
 	    list_del_rcu(&mc_fdb->list);
+#if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
+		blog_notify(MCAST_CONTROL_EVT, (void*)mc_fdb,
+                    BLOG_PARAM1_MCAST_DEL, BLOG_PARAM2_MCAST_IPV4);
+#endif
 	    kfree(mc_fdb);
 	    spin_unlock_bh(&br->mcl_lock);
-#if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
-		blog_notify(NULL, NULL, BLOG_EVENT_STOP);
-#endif
-
 	    return 1;
 	}
 	
@@ -330,7 +332,7 @@ int br_igmp_mc_forward(struct net_bridge *br,
 		       return 0;
 		    }
 #if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
-			blog_clone(skb, skb2->blog_p);
+			blog_clone(skb, blog_ptr(skb2));
 #endif
 	                if(forward)
 			   br_forward(dst->dst, skb2);
@@ -351,7 +353,7 @@ int br_igmp_mc_forward(struct net_bridge *br,
 		       return 0;
 		    }
 #if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
-			blog_clone(skb, skb2->blog_p);
+			blog_clone(skb, blog_ptr(skb2));
 #endif
 	                if(forward)
 			   br_forward(dst->dst, skb2);
@@ -374,8 +376,12 @@ int br_igmp_mc_forward(struct net_bridge *br,
 	  }
 	}
 	rcu_read_unlock();
-
+#ifdef AEI_VDSL_CUSTOMER_NCS
+	/* fix some multicast joins are not forwarded and video does not come in */
+	if((!forward) && (status))
+#else
 	if((status) && (is_routed))
+#endif
 	   kfree_skb(skb);
 
 	return status;

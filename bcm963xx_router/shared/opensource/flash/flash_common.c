@@ -38,6 +38,7 @@
 #else // Linux
 #include <linux/kernel.h>
 #include "bcm_map_part.h"
+#include <linux/string.h>
 #endif
 
 #include "bcmtypes.h"
@@ -45,7 +46,10 @@
 #include "flash_api.h"
 #include "flash_common.h"
 
-// #define DEBUG_FLASH
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+#define DEBUG_FLASH
+FLASH_PARTITION_INFO fAuxFsInfo;
+#endif 
 
 void flash_init_info(const NVRAM_DATA *nvRam, FLASH_ADDR_INFO *fInfo)
 {
@@ -56,6 +60,13 @@ void flash_init_info(const NVRAM_DATA *nvRam, FLASH_ADDR_INFO *fInfo)
     int spStartAddr = 0;
     int usedBlkSize = 0;
     int needBytes = 0;
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+    int auxFsSize = 0;
+    int sBlk, eBlk;
+    int blkSize, sectSize;	/* Size of all blocks in a partition or 0 */
+    int totalPartSize;			/* Size in bytes for a partition */
+    unsigned long  offset;   	/* Offset calulations */
+#endif 
 
     if (flash_get_flash_type() == FLASH_IFC_NAND)
     {
@@ -225,6 +236,75 @@ void flash_init_info(const NVRAM_DATA *nvRam, FLASH_ADDR_INFO *fInfo)
         fInfo->flash_syslog_number_blk = 0;
     }
 
+#if defined(AEI_CONFIG_AUXFS_JFFS2)  //for AUXFS 
+
+   if ( (nvRam->ucAuxFSPercent != 0)
+    && (nvRam->ucAuxFSPercent <= MAX_AUXFS_PERCENT))
+    {
+        /* Estimate the Auxillary File System size */
+        auxFsSize = (totalSize * (int)nvRam->ucAuxFSPercent)/100;
+        
+        /* JFFS_AUXFS offset */
+        offset = totalSize - auxFsSize - flash_get_reserved_bytes_at_end(fInfo);
+		
+        sBlk = flash_get_blk(offset+FLASH_BASE);
+	  eBlk = fInfo->flash_meta_start_blk;
+
+	  /*
+         * Implementation Note:
+         * Ensure that we have even number of blocks for
+         * ROOTFS+KERNEL to support dual image booting
+        */
+        if ( ( (sBlk+1) < eBlk)
+          && ((((sBlk+1) - flash_get_blk(fInfo->flash_rootfs_start_offset + FLASH_BASE)) % 2) == 0))
+        {
+            sBlk += 1;	/* Round up */
+        }
+
+        blkSize = flash_get_sector_size(sBlk);
+        for ( i=sBlk+1, totalPartSize = blkSize; i<eBlk; i++)
+        {
+            sectSize = flash_get_sector_size(i);
+            if ( blkSize != sectSize ) blkSize = 0;
+            totalPartSize += sectSize;
+        }
+        fAuxFsInfo.sect_size = blkSize;
+        auxFsSize = totalPartSize;
+
+
+        printk("Flash split %d : AuxFS[%d]\n",
+               (int)nvRam->ucAuxFSPercent,auxFsSize );
+    }
+    else
+    {
+	/*
+	 * Implementation Note: When there is no AuxFS Partition.
+	 * Total number of rootfs/kernel blocks will always be ODD.
+	 * Option: Increase RESERVED section ??? but this would
+	 * decrease the space available for a single kernel image
+	 */
+        sBlk = eBlk = 0;
+        fAuxFsInfo.sect_size = 0;
+        auxFsSize = 0;
+        printk("Flash not used for Auxillary File System\n");
+     }
+
+
+	/*------------*/
+	/* JFFS_AUXFS */
+	/*------------*/
+
+    sprintf(fAuxFsInfo.name, "JFFS_AUXFS");
+    fAuxFsInfo.start_blk = sBlk;
+    fAuxFsInfo.number_blk = eBlk - sBlk;
+    fAuxFsInfo.blk_offset = 0;
+    fAuxFsInfo.total_len = auxFsSize;
+    fAuxFsInfo.mem_base = (unsigned long) flash_get_memptr( sBlk )
+                                   +  fAuxFsInfo.blk_offset;
+    fAuxFsInfo.mem_length = auxFsSize;
+    
+#endif
+
 #ifdef DEBUG_FLASH_TOO_MUCH
     /* dump sizes of all sectors in flash */
     for (i=0; i<totalBlks; i++)
@@ -256,8 +336,33 @@ void flash_init_info(const NVRAM_DATA *nvRam, FLASH_ADDR_INFO *fInfo)
     printk("fInfo->flash_persistent_number_blk = %d\n", fInfo->flash_persistent_number_blk);
     printk("fInfo->flash_persistent_length=0x%x\n", (unsigned int)fInfo->flash_persistent_length);
     printk("fInfo->flash_persistent_blk_offset = 0x%x\n\n", (unsigned int)fInfo->flash_persistent_blk_offset);
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+    printk("AuxFs.start_blk = %d\n",fAuxFsInfo.start_blk );
+    printk("AuxFs,number_blk = %d\n", fAuxFsInfo.number_blk);
+    printk("AuxFs.total_len = 0x%x\n",fAuxFsInfo.total_len);
+#endif 
 #endif
 }
+
+#if defined(AEI_CONFIG_AUXFS_JFFS2)
+void kerSysFlashPartInfoGet(PFLASH_PARTITION_INFO pflash_partition_info)
+{
+    memcpy((void*)pflash_partition_info,(const void*)(&fAuxFsInfo), sizeof(FLASH_PARTITION_INFO));
+}
+
+
+unsigned int flash_get_reserved_bytes_auxfs()
+{
+   if (flash_get_flash_type() == FLASH_IFC_NAND)
+   {
+        return 0;
+   }
+   else 
+   {
+       return fAuxFsInfo.total_len;
+   }
+}
+#endif 
 
 unsigned int flash_get_reserved_bytes_at_end(const FLASH_ADDR_INFO *fInfo)
 {

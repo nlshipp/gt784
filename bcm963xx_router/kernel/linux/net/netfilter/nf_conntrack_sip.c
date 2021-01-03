@@ -384,6 +384,7 @@ static int process_connection(struct sk_buff *skb, unsigned int protoff,
 	if ((len = parse_addr(&p, *dptr+*dlen, &a)) == 0)
 		goto err;
 	pr_debug("nf_conntrack_sip: connection=%.*s\n", len, p);
+
 	*addr = a;
 	
 	/* We care only LAN->WAN situations */

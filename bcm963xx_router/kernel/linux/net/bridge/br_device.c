@@ -19,13 +19,15 @@
 #include <asm/uaccess.h>
 #include "br_private.h"
 
-#if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BR_IGMP_SNOOP)
+#if defined(CONFIG_MIPS_BRCM)
+#include <linux/blog.h>
+#if defined(CONFIG_BR_IGMP_SNOOP)
 #include "br_igmp.h"
 #endif
-#if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BR_MLD_SNOOP)
+#if defined(CONFIG_BR_MLD_SNOOP)
 #include "br_mld.h"
 #endif
-
+#endif
 
 static struct net_device_stats *br_dev_get_stats(struct net_device *dev)
 {
@@ -65,7 +67,9 @@ static struct net_device_stats * br_dev_collect_stats(struct net_device *dev_p)
 	bStats_p = br_dev_get_bstats(dev_p);
 
 	memset(&bStats, 0, sizeof(BlogStats_t));
-	blog_gstats(dev_p, &bStats, BSTATS_NOCLR);
+
+	blog_notify(FETCH_NETIF_STATS, (void*)dev_p,
+				(uint32_t)&bStats, BLOG_PARAM1_NO_CLEAR);
 
 	memcpy( cStats_p, dStats_p, sizeof(struct net_device_stats) );
 	cStats_p->rx_packets += ( bStats.rx_packets + bStats_p->rx_packets );
@@ -109,7 +113,8 @@ static void br_dev_clear_stats(struct net_device * dev_p)
 	cStats_p = br_dev_get_cstats(dev_p); 
 	bStats_p = br_dev_get_bstats(dev_p);
 
-	blog_gstats(dev_p, NULL, BSTATS_CLR);
+    blog_notify(FETCH_NETIF_STATS, (void*)dev_p, 0, BLOG_PARAM1_DO_CLEAR);
+
 	memset(bStats_p, 0, sizeof(BlogStats_t));
 	memset(dStats_p, 0, sizeof(struct net_device_stats));
 	memset(cStats_p, 0, sizeof(struct net_device_stats));
@@ -126,7 +131,7 @@ int br_dev_xmit(struct sk_buff *skb, struct net_device *dev)
 	struct net_bridge_fdb_entry *dst;
 
 #if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
-	blog_dev( skb, dev, DIR_TX, skb->len );
+    blog_link(IF_DEVICE, blog_ptr(skb), (void*)dev, DIR_TX, skb->len);
 #endif
 
 	dev->stats.tx_packets++;

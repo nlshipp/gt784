@@ -1,4 +1,4 @@
-/* $Id: termbits.h,v 1.1 2000/07/10 16:32:31 bjornw Exp $ */
+/* $Id: termbits.h,v 1.1.1.1 2010/06/14 22:48:58 tliu Exp $ */
 
 #ifndef __ARCH_ETRAX100_TERMBITS_H__
 #define __ARCH_ETRAX100_TERMBITS_H__

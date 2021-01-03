@@ -78,23 +78,11 @@
 #include <dhcp6c_ia.h>
 #include <prefixconf.h>
 #include <auth.h>
-#ifndef AEI_CONTROL_LAYER
+
 // brcm
 #include "cms_msg.h"
 Dhcp6cStateChangedMsgBody dhcp6cMsgBody;
 void *msgHandle=NULL;
-#else
-#include "tsl_common.h"
-#include "ctl_msg.h"
-#include "dbussend_msg.h"
-
-CtlDhcp6cStateChangedMsgBody ctldhcp6cMsgBody;
-static dbussend_hdl_st *ctlMsgHandle=NULL;
-#endif
-#define AEI_RENEW_OLD_PD 
-#ifdef AEI_RENEW_OLD_PD
-static int iReq = 1;
-#endif
 
 static int debug = 0;
 static int exit_ok = 0;
@@ -237,12 +225,8 @@ main(argc, argv)
 
 	setloglevel(debug);
 
-#ifndef AEI_CONTROL_LAYER
    //brcm
    cmsMsg_init(EID_DHCP6C, &msgHandle);
-#else
-	ctlMsgHandle = dbussend_init(); 
-#endif
    ifname_info = argv[0];
 
    cmsUtl_strncpy(brcm_ifname, ifname_info, sizeof(brcm_ifname));
@@ -310,14 +294,8 @@ client6_init()
 
 	/* get our DUID */
 	if (get_duid(DUID_FILE, &client_duid, l2_ifname)) {
-#ifdef AEI_CONTROL_LAYER
-		if (get_duid(DUID_FILE, &client_duid, "br0")) {
-#endif
-			dprintf(LOG_ERR, FNAME, "failed to get a DUID");
-			exit(1);
-#ifdef AEI_CONTROL_LAYER
-		}
-#endif
+		dprintf(LOG_ERR, FNAME, "failed to get a DUID");
+		exit(1);
 	}
 
 	if (dhcp6_ctl_authinit(ctlkeyfile, &ctlkey, &ctldigestlen) != 0) {
@@ -1339,13 +1317,6 @@ client6_send(ev)
 				    "failed to add an IAPD");
 				goto end;
 			}
-#ifdef AEI_RENEW_OLD_PD
-			if(iReq==1 && dh6->dh6_msgtype == DH6_REQUEST)
-			{
-				iReq=2;
-				dh6->dh6_msgtype = DH6_RENEW;
-			}			
-#endif
 			break;
 		case DHCP6_EVDATA_IANA:
 			if (dhcp6_copy_list(&optinfo.iana_list,
@@ -1528,24 +1499,21 @@ client6_recv()
 		return;
 	}
 
-#if 0 //defined ( AEI_IPV6_DEPLOY )
+#if defined ( AEI_IPV6_DEPLOY )
 	/* ip route add ::/0 via fe80::213:72ff:fe8d:d674 dev ewan0 */
 	const char cmd_ip_route[ 1024 ] = { 0 };
 #endif /* AEI_IPV6_DEPLOY */
 
 	switch(dh6->dh6_msgtype) {
 	case DH6_ADVERTISE:
-#if 0 //defined ( AEI_IPV6_DEPLOY )
+#if defined ( AEI_IPV6_DEPLOY )
     /* Change default route to use ewan0.1, @ 2010-11-15 09:08:49, Mon */
     /* sprintf( cmd_ip_route, "ip route add ::/0 via %s dev ewan0", addr2str((struct sockaddr *)&from) ); */
     /* ewan0.1 as default route dont work? */
     sprintf( cmd_ip_route, "ip route add ::/0 via %s dev ewan0.1", addr2str((struct sockaddr *)&from) );
     system( cmd_ip_route );
 #endif /* AEI_IPV6_DEPLOY */
-#ifdef AEI_CONTROL_LAYER
-		ctldhcp6cMsgBody.defaultGWAssigned = TSL_B_TRUE;
-		strcpy(ctldhcp6cMsgBody.defaultGW, addr2str((struct sockaddr *)&from));
-#endif
+
 		(void)client6_recvadvert(ifp, dh6, len, &optinfo);
 		break;
 	case DH6_REPLY:
@@ -1983,11 +1951,7 @@ client6_recvreply(ifp, dh6, len, optinfo)
 //Now, we should finish updating prefix, addr, and dns info
 //send the message to smd now.
 	sendDhcp6cEventMessage();
-#ifndef AEI_CONTROL_LAYER
 	memset(&dhcp6cMsgBody, 0, sizeof(Dhcp6cStateChangedMsgBody));
-#else
-	memset(&ctldhcp6cMsgBody, 0, sizeof(CtlDhcp6cStateChangedMsgBody));
-#endif
 
 	dhcp6_remove_event(ev);
 
@@ -2247,7 +2211,7 @@ info_printf(const char *fmt, ...)
 
 	return;
 }
-#ifndef AEI_CONTROL_LAYER
+
 #if 1 //brcm
 #if 0
 const char *f_ip6Dns     = "/var/ip6dns";
@@ -2532,70 +2496,4 @@ void sendDhcp6cEventMessage(void)
    return;
 
 }  /* End of sendDhcp6cEventMessage() */
-#endif
-
-#else
-
-int updateDhcp6sConfDnsList(struct dhcp6_optinfo *opt)
-{
-   struct dhcp6_listval *d;
-   char   nameserver[BUFLEN_128];
-
-   d = TAILQ_FIRST(&opt->dns_list);
-   if (d != NULL)
-   {
-      sprintf(nameserver, "%s", in6addr2str(&d->val_addr6, 0));
-   }
-   d = TAILQ_NEXT(d, link);
-   if (d != NULL)
-   {
-      strcat(nameserver, ",");
-      strcat(nameserver, in6addr2str(&d->val_addr6, 0));
-   }
-   
-   sendDnsEventMessage(nameserver);
-
-   return 0;
-
-}  /* End of updateDhcp6sConfDnsList() */
-
-void sendDnsEventMessage(const char *nameserver)
-{
-	ctldhcp6cMsgBody.dnsAssigned = TSL_B_TRUE;
-	strcpy(ctldhcp6cMsgBody.nameserver, nameserver);
-
-	dprintf(LOG_NOTICE, FNAME, "DHCP6C_DNS_CHANGED");
-
-	return;
-
-}  /* End of sendDnsEventMessage() */
-
-void sendDhcp6cEventMessage(void)
-{
-
-   char buf[sizeof(int) + sizeof(CtlDhcp6cStateChangedMsgBody)]={0};
-   CtlMsgHeader *msg=(CtlMsgHeader *) buf;
-   CtlDhcp6cStateChangedMsgBody *dhcp6cBody = (CtlDhcp6cStateChangedMsgBody *) (msg->buffer);
-
-   if (!ctlMsgHandle) {
-	   tsl_printf("dbussend_init fail\n");
-	   return -1;
-   }
-   
-   memcpy(dhcp6cBody, &ctldhcp6cMsgBody, sizeof(CtlDhcp6cStateChangedMsgBody));
-   msg->data_length=sizeof(int) + sizeof(CtlDhcp6cStateChangedMsgBody);
-    if (dbussend_sendmsg(ctlMsgHandle, CTL_MSG_TYPE(CTL_MSG_DHCP6C_STATE_CHANGED), NULL, msg, sizeof(CtlDhcp6cStateChangedMsgBody)) < 0)
-   {
-	   tsl_printf("could not send out DHCP6C_STATUS_CHANGED\n");
-	   dbussend_uninit(ctlMsgHandle);
-	   return -1;
-   }else
-   {
-		tsl_printf("sent out DHCP6C_STATUS_CHANGED\n");
-   }
-
-   return;
-
-}  /* End of sendDhcp6cEventMessage() */
-
 #endif

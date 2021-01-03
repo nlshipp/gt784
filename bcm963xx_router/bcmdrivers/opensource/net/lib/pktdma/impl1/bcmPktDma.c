@@ -23,12 +23,16 @@
  */
 
 #include <linux/module.h>
+#include <linux/skbuff.h>
 
 #include "bcmtypes.h"
 #include "fap_task.h"
 #include "bcmPktDmaHooks.h"
 
 bcmPktDma_hostHooks_t bcmPktDma_hostHooks_g;
+/* Add code for buffer quick free between enet and xtm - June 2010 */
+static RecycleFuncP   bcmPktDma_enet_recycle_hook = NULL;
+static RecycleFuncP   bcmPktDma_xtm_recycle_hook = NULL;
 
 static void initHostHooks(void)
 {
@@ -59,6 +63,27 @@ void bcmPktDma_unbind(void)
     initHostHooks();
 }
 
+/* Add code for buffer quick free between enet and xtm - June 2010 */
+void bcmPktDma_set_enet_recycle(RecycleFuncP enetRecycle)
+{
+    bcmPktDma_enet_recycle_hook = enetRecycle;
+}
+
+RecycleFuncP bcmPktDma_get_enet_recycle(void)
+{
+    return(bcmPktDma_enet_recycle_hook);
+}
+
+void bcmPktDma_set_xtm_recycle(RecycleFuncP xtmRecycle)
+{
+    bcmPktDma_xtm_recycle_hook = xtmRecycle;
+}
+
+RecycleFuncP bcmPktDma_get_xtm_recycle(void)
+{
+    return(bcmPktDma_xtm_recycle_hook);
+}
+
 int __init bcmPktDma_init(void)
 {
     printk("%s: Broadcom Packet DMA Library initialized\n", __FUNCTION__);
@@ -78,3 +103,7 @@ module_exit(bcmPktDma_exit);
 
 EXPORT_SYMBOL(bcmPktDma_bind);
 EXPORT_SYMBOL(bcmPktDma_unbind);
+EXPORT_SYMBOL(bcmPktDma_set_enet_recycle);
+EXPORT_SYMBOL(bcmPktDma_get_enet_recycle);
+EXPORT_SYMBOL(bcmPktDma_set_xtm_recycle);
+EXPORT_SYMBOL(bcmPktDma_get_xtm_recycle);

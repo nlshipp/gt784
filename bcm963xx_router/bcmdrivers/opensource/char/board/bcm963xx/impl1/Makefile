@@ -7,7 +7,7 @@ obj-y := board.o bcm63xx_flash.o bcm63xx_led.o
 ifeq ($(strip $(BRCM_CHIP)),6816)
 obj-y += spidevices.o
 endif
-
+EXTRA_CFLAGS += $(ACTION_TEC_DFLAGS)
 ifneq ($(strip $(CONFIG_BCM_CPLD1)),)
     obj-y += bcmcpld1.o
 	EXTRA_CFLAGS += -DCONFIG_BCM_CPLD1

@@ -2622,6 +2622,25 @@
 	"\t\t(default 3 sec.)."
 
 
+#define traceroute6_trivial_usage \
+       "[-dnrv] [-m MAXTTL] [-p PORT] [-q PROBES]\n" \
+       "        [-s SRC_IP] [-t TOS] [-w WAIT_SEC] [-i IFACE]\n" \
+       "        HOST [BYTES]"
+#define traceroute6_full_usage "\n\n" \
+       "Trace the route to HOST\n" \
+     "\nOptions:" \
+     "\n        -d      Set SO_DEBUG options to socket" \
+     "\n        -n      Print numeric addresses" \
+     "\n        -r      Bypass routing tables, send directly to HOST" \
+     "\n        -v      Verbose" \
+     "\n        -m      Max time-to-live (max number of hops)" \
+     "\n        -p      Base UDP port number used in probes" \
+     "\n                (default is 33434)" \
+     "\n        -q      Number of probes per TTL (default 3)" \
+     "\n        -s      IP address to use as the source address" \
+     "\n        -t      Type-of-service in probe packets (default 0)" \
+     "\n        -w      Time in seconds to wait for a response (default 3)" \
+
 #define true_trivial_usage \
 	""
 #define true_full_usage \

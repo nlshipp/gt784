@@ -1,4 +1,4 @@
-/*	$Id: ifaddrs.c,v 1.1.1.1.2.1 2011/02/25 16:36:42 yzhang Exp $	*/
+/*	$Id: ifaddrs.c,v 1.1.1.1 2010/06/14 22:47:26 tliu Exp $	*/
 /* 	from USAGI: ifaddrs.c,v 1.20.2.1 2002/12/08 08:22:23 yoshfuji Exp */
 
 /* 

@@ -38,11 +38,7 @@ static CmsEntityInfo entityInfoArray[] = {
     NDA_ACCESS_TR69C, /* TR69 attribute access bit */
     "tr69c",          /* name */
     "/bin/tr69c",     /* path */
-#ifdef ACTION_TEC_TR69C 
-    "-o",               /* run args */
-#else
     "",               /* run args */
-#endif
     EIF_MDM|EIF_SERVER|EIF_SERVER_TCP|EIF_LAUNCH_ON_BOOT|EIF_MESSAGING_CAPABLE|EIF_DESKTOP_LINUX_CAPABLE,
     1,                /* backlog for TCP server port */
     TR69C_CONN_REQ_PORT,       /* TCP server port */
@@ -62,7 +58,7 @@ static CmsEntityInfo entityInfoArray[] = {
     0,
     TR64C_HTTP_CONN_PORT,
 #ifdef SUPPORT_TR64C
-    TRUE,             /* isFeatureCompiledIn */
+    TRUE,             /* isFeatureComp1ledIn */
 #else
     FALSE,            /* isFeatureCompiledIn */
 #endif
@@ -78,7 +74,7 @@ static CmsEntityInfo entityInfoArray[] = {
 #else
     EIF_MDM|EIF_SERVER|EIF_SERVER_TCP|EIF_MESSAGING_CAPABLE|EIF_DESKTOP_LINUX_CAPABLE,
 #endif
-    31,                /* backlog for TCP server port */
+    3,                /* backlog for TCP server port */
     HTTPD_PORT,       /* TCP server port */
 #ifdef SUPPORT_HTTPD
     TRUE,             /* isFeatureCompiledIn */
@@ -222,7 +218,7 @@ static CmsEntityInfo entityInfoArray[] = {
     0,
     0,
     TRUE,               /* isFeatureCompiledIn */
-    0, 0, 0},
+    0, 1, 0},
 
    {EID_SSK,
     0,
@@ -591,6 +587,20 @@ static CmsEntityInfo entityInfoArray[] = {
     TRUE,               /* isFeatureCompiledIn */
     0, 0, 0},           /* misc memory parameters */
 
+#if defined(DMP_TRACEROUTE_1)
+   {EID_TRACEROUTE,
+    0,                  
+    "traceroute",
+    "/usr/bin/traceroute",
+    "",                 /* run args */
+    EIF_MESSAGING_CAPABLE,  /* EIF_ flags */
+    0,                  /* backlog for TCP server port */
+    0,                  /* TCP/UDP server port */
+    TRUE,               /* isFeatureCompiledIn */
+    0, 0, 0},           /* misc memory parameters */
+
+#endif
+
    {EID_PWRCTL,
     0,
     "pwrctl",
@@ -718,7 +728,7 @@ static CmsEntityInfo entityInfoArray[] = {
 #endif
     0, 0, 0},
 
-   {EID_MCPD,
+   {	EID_MCPD,
     0,
     "mcpd",
     "/bin/mcpd",
@@ -743,6 +753,18 @@ static CmsEntityInfo entityInfoArray[] = {
     FALSE,            /* isFeatureCompiledIn */
 #endif
     0, 0, 0},
+#if defined(AEI_VDSL_CUSTOMER_NCS)
+   {EID_MYNETWORK,
+    0,
+    "mynetwork",
+    "/bin/mynetwork",
+    "",
+    EIF_MESSAGING_CAPABLE|EIF_LAUNCH_ON_BOOT|EIF_DESKTOP_LINUX_CAPABLE ,
+    0,
+    0,
+    TRUE,             /* isFeatureCompiledIn */
+    0, 0, 0},
+#endif
 
    {EID_PPTPD,
     0,
@@ -815,51 +837,126 @@ static CmsEntityInfo entityInfoArray[] = {
     TRUE,             /* isFeatureCompiledIn */
     0, 0, 0},
 
-#ifdef CUSTOMER_ACTIONTEC
-   {EID_MYNETWORK,
+#ifdef DMP_DOWNLOAD_1
+   {EID_TR143_DLD,
     0,
-    "mynetwork",
-    "/bin/mynetwork",
+    "tr143-dld",
+    "/bin/tr143",
     "",
-    EIF_MESSAGING_CAPABLE|EIF_LAUNCH_ON_BOOT|EIF_DESKTOP_LINUX_CAPABLE ,
+    EIF_MESSAGING_CAPABLE,
     0,
     0,
-    TRUE,             /* isFeatureCompiledIn */
+    TRUE,
     0, 0, 0},
 #endif
 
-#ifdef CUSTOMER_ACTIONTEC
-   {EID_ATMDETECTD,
+#ifdef DMP_UPLOAD_1
+   {EID_TR143_UPLD,
     0,
-    "atmdetectd",
-    "/bin/atmdetectd",
+    "tr143-upld",
+    "/bin/tr143",
     "",
-#if defined(CUSTOMER_QNCS) || defined (CUSTOMER_VERIZON)
-	 EIF_MESSAGING_CAPABLE,
-#else
-    EIF_MESSAGING_CAPABLE | EIF_LAUNCH_ON_BOOT, //|EIF_DESKTOP_LINUX_CAPABLE ,
+    EIF_MESSAGING_CAPABLE,
+    0,
+    0,
+    TRUE,
+    0, 0, 0},
 #endif
+
+#ifdef DMP_UDPECHO_1
+   {EID_TR143_ECHO,
+    0,
+    "tr143-echo",
+    "/bin/tr143",
+    "",
+    EIF_MESSAGING_CAPABLE,
     0,
     0,
-    TRUE,             /* isFeatureCompiledIn */
+    TRUE,
+    0, 0, 0},
+#endif
+
+#if defined (AEI_VDSL_SMARTLED)
+    {EID_INET_LED,
+    0,                  
+    "ledctl",
+    "/bin/ledctl",
+    "",                 /* run args */
+    EIF_MESSAGING_CAPABLE,  /* EIF_ flags */
+    0,                  /* backlog for TCP server port */
+    0,                  /* TCP/UDP server port */
+    TRUE,               /* isFeatureCompiledIn */
+    0, 0, 0},           /* misc memory parameters */
+
+   {EID_NSLOOKUP,
+    0,
+    "nslookup",
+    "/usr/bin/nslookup",
+    "",                 /* run args */
+    EIF_MESSAGING_CAPABLE,  /* EIF_ flags */
+    0,                  /* backlog for TCP server port */
+    0,                  /* TCP/UDP server port */
+    TRUE,               /* isFeatureCompiledIn */
+    0, 0, 0},         
+#endif
+
+#ifdef AEI_VDSL_HPNA
+   {EID_INHPNA,
+    0,
+    "inhpna",
+    "/bin/inhpna",
+    "-i eth4 -b br0",
+    EIF_LAUNCH_ON_BOOT | EIF_MESSAGING_CAPABLE,
+    0,
+    0,
+    TRUE,
     0, 0, 0},
 
+#ifdef AEI_VDSL_WT107
+   {EID_HPNA_NODESTATS,
+    0,
+    "hpna_nodestats",
+    "/bin/node_stats",
+    "",
+    EIF_MESSAGING_CAPABLE,
+    0,
+    0,
+    TRUE,
+    0, 0, 0},
+#endif
+#endif
+
+
+#if defined(AEI_VDSL_CUSTOMER_NCS)
 #ifdef SUPPORT_HTTPD_SSL
    {EID_HTTPSD,
     NDA_ACCESS_HTTPD,
     "httpd", /*combine httpsd with httpd process*/
     "/bin/httpd",
     "-s", //launch httpd with SSL support
+#if defined(DMP_X_BROADCOM_COM_IPV6_1) || defined(AEI_CONTROL_LAYER) /* aka SUPPORT_IPV6 */
+    EIF_MDM|EIF_SERVER|EIF_SERVER_TCP|EIF_MESSAGING_CAPABLE|EIF_DESKTOP_LINUX_CAPABLE|EIF_IPV6,
+#else
     EIF_MDM|EIF_SERVER|EIF_SERVER_TCP|EIF_MESSAGING_CAPABLE|EIF_DESKTOP_LINUX_CAPABLE,
+#endif
     3,                /* backlog for TCP server port */
     HTTPDS_PORT,       /* TCP server port */
     TRUE,             /* isFeatureCompiledIn */
     0, 0, 0},
-#endif/*SUPPORT_HTTPD_SSL*/
-
 #endif
-
-
+#endif 
+#if defined (AEI_VDSL_SMARTDMZ)
+   {EID_ARPING,
+    0,
+    "arping",
+    "/usr/bin/arping",
+    "",                 /* run args */
+    EIF_MESSAGING_CAPABLE,  /* EIF_ flags */
+    0,                  /* backlog for TCP server port */
+    0,                  /* TCP/UDP server port */
+    TRUE,               /* isFeatureCompiledIn */
+    0, 0, 0},         
+#endif
 #ifdef AEI_CONTROL_LAYER
    {EID_AEI_RTD,
     NDA_ACCESS_RTD, //NDA_ACCESS_WLAN,
@@ -871,6 +968,54 @@ static CmsEntityInfo entityInfoArray[] = {
     0,                /* backlog for TCP server port */
     0,
     TRUE,             /* isFeatureCompiledIn */
+    0, 0, 0},
+#endif
+#if defined(AEI_VDSL_DETECT_WAN_SERVICE)
+   {EID_DETECT_WAN_SERVICE,
+    0,
+    "detectWANService",
+    "/bin/detectWANService",
+    "",                 /* run args */
+   EIF_MESSAGING_CAPABLE|EIF_MULTIPLE_INSTANCES,  /* EIF_ flags */
+    0,                  /* backlog for TCP server port */
+    0,                  /* TCP/UDP server port */
+    TRUE,               /* isFeatureCompiledIn */
+    0, 0, 0},         
+#endif
+#if defined(AEI_VDSL_CUSTOMER_VIDEO_GUARANTEE)
+   {EID_CPU_MONITOR,
+    0,
+    "statd",
+    "/bin/statd",
+    "",                 /* run args */
+   EIF_MESSAGING_CAPABLE,  /* EIF_ flags */
+    0,                  /* backlog for TCP server port */
+    0,                  /* TCP/UDP server port */
+    TRUE,               /* isFeatureCompiledIn */
+    0, 0, 0},         
+   {EID_STATD,
+    NDA_ACCESS_TR69C,
+    "statd_cfg",
+    "/bin/statd_cfg",
+    "",                 /* run args */
+   EIF_MDM|EIF_MESSAGING_CAPABLE|EIF_DESKTOP_LINUX_CAPABLE,  /* EIF_ flags */
+    0,                  /* backlog for TCP server port */
+    0,                  /* TCP/UDP server port */
+    TRUE,               /* isFeatureCompiledIn */
+    0, 0, 0},         
+    
+#endif
+
+#ifdef AEI_VDSL_CUSTOMER_QWEST
+   {EID_TSTATS,
+    0,
+    "tstats",
+    "/bin/tstats",
+    "",
+    EIF_MESSAGING_CAPABLE,
+    0,
+    0,
+    TRUE,
     0, 0, 0},
 #endif
 };

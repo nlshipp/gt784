@@ -29,6 +29,9 @@
 #include <net/netfilter/nf_conntrack.h>
 #include <net/netfilter/nf_conntrack_core.h>
 #include "skb_defines.h"
+#if defined(CONFIG_MIPS_BRCM)
+#include <linux/blog.h>
+#endif
 
 #if 0
 
@@ -274,8 +277,10 @@ static unsigned int nf_dyntos_in(unsigned int hooknum,
 						 */
 
 						if(ip_hdr(skb)->protocol == IPPROTO_UDP){
-							 blog_notify(NULL, ct, BLOG_EVENT_DTOS);  
-							 DEBUG_TOS(("%s:blog_notify:EVENT_DTOS for\n",__FUNCTION__));
+
+							blog_notify(DYNAMIC_TOS_EVENT, (void*)ct, 0, 0);
+
+							 DEBUG_TOS(("%s:blog_notify:DYNAMIC_TOS_EVENT for\n",__FUNCTION__));
 							 DUMP_TUPLE_IPV4(&ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple);
 						}
 #endif

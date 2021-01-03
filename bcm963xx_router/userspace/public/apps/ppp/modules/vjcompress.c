@@ -29,7 +29,7 @@
  * This version is used under SunOS 4.x, Digital UNIX, AIX 4.x,
  * and SVR4 systems including Solaris 2.
  *
- * $Id: vjcompress.c,v 1.1.1.1 2010/06/24 19:07:37 denny Exp $
+ * $Id: vjcompress.c,v 1.1.1.1 2010/06/14 22:47:27 tliu Exp $
  */
 
 #include <sys/types.h>

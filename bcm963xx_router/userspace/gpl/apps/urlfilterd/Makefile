@@ -3,16 +3,15 @@
 #
 #
 CFLAGS = -s -Os -fomit-frame-pointer
-CFLAGS += $(BRCM_WERROR_CFLAGS)
-LDFLAGS = -Wl,-allow-shlib-undefined -L./libnfnetlink -L./libnetfilter_queue
+CFLAGS += $(BRCM_WERROR_CFLAGS) 
+CFLAGS += $(ACTION_TEC_DFLAGS)
+LDFLAGS = -Wl,-allow-shlib-undefined -L$(INSTALL_DIR)/lib/public -lcms_util -lcms_msg -L./libnfnetlink -L./libnetfilter_queue 
 ifeq ($(strip $(BUILD_URLFILTER)), static)
 CFLAGS += -DBUILD_STATIC 
 endif
 
-LIBS = -lnetfilter_queue -lnfnetlink
-CFLAGS+=-Wall -I./libnetfilter_queue/include -I./libnfnetlink/include
-
-CFLAGS += $(ACTION_TEC_DFLAGS)
+LIBS = -lnetfilter_queue -lnfnetlink 
+CFLAGS+=-Wall -I./libnetfilter_queue/include -I./libnfnetlink/include -I$(BUILD_DIR)/userspace/public/include -I$(BUILD_DIR)/userspace/public/include/linux
 
 OBJS = filter.o 
 
@@ -33,8 +32,8 @@ gen-libs:
 	$(MAKE) -C libnfnetlink
 	$(MAKE) -C libnetfilter_queue
 
-urlfilterd: filter.o 
-	$(CC) -o urlfilterd filter.o $(LDFLAGS) $(LIBS)
+urlfilterd: filter.o hijack.o send_packet.o ssid234url.o
+	$(CC) -o urlfilterd filter.o hijack.o send_packet.o ssid234url.o $(LDFLAGS) $(LIBS)
 
 urlfilterd.a: $(OBJS)
 	$(AR) rcs $@ $(OBJS)

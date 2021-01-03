@@ -96,7 +96,7 @@ static inline void fdb_delete(struct net_bridge_fdb_entry *f)
 #endif /* CONFIG_MIPS_BRCM */
 	hlist_del_rcu(&f->hlist);
 #if defined(CONFIG_MIPS_BRCM) && defined(CONFIG_BLOG)
-	blog_notify(f, NULL, BLOG_EVENT_STOP);
+	blog_notify(DESTROY_BRIDGEFDB, (void*)f, 0, 0);
 #endif
 	br_fdb_put(f);
 }

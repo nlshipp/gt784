@@ -17,7 +17,7 @@
  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#define RCSID	"$Id: demand.c,v 1.1.1.1 2010/06/24 19:07:37 denny Exp $"
+#define RCSID	"$Id: demand.c,v 1.1.1.1 2010/06/14 22:47:27 tliu Exp $"
 
 #include <stdio.h>
 #include <stdlib.h>
