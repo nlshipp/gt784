@@ -163,6 +163,8 @@ create_install:
 		mkdir -p $(INSTALL_DIR)/bin
 		mkdir -p $(INSTALL_DIR)/lib
 
+#############################################
+
 $(KERNEL_DIR)/vmlinux:
 	$(GENDEFCONFIG_CMD) $(PROFILE_PATH) ${MAKEFLAGS}
 	cd $(KERNEL_DIR); \
@@ -665,8 +667,8 @@ endif
 endif
 
 # (mksquashfs call moved to buildFS, for fakeroot to work)
-
 ifeq ($(strip $(BRCM_KERNEL_ROOTFS)),jffs2)
+	echo "ROOTFS is JFFS2"
 	cd $(PROFILE_DIR); \
 	dd if=/dev/zero of=file128k.tmp bs=1k count=128; \
 	cat $(CFE_ROM_FILE) file128k.tmp | head --bytes=$(FLASH_NAND_BLOCK_16KB) > cferom.tmp; \
@@ -687,6 +689,7 @@ ifeq ($(strip $(BRCM_KERNEL_ROOTFS)),jffs2)
 	@echo -e "Done! Image $(PROFILE) has been built in $(PROFILE_DIR)."
 else
 ifeq ($(strip $(BRCM_KERNEL_ROOTFS)),nfs)
+	echo "ROOTFS is NFS"
 	@cd $(PROFILE_DIR); cp $(KERNEL_DIR)/vmlinux . ;
 	@echo
 	@echo -e "======== Follow the below steps to start your NFS root file system on host ========"
@@ -706,6 +709,7 @@ ifeq ($(strip $(BRCM_KERNEL_ROOTFS)),nfs)
 	@echo -e "* Reboot your board and break into CFE bootloader, choose h on \"Run from flash/host\" and vmlinux on \"Default host run file name\""
 	@echo
 else
+	echo "ROOTFS is OTHER"
 	cd $(PROFILE_DIR); \
 	cp $(KERNEL_DIR)/vmlinux . ; \
 	$(STRIP) --remove-section=.note --remove-section=.comment vmlinux; \
@@ -713,7 +717,7 @@ else
 	$(HOSTTOOLS_DIR)/cmplzma -k -2 vmlinux vmlinux.bin vmlinux.lz;\
 	$(HOSTTOOLS_DIR)/bcmImageBuilder --output $(FS_KERNEL_IMAGE_NAME) --release $(BRCM_RELEASETAG) --chip $(BRCM_CHIP) --board $(BRCM_BOARD_ID) --blocksize $(BRCM_FLASHBLK_SIZE) --cfefile $(CFE_FILE) --rootfsfile rootfs.img --kernelfile vmlinux.lz; \
 	$(HOSTTOOLS_DIR)/bcmImageBuilder --output $(CFE_FS_KERNEL_IMAGE_NAME) --release $(BRCM_RELEASETAG) --chip $(BRCM_CHIP) --board $(BRCM_BOARD_ID) --blocksize $(BRCM_FLASHBLK_SIZE) --cfefile $(CFE_FILE) --rootfsfile rootfs.img --kernelfile vmlinux.lz --include-cfe; \
-	$(HOSTTOOLS_DIR)/createimg --boardid=$(BRCM_BOARD_ID) --voiceboardid $(BRCM_VOICE_BOARD_ID) --numbermac=$(BRCM_NUM_MAC_ADDRESSES) --macaddr=$(BRCM_BASE_MAC_ADDRESS) --tp=$(BRCM_MAIN_TP_NUM) --psisize=$(BRCM_PSI_SIZE) --gponsn=$(BRCM_GPON_SERIAL_NUMBER) --gponpw=$(BRCM_GPON_PASSWORD) --inputfile=$(CFE_FS_KERNEL_IMAGE_NAME) --outputfile=$(FLASH_IMAGE_NAME); \
+	$(HOSTTOOLS_DIR)/createimg --boardid=$(BRCM_BOARD_ID) --voiceboardid $(BRCM_VOICE_BOARD_ID) --numbermac=$(BRCM_NUM_MAC_ADDRESSES) --macaddr=$(BRCM_BASE_MAC_ADDRESS) --tp=$(BRCM_MAIN_TP_NUM) --psisize=$(BRCM_PSI_SIZE) --logsize=$(BRCM_LOG_SECTION_SIZE) --flblksz=$(BRCM_FLASHBLK_SIZE) --auxfsprcnt=$(BRCM_AUXFS_PERCENT) --backuppsi=$(BRCM_BACKUP_PSI)--gponsn=$(BRCM_GPON_SERIAL_NUMBER) --gponpw=$(BRCM_GPON_PASSWORD) --inputfile=$(CFE_FS_KERNEL_IMAGE_NAME) --outputfile=$(FLASH_IMAGE_NAME); \
 	$(HOSTTOOLS_DIR)/addvtoken --chip $(BRCM_CHIP) --flashtype NOR $(FLASH_IMAGE_NAME) $(FLASH_IMAGE_NAME).w
 	@mkdir -p $(IMAGES_DIR)
 	@cp $(PROFILE_DIR)/$(FS_KERNEL_IMAGE_NAME) $(IMAGES_DIR)/$(FS_KERNEL_IMAGE_NAME)_$(BRCM_RELEASETAG)-$(shell date '+%y%m%d_%H%M')
@@ -917,6 +921,7 @@ BRCM_DRIVER_PCI            \
 BRCM_EXTRAVERSION          \
 BRCM_KERNEL_NETQOS         \
 BRCM_KERNEL_ROOTFS         \
+BRCM_KERNEL_AUXFS_JFFS2    \
 BRCM_SQUASHFS_BLOCK_SIZE         \
 BRCM_SQUASHFS_FRAGMENT_CACHE_SIZE         \
 BRCM_KERNEL_OPROFILE       \
@@ -1035,6 +1040,11 @@ BUILD_VIRT_SRVR            \
 BUILD_PORT_TRIG            \
 BUILD_TR69C_BCM_SSL        \
 BUILD_IPV6                 \
+BUILD_BORAD_LOG_SECTION    \
+BRCM_LOG_SECTION_SIZE      \
+BRCM_FLASHBLK_SIZE         \
+BRCM_AUXFS_PERCENT     \
+BRCM_BACKUP_PSI      \
 LINUX_KERNEL_USBMASS       \
 BUILD_IPSEC                \
 BUILD_MoCACTL              \

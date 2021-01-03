@@ -327,14 +327,14 @@ renew_addr(iac, iaparam, evdp, evd)
 	for (sa = TAILQ_FIRST(&iac_na->statefuladdr_head); sa;
 	    sa = TAILQ_NEXT(sa, link)) {
 		if (dhcp6_add_listval(&pl, DHCP6_LISTVAL_STATEFULADDR6,
-		    &sa->addr, NULL) == NULL)
+		    &sa->addr, NULL, 0) == NULL)
 			goto fail;
 	}
 
 	if ((ial = malloc(sizeof(*ial))) == NULL)
 		goto fail;
 	TAILQ_INIT(ial);
-	if (dhcp6_add_listval(ial, DHCP6_LISTVAL_IANA, iaparam, &pl) == NULL)
+	if (dhcp6_add_listval(ial, DHCP6_LISTVAL_IANA, iaparam, &pl, 0) == NULL)
 		goto fail;
 	dhcp6_clear_list(&pl);
 

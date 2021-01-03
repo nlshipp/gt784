@@ -1,8 +1,14 @@
+# File: bcmdrivers/broadcom/char/p8021ag/impl1/Makefile
+#
+# Makefile for the BCM63xx p8021ag
+#
+
 obj-$(CONFIG_BCM_P8021AG) += p8021ag.o
 
-p8021ag-objs += p8021ag_dep.o
+EXTRA_CFLAGS += -I$(INC_BRCMDRIVER_PUB_PATH)/$(BRCM_BOARD) -I$(INC_BRCMDRIVER_PRIV_PATH)/$(BRCM_BOARD) -I$(INC_BRCMSHARED_PUB_PATH)/$(BRCM_BOARD) -I$(INC_BRCMSHARED_PRIV_PATH)/$(BRCM_BOARD)
 
-$(obj)/p8021ag_dep.o:
-	cp $(obj)/p8021ag$(PROFILE).o_save $(obj)/p8021ag_dep.o
+-include $(TOPDIR)/Rules.make
 
+clean:
+	rm -f core *.o *.a *.s
 

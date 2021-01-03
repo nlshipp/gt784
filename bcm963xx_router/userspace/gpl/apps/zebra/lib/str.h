@@ -1,5 +1,5 @@
 /*
- * $Id: str.h,v 1.1.1.1 2010/06/14 22:47:23 tliu Exp $
+ * $Id: str.h,v 1.3 1999/02/19 17:01:49 developer Exp $
  */
 
 #ifndef _ZEBRA_STR_H

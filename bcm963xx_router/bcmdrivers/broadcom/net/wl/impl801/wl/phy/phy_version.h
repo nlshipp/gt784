@@ -1,0 +1,34 @@
+/*
+ * Copyright (C) 2009, Broadcom Corporation
+ * All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS OFFERED "AS IS", AND BROADCOM GRANTS NO WARRANTIES OF ANY
+ * KIND, EXPRESS OR IMPLIED, BY STATUTE, COMMUNICATION OR OTHERWISE. BROADCOM
+ * SPECIFICALLY DISCLAIMS ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A SPECIFIC PURPOSE OR NONINFRINGEMENT CONCERNING THIS SOFTWARE.
+ *
+ * $Id: phy_version.h,v 1.1 2010/08/05 21:59:00 ywu Exp $
+ *
+*/
+
+#ifndef phy_version_h_
+#define phy_version_h_
+
+#define	PHY_MAJOR_VERSION		1
+
+#define	PHY_MINOR_VERSION		142
+
+#define	PHY_RC_NUMBER		0
+
+#define	PHY_INCREMENTAL_NUMBER	0
+
+#define	PHY_BUILD_NUMBER		0
+
+#define	PHY_VERSION			1, 142, 0, 0
+
+#define	PHY_VERSION_NUM		0x018e0000
+
+/* Version String, ASCII, 32 chars max */
+#define	PHY_VERSION_STR		"1.142.0.0"
+
+#endif /* phy_version_h_ */

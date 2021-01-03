@@ -108,7 +108,7 @@ radvd.o: radvd.c config.h includes.h \
  /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/getopt.h \
  radvd.h defaults.h log.h \
  /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/linux/version.h \
- pathnames.h netlink.h \
+ pathnames.h \
  /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/poll.h \
  /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/sys/poll.h \
  /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/bits/poll.h
@@ -340,8 +340,6 @@ log.h:
 /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/linux/version.h:
 
 pathnames.h:
-
-netlink.h:
 
 /opt/toolchains/uclibc-crosstools-gcc-4.4.2-1/usr/include/poll.h:
 

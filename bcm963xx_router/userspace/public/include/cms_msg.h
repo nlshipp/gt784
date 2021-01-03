@@ -5,24 +5,25 @@
  *
 # 
 # 
-# This program is free software; you can redistribute it and/or modify 
-# it under the terms of the GNU General Public License, version 2, as published by  
-# the Free Software Foundation (the "GPL"). 
+# Unless you and Broadcom execute a separate written software license 
+# agreement governing use of this software, this software is licensed 
+# to you under the terms of the GNU General Public License version 2 
+# (the "GPL"), available at http://www.broadcom.com/licenses/GPLv2.php, 
+# with the following added to such license:
 # 
-#
+#    As a special exception, the copyright holders of this software give 
+#    you permission to link this software with independent modules, and 
+#    to copy and distribute the resulting executable under terms of your 
+#    choice, provided that you also meet, for each linked independent 
+#    module, the terms and conditions of the license of that module. 
+#    An independent module is a module which is not derived from this
+#    software.  The special exception does not apply to any modifications 
+#    of the software.  
 # 
-# This program is distributed in the hope that it will be useful,  
-# but WITHOUT ANY WARRANTY; without even the implied warranty of  
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the  
-# GNU General Public License for more details. 
-#  
-# 
-#  
-#   
-# 
-# A copy of the GPL is available at http://www.broadcom.com/licenses/GPLv2.php, or by 
-# writing to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
-# Boston, MA 02111-1307, USA. 
+# Not withstanding the above, under no circumstances may you combine 
+# this software in any way with any other Broadcom software provided 
+# under a license other than the GPL, without Broadcom's express prior 
+# written consent. 
 #
  *
  ************************************************************************/
@@ -34,6 +35,9 @@
 #include "cms_eid.h"
 
 
+#if defined(AEI_VDSL_WP) && defined(AEI_VDSL_DHCP_LEASE)
+#include "aei_cms.h"
+#endif
 /*!\file cms_msg.h
  * \brief Public header file for messaging.
  * Code which need to handle messages must include this file.
@@ -343,6 +347,12 @@ CMS_MSG_DHCPD_MACS_TO_CMS = 0x1000026D,
    CMS_MSG_TSTATS_RESULT = 0x10002518,
    CMS_MSG_TSTATS_REQUEST = 0x10002519,
 #endif
+#ifdef AEI_CONTROL_LAYER
+#ifdef AEI_SUPPORT_IPV6_STATICROUTE
+    CMS_MSG_AEI_CTL_INFOR_FOR_STATIC_ROUTE   = 0x10002521,
+#endif
+    CMS_MSG_AEI_CTL_GET_PHYTYPE_IFNAME       = 0x10002522,
+#endif
 } CmsMsgType;
 
 
@@ -560,6 +570,12 @@ typedef struct
 #endif 
 #if defined(AEI_VDSL_CUSTOMER_TELUS)
    UBOOL8 isStb;                  /** The lan host pc is stb or not */
+#endif
+#if defined(AEI_VDSL_WP) && defined(AEI_VDSL_DHCP_LEASE)
+   UINT32 isWP;                  /** The lan host is AEI WP or not */
+   char WPProductType[AEI_WP_PRODUCT_TYPE_LEN];
+   char WPFirmwareVersion[AEI_WP_FIRMWARE_LEN];
+   char WPProtocolVersion[AEI_WP_PROTOCOL_LEN];
 #endif
 
 } DhcpdHostInfoMsgBody;
@@ -848,6 +864,13 @@ typedef struct
     UINT32 expires;
     char hostname[BUFLEN_64];
     UINT32 is_stb;
+#if defined(AEI_VDSL_WP) && defined(AEI_VDSL_DHCP_LEASE)
+    UINT32 isWP;
+    char WPProductType[AEI_WP_PRODUCT_TYPE_LEN];
+    char WPFirmwareVersion[AEI_WP_FIRMWARE_LEN];
+    char WPProtocolVersion[AEI_WP_PROTOCOL_LEN];
+#endif
+
 } DhcpLeasesUpdatedMsgBody;
 #endif
 

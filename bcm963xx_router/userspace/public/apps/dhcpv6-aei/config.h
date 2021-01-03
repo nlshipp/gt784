@@ -334,6 +334,9 @@ extern struct keyinfo *find_key __P((char *, size_t, u_int32_t));
 extern int configure_pool __P((struct cf_namelist *));
 extern struct pool_conf *find_pool __P((const char *));
 extern int is_available_in_pool __P((struct pool_conf *, struct in6_addr *));
+#ifdef AEI_DHCP6S_SERIALIZE
+extern int is_in_pool __P((struct in6_addr *));
+#endif
 extern int get_free_address_from_pool __P((struct pool_conf *,
 	struct in6_addr *));
 struct host_conf *create_dynamic_hostconf __P((struct duid *,

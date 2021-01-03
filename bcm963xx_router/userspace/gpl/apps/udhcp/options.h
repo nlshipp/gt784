@@ -23,7 +23,7 @@ enum {
 struct dhcp_option {
 	char name[10];
 	char flags;
-	unsigned char code;	// to support 6rd option (212), 'char' => 'unsigned char'
+	char code;
 };
 
 extern struct dhcp_option options[];

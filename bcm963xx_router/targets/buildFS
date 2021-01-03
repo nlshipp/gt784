@@ -272,6 +272,11 @@ fi
 cd $ACT_PROJECT_PATH
 ./$ACT_MERGE_ACTION
 
+if [ "$AEI_VDSL_WP" == "1" ]; then
+    ln -sf /var/wirelesssettings.xml  $TOP_DIR/$ROOTFS/webs/wirelesssettings.xml
+    ln -sf /var/firmwarelinks.xml  $TOP_DIR/$ROOTFS/webs/firmwarelinks.xml
+fi
+
 # Memory Leak Toolkit - modify profile 
 if [ "$ACT_OPTIONS" = "memleak" ]; then
 #MLT_MARK="#up eth0 for memory leak toolkit"

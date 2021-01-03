@@ -6,3 +6,6 @@ $(obj)/pktflow_dep.o:
 	cp $(obj)/pktflow$(PROFILE).o_save $(obj)/pktflow_dep.o
 
 
+clean:
+	rm -f *.o *.ko *.cmd
+

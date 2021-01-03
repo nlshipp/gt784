@@ -124,7 +124,7 @@ dhcp6_copy_list(dst, src)
 
 	for (ent = TAILQ_FIRST(src); ent; ent = TAILQ_NEXT(ent, link)) {
 		if (dhcp6_add_listval(dst, ent->type,
-		    &ent->uv, &ent->sublist) == NULL)
+		    &ent->uv, &ent->sublist, 0) == NULL)
 			goto fail;
 	}
 
@@ -276,10 +276,11 @@ char tmpbuf[48]="";
 }
 
 struct dhcp6_listval *
-dhcp6_add_listval(head, type, val, sublist)
+dhcp6_add_listval(head, type, val, sublist, flag)
 	struct dhcp6_list *head, *sublist;
 	dhcp6_listval_type_t type;
 	void *val;
+    int flag;
 {
 	struct dhcp6_listval *lv = NULL;
 
@@ -325,8 +326,14 @@ dhcp6_add_listval(head, type, val, sublist)
 	if (sublist && dhcp6_copy_list(&lv->sublist, sublist))
 		goto fail;
 
+    if(!flag)
+    {
 	TAILQ_INSERT_TAIL(head, lv, link);
-
+    }
+    else
+    {
+	    TAILQ_INSERT_HEAD(head, lv, link);
+    }
 	return (lv);
 
   fail:
@@ -396,7 +403,7 @@ dhcp6_get_addr(optlen, cp, type, list)
 		}
 
 		if (dhcp6_add_listval(list, DHCP6_LISTVAL_ADDR6,
-		    &valaddr, NULL) == NULL) {
+		    &valaddr, NULL, 0) == NULL) {
 			dprintf(LOG_ERR, FNAME,
 			    "failed to copy %s address", dhcp6optstr(type));
 			return -1;
@@ -470,7 +477,7 @@ dhcp6_get_domain(optlen, cp, type, list)
 		vb.dv_buf = name;
 
 		if (dhcp6_add_listval(list,
-		    DHCP6_LISTVAL_VBUF, &vb, NULL) == NULL) {
+		    DHCP6_LISTVAL_VBUF, &vb, NULL, 0) == NULL) {
 			dprintf(LOG_ERR, FNAME, "failed to "
 			    "copy a %s domain name", dhcp6optstr(type));
 			return -1;
@@ -1578,7 +1585,7 @@ dhcp6_get_options(p, ep, optinfo)
 			/* need to check duplication? */
 
 			if (dhcp6_add_listval(&optinfo->stcode_list,
-			    DHCP6_LISTVAL_STCODE, &num16, NULL) == NULL) {
+			    DHCP6_LISTVAL_STCODE, &num16, NULL, 0) == NULL) {
 				dprintf(LOG_ERR, FNAME, "failed to copy "
 				    "status code");
 				goto fail;
@@ -1609,7 +1616,7 @@ dhcp6_get_options(p, ep, optinfo)
 				}
 
 				if (dhcp6_add_listval(&optinfo->reqopt_list,
-				    DHCP6_LISTVAL_NUM, &num, NULL) == NULL) {
+				    DHCP6_LISTVAL_NUM, &num, NULL, 0) == NULL) {
 					dprintf(LOG_ERR, FNAME,
 					    "failed to copy requested option");
 					goto fail;
@@ -1853,7 +1860,7 @@ dhcp6_get_options(p, ep, optinfo)
 
 			/* link this option set */
 			if (dhcp6_add_listval(&optinfo->iapd_list,
-			    DHCP6_LISTVAL_IAPD, &ia, &sublist) == NULL) {
+			    DHCP6_LISTVAL_IAPD, &ia, &sublist, 0) == NULL) {
 				dhcp6_clear_list(&sublist);
 				goto fail;
 			}
@@ -1917,7 +1924,7 @@ dhcp6_get_options(p, ep, optinfo)
 
 			/* link this option set */
 			if (dhcp6_add_listval(&optinfo->iana_list,
-			    DHCP6_LISTVAL_IANA, &ia, &sublist) == NULL) {
+			    DHCP6_LISTVAL_IANA, &ia, &sublist, 0) == NULL) {
 				dhcp6_clear_list(&sublist);
 				goto fail;
 			}
@@ -2136,7 +2143,7 @@ copyin_option(type, p, ep, list)
 			}
 
 			if (dhcp6_add_listval(list, DHCP6_LISTVAL_PREFIX6,
-			    &iapd_prefix, &sublist) == NULL) {
+			    &iapd_prefix, &sublist, 0) == NULL) {
 				dhcp6_clear_list(&sublist);
 				goto fail;
 			}
@@ -2185,7 +2192,7 @@ copyin_option(type, p, ep, list)
 			}
 
 			if (dhcp6_add_listval(list, DHCP6_LISTVAL_STATEFULADDR6,
-			    &ia_addr, &sublist) == NULL) {
+			    &ia_addr, &sublist, 0) == NULL) {
 				dhcp6_clear_list(&sublist);
 				goto fail;
 			}
@@ -2225,7 +2232,7 @@ copyin_option(type, p, ep, list)
 
 			/* copy-in the code value */
 			if (dhcp6_add_listval(list, DHCP6_LISTVAL_STCODE,
-			    &opt_stcode.dh6_stcode_code, NULL) == NULL)
+			    &opt_stcode.dh6_stcode_code, NULL, 0) == NULL)
 				goto fail;
 
 			break;

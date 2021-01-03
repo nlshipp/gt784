@@ -42,6 +42,9 @@ all    : public-include public-libs gpl-apps gpl-libs public-apps
 public-include:
 	$(MAKE) -C public/include
 
+private-libs:
+	$(MAKE) -C private/libs
+
 public-libs:
 	$(MAKE) -C public/libs
 
@@ -53,6 +56,9 @@ gpl-libs:
 
 public-apps:
 	$(MAKE) -C public/apps
+
+private-apps:
+	$(MAKE) -C private/apps
 
 
 #

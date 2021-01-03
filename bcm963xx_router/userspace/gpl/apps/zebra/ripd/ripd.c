@@ -2683,7 +2683,14 @@ rip_request_send (struct sockaddr_in *to, struct interface *ifp,
 int
 rip_update_jitter (unsigned long time)
 {
+#if defined(CUSTOMER_ACTIONTEC)
+    /* Per rfc2453,  the 30-second timer is offset by a small random time (+/- 0 to 5 seconds)
+    ** each time it is set. We use [-5, 5] offset range instead of original one [-15, 15].
+    */
+  return ((rand () % 11) - 5);
+#else
   return ((rand () % (time + 1)) - (time / 2));
+#endif
 }
 
 void

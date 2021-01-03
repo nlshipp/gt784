@@ -377,14 +377,14 @@ renew_prefix(iac, iaparam, evdp, evd)
 	for (sp = TAILQ_FIRST(&iac_pd->siteprefix_head); sp;
 	    sp = TAILQ_NEXT(sp, link)) {
 		if (dhcp6_add_listval(&pl, DHCP6_LISTVAL_PREFIX6,
-		    &sp->prefix, NULL) == NULL)
+		    &sp->prefix, NULL, 0) == NULL)
 			goto fail;
 	}
 
 	if ((ial = malloc(sizeof(*ial))) == NULL)
 		goto fail;
 	TAILQ_INIT(ial);
-	if (dhcp6_add_listval(ial, DHCP6_LISTVAL_IAPD, iaparam, &pl) == NULL)
+	if (dhcp6_add_listval(ial, DHCP6_LISTVAL_IAPD, iaparam, &pl, 0) == NULL)
 		goto fail;
 	dhcp6_clear_list(&pl);
 

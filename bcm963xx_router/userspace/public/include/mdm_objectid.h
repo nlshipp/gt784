@@ -59,950 +59,956 @@
 /*! \brief InternetGatewayDevice.UPnP.Discovery.Service.{i}. */
 #define MDMOID_IGD_UPNP_DIS_SERVICE  15
 
+/*! \brief InternetGatewayDevice.X_ACTIONTEC_COM_IPv6Firewall. */
+#define MDMOID_IGD_X00247_B_FIREWALL  16
+
 /*! \brief InternetGatewayDevice.Firewall. */
-#define MDMOID_IGD_FIREWALL  16
+#define MDMOID_IGD_FIREWALL  17
 
 /*! \brief InternetGatewayDevice.PeriodicStatistics. */
-#define MDMOID_PERIODIC_STATS  17
+#define MDMOID_PERIODIC_STATS  18
 
 /*! \brief InternetGatewayDevice.PeriodicStatistics.SampleSet.{i}. */
-#define MDMOID_PERIODIC_STATS_SET  18
+#define MDMOID_PERIODIC_STATS_SET  19
 
 /*! \brief InternetGatewayDevice.PeriodicStatistics.SampleSet.{i}.Parameter.{i}. */
-#define MDMOID_PERIODIC_STATS_SET_PARAM  19
+#define MDMOID_PERIODIC_STATS_SET_PARAM  20
 
 /*! \brief InternetGatewayDevice.SelfTestDiagnostics. */
-#define MDMOID_SELF_TEST_DIAG  20
+#define MDMOID_SELF_TEST_DIAG  21
 
 /*! \brief InternetGatewayDevice.TraceRouteDiagnostics. */
-#define MDMOID_TRACE_ROUTE_DIAGNOSTICS  21
+#define MDMOID_TRACE_ROUTE_DIAGNOSTICS  22
 
 /*! \brief InternetGatewayDevice.TraceRouteDiagnostics.RouteHops.{i}. */
-#define MDMOID_ROUTE_HOPS  22
+#define MDMOID_ROUTE_HOPS  23
 
 /*! \brief InternetGatewayDevice.SpeedTest. */
-#define MDMOID_SPEED_TEST  23
+#define MDMOID_SPEED_TEST  24
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_SyslogCfg. */
-#define MDMOID_SYSLOG_CFG  24
+#define MDMOID_SYSLOG_CFG  25
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_LoginCfg. */
-#define MDMOID_LOGIN_CFG  25
+#define MDMOID_LOGIN_CFG  26
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_AppCfg. */
-#define MDMOID_APP_CFG  26
+#define MDMOID_APP_CFG  27
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_AppCfg.HttpdCfg. */
-#define MDMOID_HTTPD_CFG  27
+#define MDMOID_HTTPD_CFG  28
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_AppCfg.Tr69cCfg. */
-#define MDMOID_TR69C_CFG  28
+#define MDMOID_TR69C_CFG  29
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_AppCfg.Tr64cCfg. */
-#define MDMOID_TR64C_CFG  29
+#define MDMOID_TR64C_CFG  30
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_AppCfg.SshdCfg. */
-#define MDMOID_SSHD_CFG  30
+#define MDMOID_SSHD_CFG  31
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_AppCfg.TelnetdCfg. */
-#define MDMOID_TELNETD_CFG  31
+#define MDMOID_TELNETD_CFG  32
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_AppCfg.ConsoledCfg. */
-#define MDMOID_CONSOLED_CFG  32
+#define MDMOID_CONSOLED_CFG  33
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_AppCfg.SmdCfg. */
-#define MDMOID_SMD_CFG  33
+#define MDMOID_SMD_CFG  34
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_AppCfg.SskCfg. */
-#define MDMOID_SSK_CFG  34
+#define MDMOID_SSK_CFG  35
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_AppCfg.SnmpdCfg. */
-#define MDMOID_SNMPD_CFG  35
+#define MDMOID_SNMPD_CFG  36
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_AppCfg.FtpdCfg. */
-#define MDMOID_FTPD_CFG  36
+#define MDMOID_FTPD_CFG  37
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_AppCfg.TftpdCfg. */
-#define MDMOID_TFTPD_CFG  37
+#define MDMOID_TFTPD_CFG  38
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_AppCfg.PppdCfg. */
-#define MDMOID_PPPD_CFG  38
+#define MDMOID_PPPD_CFG  39
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_AppCfg.IcmpCfg. */
-#define MDMOID_ICMP_CFG  39
+#define MDMOID_ICMP_CFG  40
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_AppCfg.UpnpCfg. */
-#define MDMOID_UPNP_CFG  40
+#define MDMOID_UPNP_CFG  41
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_AppCfg.DnsProxyCfg. */
-#define MDMOID_DNS_PROXY_CFG  41
+#define MDMOID_DNS_PROXY_CFG  42
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_EthernetSwitch. */
-#define MDMOID_ETHERNET_SWITCH  42
+#define MDMOID_ETHERNET_SWITCH  43
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_PwrMngtCfg. */
-#define MDMOID_PWR_MNGT  43
+#define MDMOID_PWR_MNGT  44
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_StandbyCfg. */
-#define MDMOID_STANDBY_CFG  44
+#define MDMOID_STANDBY_CFG  45
 
 /*! \brief InternetGatewayDevice.DeviceConfig. */
-#define MDMOID_DEVICE_CONFIG  45
+#define MDMOID_DEVICE_CONFIG  46
 
 /*! \brief InternetGatewayDevice.ManagementServer. */
-#define MDMOID_MANAGEMENT_SERVER  46
+#define MDMOID_MANAGEMENT_SERVER  47
 
 /*! \brief InternetGatewayDevice.ManagementServer.ManageableDevice.{i}. */
-#define MDMOID_MANAGEABLE_DEVICE  47
+#define MDMOID_MANAGEABLE_DEVICE  48
 
 /*! \brief InternetGatewayDevice.Time. */
-#define MDMOID_TIME_SERVER_CFG  48
+#define MDMOID_TIME_SERVER_CFG  49
 
 /*! \brief InternetGatewayDevice.CaptivePortal. */
-#define MDMOID_CAPTIVE_PORTAL  49
+#define MDMOID_CAPTIVE_PORTAL  50
 
 /*! \brief InternetGatewayDevice.UserInterface. */
-#define MDMOID_USER_INTERFACE_CFG  50
+#define MDMOID_USER_INTERFACE_CFG  51
 
 /*! \brief InternetGatewayDevice.UserInterface.RemoteAccess. */
-#define MDMOID_REMOTE_ACCESS  51
+#define MDMOID_REMOTE_ACCESS  52
 
 /*! \brief InternetGatewayDevice.UserInterface.RemoteAccess.Telnet. */
-#define MDMOID_TELNET  52
+#define MDMOID_TELNET  53
 
 /*! \brief InternetGatewayDevice.Layer2Bridging. */
-#define MDMOID_L2_BRIDGING  53
+#define MDMOID_L2_BRIDGING  54
 
 /*! \brief InternetGatewayDevice.Layer2Bridging.Bridge.{i}. */
-#define MDMOID_L2_BRIDGING_ENTRY  54
+#define MDMOID_L2_BRIDGING_ENTRY  55
 
 /*! \brief InternetGatewayDevice.Layer2Bridging.Filter.{i}. */
-#define MDMOID_L2_BRIDGING_FILTER  55
+#define MDMOID_L2_BRIDGING_FILTER  56
 
 /*! \brief InternetGatewayDevice.Layer2Bridging.AvailableInterface.{i}. */
-#define MDMOID_L2_BRIDGING_INTF  56
+#define MDMOID_L2_BRIDGING_INTF  57
 
 /*! \brief InternetGatewayDevice.QueueManagement. */
-#define MDMOID_Q_MGMT  57
+#define MDMOID_Q_MGMT  58
 
 /*! \brief InternetGatewayDevice.QueueManagement.Classification.{i}. */
-#define MDMOID_Q_MGMT_CLASSIFICATION  58
+#define MDMOID_Q_MGMT_CLASSIFICATION  59
 
 /*! \brief InternetGatewayDevice.QueueManagement.Queue.{i}. */
-#define MDMOID_Q_MGMT_QUEUE  59
+#define MDMOID_Q_MGMT_QUEUE  60
 
 /*! \brief InternetGatewayDevice.QueueManagement.QueueStats.{i}. */
-#define MDMOID_Q_MGMT_QUEUE_STATS  60
+#define MDMOID_Q_MGMT_QUEUE_STATS  61
 
 /*! \brief InternetGatewayDevice.LANConfigSecurity. */
-#define MDMOID_LANCONFIG_SECURITY  61
+#define MDMOID_LANCONFIG_SECURITY  62
 
 /*! \brief InternetGatewayDevice.IPPingDiagnostics. */
-#define MDMOID_IP_PING_DIAG  62
+#define MDMOID_IP_PING_DIAG  63
 
 /*! \brief InternetGatewayDevice.Capabilities. */
-#define MDMOID_CAPABLITIES  63
+#define MDMOID_CAPABLITIES  64
 
 /*! \brief InternetGatewayDevice.Capabilities.PerformanceDiagnostic. */
-#define MDMOID_PERFORM_DIAG  64
+#define MDMOID_PERFORM_DIAG  65
 
 /*! \brief InternetGatewayDevice.DownloadDiagnostics. */
-#define MDMOID_DLD_DIAG  65
+#define MDMOID_DLD_DIAG  66
 
 /*! \brief InternetGatewayDevice.UploadDiagnostics. */
-#define MDMOID_UPLD_DIAG  66
+#define MDMOID_UPLD_DIAG  67
 
 /*! \brief InternetGatewayDevice.UDPEchoConfig. */
-#define MDMOID_UDP_ECHO_DIAG  67
+#define MDMOID_UDP_ECHO_DIAG  68
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}. */
-#define MDMOID_LAN_DEV  68
+#define MDMOID_LAN_DEV  69
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.X_BROADCOM_COM_IgmpSnoopingConfig. */
-#define MDMOID_IGMP_SNOOPING_CFG  69
+#define MDMOID_IGMP_SNOOPING_CFG  70
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.LANHostConfigManagement. */
-#define MDMOID_LAN_HOST_CFG  70
+#define MDMOID_LAN_HOST_CFG  71
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.LANHostConfigManagement.IPInterface.{i}. */
-#define MDMOID_LAN_IP_INTF  71
+#define MDMOID_LAN_IP_INTF  72
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.LANHostConfigManagement.IPInterface.{i}.X_BROADCOM_COM_FirewallException.{i}. */
-#define MDMOID_LAN_IP_INTF_FIREWALL_EXCEPTION  72
+#define MDMOID_LAN_IP_INTF_FIREWALL_EXCEPTION  73
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.LANHostConfigManagement.IPInterface.{i}.X_BROADCOM_COM_IpFilterCfg.{i}. */
-#define MDMOID_IP_FILTER_CFG  73
+#define MDMOID_IP_FILTER_CFG  74
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.LANHostConfigManagement.DHCPConditionalServingPool.{i}. */
-#define MDMOID_DHCP_CONDITIONAL_SERVING  74
+#define MDMOID_DHCP_CONDITIONAL_SERVING  75
+
+/*! \brief InternetGatewayDevice.LANDevice.{i}.X_ACTIONTEC_COM_IPv6LANHostConfigManagement. */
+#define MDMOID_BI_PV6_LAN_HOST_CFG  76
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.X_BROADCOM_COM_IPv6LANHostConfigManagement. */
-#define MDMOID_I_PV6_LAN_HOST_CFG  75
+#define MDMOID_I_PV6_LAN_HOST_CFG  77
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.X_BROADCOM_COM_IPv6LANHostConfigManagement.X_BROADCOM_COM_MldSnoopingConfig. */
-#define MDMOID_MLD_SNOOPING_CFG  76
+#define MDMOID_MLD_SNOOPING_CFG  78
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.LANEthernetInterfaceConfig.{i}. */
-#define MDMOID_LAN_ETH_INTF  77
+#define MDMOID_LAN_ETH_INTF  79
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.LANEthernetInterfaceConfig.{i}.Stats. */
-#define MDMOID_LAN_ETH_INTF_STATS  78
+#define MDMOID_LAN_ETH_INTF_STATS  80
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.LANUSBInterfaceConfig.{i}. */
-#define MDMOID_LAN_USB_INTF  79
+#define MDMOID_LAN_USB_INTF  81
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.LANUSBInterfaceConfig.{i}.Stats. */
-#define MDMOID_LAN_USB_INTF_STATS  80
+#define MDMOID_LAN_USB_INTF_STATS  82
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}. */
-#define MDMOID_LAN_WLAN  81
+#define MDMOID_LAN_WLAN  83
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.AssociatedDevice.{i}. */
-#define MDMOID_LAN_WLAN_ASSOCIATED_DEVICE_ENTRY  82
+#define MDMOID_LAN_WLAN_ASSOCIATED_DEVICE_ENTRY  84
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.WEPKey.{i}. */
-#define MDMOID_LAN_WLAN_WEP_KEY  83
+#define MDMOID_LAN_WLAN_WEP_KEY  85
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.PreSharedKey.{i}. */
-#define MDMOID_LAN_WLAN_PRE_SHARED_KEY  84
+#define MDMOID_LAN_WLAN_PRE_SHARED_KEY  86
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.APWMMParameter.{i}. */
-#define MDMOID_LAN_WLAN_AP_WMM  85
+#define MDMOID_LAN_WLAN_AP_WMM  87
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.STAWMMParameter.{i}. */
-#define MDMOID_LAN_WLAN_STA_WMM  86
+#define MDMOID_LAN_WLAN_STA_WMM  88
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.Stats. */
-#define MDMOID_LAN_WLAN_STATS  87
+#define MDMOID_LAN_WLAN_STATS  89
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.WPS. */
-#define MDMOID_WP_S  88
+#define MDMOID_WP_S  90
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.WPS.Registrar.{i}. */
-#define MDMOID_WPS_REGISTRAR  89
+#define MDMOID_WPS_REGISTRAR  91
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_BROADCOM_COM_WlanAdapter. */
-#define MDMOID_WLAN_ADAPTER  90
+#define MDMOID_WLAN_ADAPTER  92
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_BROADCOM_COM_WlanAdapter.WlBaseCfg. */
-#define MDMOID_WL_BASE_CFG  91
+#define MDMOID_WL_BASE_CFG  93
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_BROADCOM_COM_WlanAdapter.WlStaticWdsCfg.{i}. */
-#define MDMOID_WL_STATIC_WDS_CFG  92
+#define MDMOID_WL_STATIC_WDS_CFG  94
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_BROADCOM_COM_WlanAdapter.WlWdsCfg.{i}. */
-#define MDMOID_WL_WDS_CFG  93
+#define MDMOID_WL_WDS_CFG  95
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_BROADCOM_COM_WlanAdapter.WlScanWdsCfg.{i}. */
-#define MDMOID_WL_SCAN_WDS_CFG  94
+#define MDMOID_WL_SCAN_WDS_CFG  96
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_BROADCOM_COM_WlanAdapter.WlMimoCfg. */
-#define MDMOID_WL_MIMO_CFG  95
+#define MDMOID_WL_MIMO_CFG  97
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_BROADCOM_COM_WlanAdapter.WlSesCfg. */
-#define MDMOID_WL_SES_CFG  96
+#define MDMOID_WL_SES_CFG  98
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_BROADCOM_COM_WlanAdapter.WlVirtIntfCfg.{i}. */
-#define MDMOID_WL_VIRT_INTF_CFG  97
+#define MDMOID_WL_VIRT_INTF_CFG  99
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_BROADCOM_COM_WlanAdapter.VirtIntf.{i}.WlMacFltCfg.{i}. */
-#define MDMOID_WL_MAC_FLT  98
+#define MDMOID_WL_MAC_FLT  100
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_BROADCOM_COM_WlanAdapter.VirtIntf.{i}.WlKey64Cfg.{i}. */
-#define MDMOID_WL_KEY64_CFG  99
+#define MDMOID_WL_KEY64_CFG  101
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_BROADCOM_COM_WlanAdapter.VirtIntf.{i}.WlKey128Cfg.{i}. */
-#define MDMOID_WL_KEY128_CFG  100
+#define MDMOID_WL_KEY128_CFG  102
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_BROADCOM_COM_WlanAdapter.VirtIntf.{i}.WlWpsCfg. */
-#define MDMOID_WL_WPS_CFG  101
+#define MDMOID_WL_WPS_CFG  103
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.X_BROADCOM_COM_LANMocaInterfaceConfig.{i}. */
-#define MDMOID_LAN_MOCA_INTF  102
+#define MDMOID_LAN_MOCA_INTF  104
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.X_BROADCOM_COM_LANMocaInterfaceConfig.{i}.Status. */
-#define MDMOID_LAN_MOCA_INTF_STATUS  103
+#define MDMOID_LAN_MOCA_INTF_STATUS  105
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.X_BROADCOM_COM_LANMocaInterfaceConfig.{i}.Stats. */
-#define MDMOID_LAN_MOCA_INTF_STATS  104
+#define MDMOID_LAN_MOCA_INTF_STATS  106
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.Hosts. */
-#define MDMOID_LAN_HOSTS  105
+#define MDMOID_LAN_HOSTS  107
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}. */
-#define MDMOID_LAN_HOST_ENTRY  106
+#define MDMOID_LAN_HOST_ENTRY  108
 
 /*! \brief InternetGatewayDevice.LANDevice.{i}.X_ACTIONTEC_COM_ALG.{i}. */
-#define MDMOID_LAN_ALG  107
+#define MDMOID_LAN_ALG  109
 
 /*! \brief InternetGatewayDevice.LANInterfaces. */
-#define MDMOID_LAN_INTF  108
+#define MDMOID_LAN_INTF  110
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}. */
-#define MDMOID_WAN_DEV  109
+#define MDMOID_WAN_DEV  111
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANCommonInterfaceConfig. */
-#define MDMOID_WAN_COMMON_INTF_CFG  110
+#define MDMOID_WAN_COMMON_INTF_CFG  112
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANCommonInterfaceConfig.Connection.{i}. */
-#define MDMOID_WAN_COMMON_INTF_CONN  111
+#define MDMOID_WAN_COMMON_INTF_CONN  113
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.X_BROADCOM_COM_XTM_Interface_Stats.{i}. */
-#define MDMOID_XTM_INTERFACE_STATS  112
+#define MDMOID_XTM_INTERFACE_STATS  114
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANDSLInterfaceConfig. */
-#define MDMOID_WAN_DSL_INTF_CFG  113
+#define MDMOID_WAN_DSL_INTF_CFG  115
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANDSLInterfaceConfig.X_BROADCOM_COM_BertTest. */
-#define MDMOID_WAN_BERT_TEST  114
+#define MDMOID_WAN_BERT_TEST  116
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANDSLInterfaceConfig.Stats. */
-#define MDMOID_WAN_DSL_INTF_STATS  115
+#define MDMOID_WAN_DSL_INTF_STATS  117
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANDSLInterfaceConfig.Stats.Total. */
-#define MDMOID_WAN_DSL_INTF_STATS_TOTAL  116
+#define MDMOID_WAN_DSL_INTF_STATS_TOTAL  118
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANDSLInterfaceConfig.Stats.Showtime. */
-#define MDMOID_WAN_DSL_INTF_STATS_SHOWTIME  117
+#define MDMOID_WAN_DSL_INTF_STATS_SHOWTIME  119
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANDSLInterfaceConfig.Stats.CurrentDay. */
-#define MDMOID_WAN_DSL_INTF_STATS_CURRENT_DAY  118
+#define MDMOID_WAN_DSL_INTF_STATS_CURRENT_DAY  120
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANDSLInterfaceConfig.Stats.QuarterHour. */
-#define MDMOID_WAN_DSL_INTF_STATS_QUARTER_HOUR  119
+#define MDMOID_WAN_DSL_INTF_STATS_QUARTER_HOUR  121
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANDSLInterfaceConfig.TestParams. */
-#define MDMOID_WAN_DSL_TEST_PARAMS  120
+#define MDMOID_WAN_DSL_TEST_PARAMS  122
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANEthernetInterfaceConfig. */
-#define MDMOID_WAN_ETH_INTF  121
+#define MDMOID_WAN_ETH_INTF  123
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANEthernetInterfaceConfig.Stats. */
-#define MDMOID_WAN_ETH_INTF_STATS  122
+#define MDMOID_WAN_ETH_INTF_STATS  124
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.X_BROADCOM_COM_WANMocaInterfaceConfig. */
-#define MDMOID_WAN_MOCA_INTF  123
+#define MDMOID_WAN_MOCA_INTF  125
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.X_BROADCOM_COM_WANMocaInterfaceConfig.Status. */
-#define MDMOID_WAN_MOCA_INTF_STATUS  124
+#define MDMOID_WAN_MOCA_INTF_STATUS  126
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.X_BROADCOM_COM_WANMocaInterfaceConfig.Stats. */
-#define MDMOID_WAN_MOCA_INTF_STATS  125
+#define MDMOID_WAN_MOCA_INTF_STATS  127
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.X_BROADCOM_COM_L2tpAcIntfConfig. */
-#define MDMOID_L2TP_AC_INTF_CONFIG  126
+#define MDMOID_L2TP_AC_INTF_CONFIG  128
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANDSLDiagnostics. */
-#define MDMOID_WAN_DSL_DIAG  127
+#define MDMOID_WAN_DSL_DIAG  129
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.X_BROADCOM_COM_WANDSLDiagnostics. */
-#define MDMOID_WAN_DSL_PROPRIETARY_DIAG  128
+#define MDMOID_WAN_DSL_PROPRIETARY_DIAG  130
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.X_BROADCOM_COM_WANDSLDiagnostics.PeakLineNoise. */
-#define MDMOID_WAN_DSL_DIAG_PLN  129
+#define MDMOID_WAN_DSL_DIAG_PLN  131
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.X_BROADCOM_COM_WANDSLDiagnostics.NonLinearity. */
-#define MDMOID_WAN_DSL_DIAG_NON_LINEARITY  130
+#define MDMOID_WAN_DSL_DIAG_NON_LINEARITY  132
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}. */
-#define MDMOID_WAN_CONN_DEVICE  131
+#define MDMOID_WAN_CONN_DEVICE  133
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.X_BROADCOM_COM_WANATMF4EndToEndLoopbackDiagnostics. */
-#define MDMOID_WAN_ATM_F4_END_TO_END_LOOPBACK_DIAG  132
+#define MDMOID_WAN_ATM_F4_END_TO_END_LOOPBACK_DIAG  134
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.X_BROADCOM_COM_WANATMF4LoopbackDiagnostics. */
-#define MDMOID_WAN_ATM_F4_LOOPBACK_DIAG  133
+#define MDMOID_WAN_ATM_F4_LOOPBACK_DIAG  135
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.X_BROADCOM_COM_WANATMF5EndToEndLoopbackDiagnostics. */
-#define MDMOID_WAN_ATM_F5_END_TO_END_LOOPBACK_DIAG  134
+#define MDMOID_WAN_ATM_F5_END_TO_END_LOOPBACK_DIAG  136
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANDSLLinkConfig. */
-#define MDMOID_WAN_DSL_LINK_CFG  135
+#define MDMOID_WAN_DSL_LINK_CFG  137
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANDSLLinkConfig.X_BROADCOM_COM_ATM_PARMS. */
-#define MDMOID_WAN_DSL_ATM_PARAMS  136
+#define MDMOID_WAN_DSL_ATM_PARAMS  138
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANATMF5LoopbackDiagnostics. */
-#define MDMOID_WAN_ATM5_LOOPBACK_DIAG  137
+#define MDMOID_WAN_ATM5_LOOPBACK_DIAG  139
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPTMLinkConfig. */
-#define MDMOID_WAN_PTM_LINK_CFG  138
+#define MDMOID_WAN_PTM_LINK_CFG  140
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANEthernetLinkConfig. */
-#define MDMOID_WAN_ETH_LINK_CFG  139
+#define MDMOID_WAN_ETH_LINK_CFG  141
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.X_BROADCOM_COM_L2tpAcLinkConfig. */
-#define MDMOID_L2TP_AC_LINK_CONFIG  140
+#define MDMOID_L2TP_AC_LINK_CONFIG  142
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}. */
-#define MDMOID_WAN_IP_CONN  141
+#define MDMOID_WAN_IP_CONN  143
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.PortMapping.{i}. */
-#define MDMOID_WAN_IP_CONN_PORTMAPPING  142
+#define MDMOID_WAN_IP_CONN_PORTMAPPING  144
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.X_BROADCOM_COM_PortTriggering.{i}. */
-#define MDMOID_WAN_IP_CONN_PORT_TRIGGERING  143
+#define MDMOID_WAN_IP_CONN_PORT_TRIGGERING  145
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.X_BROADCOM_COM_FirewallException.{i}. */
-#define MDMOID_WAN_IP_CONN_FIREWALL_EXCEPTION  144
+#define MDMOID_WAN_IP_CONN_FIREWALL_EXCEPTION  146
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.X_BROADCOM_COM_MacFilterObj. */
-#define MDMOID_MAC_FILTER  145
+#define MDMOID_MAC_FILTER  147
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.X_BROADCOM_COM_MacFilterObj.X_BROADCOM_COM_MacFilterCfg.{i}. */
-#define MDMOID_MAC_FILTER_CFG  146
+#define MDMOID_MAC_FILTER_CFG  148
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.Stats. */
-#define MDMOID_WAN_IP_CONN_STATS  147
+#define MDMOID_WAN_IP_CONN_STATS  149
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}. */
-#define MDMOID_WAN_PPP_CONN  148
+#define MDMOID_WAN_PPP_CONN  150
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.PortMapping.{i}. */
-#define MDMOID_WAN_PPP_CONN_PORTMAPPING  149
+#define MDMOID_WAN_PPP_CONN_PORTMAPPING  151
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_BROADCOM_COM_PortTriggering.{i}. */
-#define MDMOID_WAN_PPP_CONN_PORT_TRIGGERING  150
+#define MDMOID_WAN_PPP_CONN_PORT_TRIGGERING  152
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_BROADCOM_COM_FirewallException.{i}. */
-#define MDMOID_WAN_PPP_CONN_FIREWALL_EXCEPTION  151
+#define MDMOID_WAN_PPP_CONN_FIREWALL_EXCEPTION  153
 
 /*! \brief InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.Stats. */
-#define MDMOID_WAN_PPP_CONN_STATS  152
+#define MDMOID_WAN_PPP_CONN_STATS  154
 
 /*! \brief InternetGatewayDevice.Layer3Forwarding. */
-#define MDMOID_L3_FORWARDING  153
+#define MDMOID_L3_FORWARDING  155
 
 /*! \brief InternetGatewayDevice.Layer3Forwarding.Forwarding.{i}. */
-#define MDMOID_L3_FORWARDING_ENTRY  154
+#define MDMOID_L3_FORWARDING_ENTRY  156
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_IPv6Layer3Forwarding. */
-#define MDMOID_I_PV6_L3_FORWARDING  155
+#define MDMOID_I_PV6_L3_FORWARDING  157
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_IPv6Layer3Forwarding.IPv6Forwarding.{i}. */
-#define MDMOID_I_PV6_L3_FORWARDING_ENTRY  156
+#define MDMOID_I_PV6_L3_FORWARDING_ENTRY  158
 
 /*! \brief InternetGatewayDevice.Services. */
-#define MDMOID_SERVICES  157
+#define MDMOID_SERVICES  159
 
 /*! \brief InternetGatewayDevice.Services.StorageService.{i}. */
-#define MDMOID_STORAGE_SERVICE  158
+#define MDMOID_STORAGE_SERVICE  160
 
 /*! \brief InternetGatewayDevice.Services.StorageService.{i}.UserAccount.{i}. */
-#define MDMOID_USER_ACCOUNT  159
+#define MDMOID_USER_ACCOUNT  161
 
 /*! \brief InternetGatewayDevice.Services.StorageService.{i}.Capabilites. */
-#define MDMOID_CAPABILITES  160
+#define MDMOID_CAPABILITES  162
 
 /*! \brief InternetGatewayDevice.Services.StorageService.{i}.NetInfo. */
-#define MDMOID_NETWORK_INFO  161
+#define MDMOID_NETWORK_INFO  163
 
 /*! \brief InternetGatewayDevice.Services.StorageService.{i}.NetworkServer. */
-#define MDMOID_NETWORK_SERVER  162
+#define MDMOID_NETWORK_SERVER  164
 
 /*! \brief InternetGatewayDevice.Services.StorageService.{i}.PhysicalMedium.{i}. */
-#define MDMOID_PHYSICAL_MEDIUM  163
+#define MDMOID_PHYSICAL_MEDIUM  165
 
 /*! \brief InternetGatewayDevice.Services.StorageService.{i}.LogicalVolume.{i}. */
-#define MDMOID_LOGICAL_VOLUME  164
+#define MDMOID_LOGICAL_VOLUME  166
 
 /*! \brief InternetGatewayDevice.Services.StorageService.{i}.LogicalVolume.{i}.Folder.{i}. */
-#define MDMOID_FOLDER  165
+#define MDMOID_FOLDER  167
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}. */
-#define MDMOID_VOICE  166
+#define MDMOID_VOICE  168
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.Capabilities. */
-#define MDMOID_VOICE_CAP  167
+#define MDMOID_VOICE_CAP  169
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.Capabilities.SIP. */
-#define MDMOID_VOICE_CAP_SIP  168
+#define MDMOID_VOICE_CAP_SIP  170
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.Capabilities.MGCP. */
-#define MDMOID_VOICE_CAP_MGCP  169
+#define MDMOID_VOICE_CAP_MGCP  171
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.Capabilities.Codecs.{i}. */
-#define MDMOID_VOICE_CAP_CODECS  170
+#define MDMOID_VOICE_CAP_CODECS  172
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.VoiceProfile.{i}. */
-#define MDMOID_VOICE_PROF  171
+#define MDMOID_VOICE_PROF  173
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.VoiceProfile.{i}.ServiceProviderInfo. */
-#define MDMOID_VOICE_PROF_PROVIDER  172
+#define MDMOID_VOICE_PROF_PROVIDER  174
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.VoiceProfile.{i}.SIP. */
-#define MDMOID_VOICE_PROF_SIP  173
+#define MDMOID_VOICE_PROF_SIP  175
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.VoiceProfile.{i}.SIP.EventSubscribe.{i}. */
-#define MDMOID_VOICE_PROF_SIP_SUBSCRIBE  174
+#define MDMOID_VOICE_PROF_SIP_SUBSCRIBE  176
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.VoiceProfile.{i}.MGCP. */
-#define MDMOID_VOICE_PROF_MGCP  175
+#define MDMOID_VOICE_PROF_MGCP  177
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.VoiceProfile.{i}.RTP. */
-#define MDMOID_VOICE_PROF_RTP  176
+#define MDMOID_VOICE_PROF_RTP  178
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.VoiceProfile.{i}.RTP.SRTP. */
-#define MDMOID_VOICE_PROF_RTP_SRTP  177
+#define MDMOID_VOICE_PROF_RTP_SRTP  179
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.VoiceProfile.{i}.FaxT38. */
-#define MDMOID_VOICE_PROF_FAX_T38  178
+#define MDMOID_VOICE_PROF_FAX_T38  180
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.VoiceProfile.{i}.Line.{i}. */
-#define MDMOID_VOICE_LINE  179
+#define MDMOID_VOICE_LINE  181
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.VoiceProfile.{i}.Line.{i}.SIP. */
-#define MDMOID_VOICE_LINE_SIP  180
+#define MDMOID_VOICE_LINE_SIP  182
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.VoiceProfile.{i}.Line.{i}.CallingFeatures. */
-#define MDMOID_VOICE_LINE_CALLING_FEATURES  181
+#define MDMOID_VOICE_LINE_CALLING_FEATURES  183
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.VoiceProfile.{i}.Line.{i}.VoiceProcessing. */
-#define MDMOID_VOICE_LINE_PROCESSING  182
+#define MDMOID_VOICE_LINE_PROCESSING  184
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.VoiceProfile.{i}.Line.{i}.Codec. */
-#define MDMOID_VOICE_LINE_CODEC  183
+#define MDMOID_VOICE_LINE_CODEC  185
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.VoiceProfile.{i}.Line.{i}.Codec.List.{i}. */
-#define MDMOID_VOICE_LINE_CODEC_LIST  184
+#define MDMOID_VOICE_LINE_CODEC_LIST  186
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.VoiceProfile.{i}.Line.{i}.Stats. */
-#define MDMOID_VOICE_LINE_STATS  185
+#define MDMOID_VOICE_LINE_STATS  187
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.PhyInterface.{i}. */
-#define MDMOID_VOICE_PHY_INTF  186
+#define MDMOID_VOICE_PHY_INTF  188
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.PhyInterface.{i}.Tests. */
-#define MDMOID_VOICE_PHY_INTF_TESTS  187
+#define MDMOID_VOICE_PHY_INTF_TESTS  189
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.X_BROADCOM_COM_PSTN.{i}. */
-#define MDMOID_VOICE_PSTN  188
+#define MDMOID_VOICE_PSTN  190
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.X_BROADCOM_COM_Ntr. */
-#define MDMOID_VOICE_NTR  189
+#define MDMOID_VOICE_NTR  191
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.X_BROADCOM_COM_Ntr.History.{i}. */
-#define MDMOID_VOICE_NTR_HISTORY  190
+#define MDMOID_VOICE_NTR_HISTORY  192
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.DECTInterface. */
-#define MDMOID_DECT_INTF  191
+#define MDMOID_DECT_INTF  193
 
 /*! \brief InternetGatewayDevice.Services.VoiceService.{i}.DECTInterface.Handset.{i}. */
-#define MDMOID_DECT_HANDSET  192
+#define MDMOID_DECT_HANDSET  194
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_COM_DNSHostMapping.{i}. */
-#define MDMOID_HOST_MAPPING  193
+#define MDMOID_HOST_MAPPING  195
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_COM_Firewall. */
-#define MDMOID_FIREWALL  194
+#define MDMOID_FIREWALL  196
 
 /*! \brief InternetGatewayDevice.LANDeviceIcon.{i}. */
-#define MDMOID_LAN_ICON  195
+#define MDMOID_LAN_ICON  197
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_SnmpCfg. */
-#define MDMOID_SNMP_CFG  196
+#define MDMOID_SNMP_CFG  198
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_SecDmzHostCfg. */
-#define MDMOID_SEC_DMZ_HOST_CFG  197
+#define MDMOID_SEC_DMZ_HOST_CFG  199
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_AccessTimeRestriction.{i}. */
-#define MDMOID_ACCESS_TIME_RESTRICTION  198
+#define MDMOID_ACCESS_TIME_RESTRICTION  200
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_COM_MacFilter.{i}. */
-#define MDMOID_LAN_MAC_FILTER  199
+#define MDMOID_LAN_MAC_FILTER  201
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_UrlFilterCfg. */
-#define MDMOID_URL_FILTER_CFG  200
+#define MDMOID_URL_FILTER_CFG  202
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_UrlFilterCfg.X_BROADCOM_COM_UrlFilterListCfgObj.{i}. */
-#define MDMOID_URL_FILTER_LIST  201
+#define MDMOID_URL_FILTER_LIST  203
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_DDnsCfg.{i}. */
-#define MDMOID_D_DNS_CFG  202
+#define MDMOID_D_DNS_CFG  204
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_IPPCfg. */
-#define MDMOID_IPP_CFG  203
+#define MDMOID_IPP_CFG  205
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_DLNA. */
-#define MDMOID_DLNA  204
+#define MDMOID_DLNA  206
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_DLNA.DmsCfg. */
-#define MDMOID_DMS_CFG  205
+#define MDMOID_DMS_CFG  207
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_DebugPortMirroringCfg.{i}. */
-#define MDMOID_WAN_DEBUG_PORT_MIRRORING_CFG  206
+#define MDMOID_WAN_DEBUG_PORT_MIRRORING_CFG  208
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_IPSecCfg.{i}. */
-#define MDMOID_IP_SEC_CFG  207
+#define MDMOID_IP_SEC_CFG  209
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_CertificateCfg.{i}. */
-#define MDMOID_CERTIFICATE_CFG  208
+#define MDMOID_CERTIFICATE_CFG  210
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_WapiCertificate. */
-#define MDMOID_WAPI_CERTIFICATE  209
+#define MDMOID_WAPI_CERTIFICATE  211
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_WapiCertificate.WapiAsCertificate. */
-#define MDMOID_WAPI_AS_CERTIFICATE  210
+#define MDMOID_WAPI_AS_CERTIFICATE  212
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_WapiCertificate.WapiIssuedCertificate. */
-#define MDMOID_WAPI_ISSUED_CERTIFICATE  211
+#define MDMOID_WAPI_ISSUED_CERTIFICATE  213
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_NetworkConfig. */
-#define MDMOID_NETWORK_CONFIG  212
+#define MDMOID_NETWORK_CONFIG  214
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_InterfaceControl. */
-#define MDMOID_INTERFACE_CONTROL  213
+#define MDMOID_INTERFACE_CONTROL  215
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_P8021agCfg. */
-#define MDMOID_P8021AG_CFG  214
+#define MDMOID_P8021AG_CFG  216
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_IGMPCfg. */
-#define MDMOID_IGMP_CFG  215
+#define MDMOID_IGMP_CFG  217
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_MLDCfg. */
-#define MDMOID_MLD_CFG  216
+#define MDMOID_MLD_CFG  218
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG. */
-#define MDMOID_ITU_T_ORG  217
+#define MDMOID_ITU_T_ORG  219
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4. */
-#define MDMOID_G_984_4  218
+#define MDMOID_G_984_4  220
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.EquipmentManagement. */
-#define MDMOID_EQUIPMENT_MANAGEMENT  219
+#define MDMOID_EQUIPMENT_MANAGEMENT  221
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.EquipmentManagement.OntG. */
-#define MDMOID_ONT_G  220
+#define MDMOID_ONT_G  222
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.EquipmentManagement.Ont2G. */
-#define MDMOID_ONT2_G  221
+#define MDMOID_ONT2_G  223
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.EquipmentManagement.OntData. */
-#define MDMOID_ONT_DATA  222
+#define MDMOID_ONT_DATA  224
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.EquipmentManagement.SoftwareImage.{i}. */
-#define MDMOID_SOFTWARE_IMAGE  223
+#define MDMOID_SOFTWARE_IMAGE  225
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.EquipmentManagement.CardHolder.{i}. */
-#define MDMOID_CARD_HOLDER  224
+#define MDMOID_CARD_HOLDER  226
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.EquipmentManagement.CircuitPack.{i}. */
-#define MDMOID_CIRCUIT_PACK  225
+#define MDMOID_CIRCUIT_PACK  227
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.EquipmentManagement.PowerShedding.{i}. */
-#define MDMOID_POWER_SHEDDING  226
+#define MDMOID_POWER_SHEDDING  228
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.EquipmentManagement.PortMappingPackageG.{i}. */
-#define MDMOID_PORT_MAPPING_PACKAGE_G  227
+#define MDMOID_PORT_MAPPING_PACKAGE_G  229
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.AniManagement. */
-#define MDMOID_ANI_MANAGEMENT  228
+#define MDMOID_ANI_MANAGEMENT  230
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.AniManagement.AniG.{i}. */
-#define MDMOID_ANI_G  229
+#define MDMOID_ANI_G  231
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.AniManagement.TCont.{i}. */
-#define MDMOID_T_CONT  230
+#define MDMOID_T_CONT  232
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.AniManagement.GemPortNetworkCtp.{i}. */
-#define MDMOID_GEM_PORT_NETWORK_CTP  231
+#define MDMOID_GEM_PORT_NETWORK_CTP  233
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.AniManagement.X_BROADCOM_COM_GemPortNetworkCtp.{i}. */
-#define MDMOID_BC_GEM_PORT_NETWORK_CTP  232
+#define MDMOID_BC_GEM_PORT_NETWORK_CTP  234
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.AniManagement.GemInterworkingTp.{i}. */
-#define MDMOID_GEM_INTERWORKING_TP  233
+#define MDMOID_GEM_INTERWORKING_TP  235
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.AniManagement.MulticastGemInterworkingTp.{i}. */
-#define MDMOID_MULTICAST_GEM_INTERWORKING_TP  234
+#define MDMOID_MULTICAST_GEM_INTERWORKING_TP  236
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.AniManagement.MulticastGemInterworkingTp.{i}.MulticastAddressTable.{i}. */
-#define MDMOID_GEM_INTERWORKING_TP_MULTICAST_ADDRESS_TABLE  235
+#define MDMOID_GEM_INTERWORKING_TP_MULTICAST_ADDRESS_TABLE  237
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.AniManagement.GemPortPmHistoryData.{i}. */
-#define MDMOID_GEM_PORT_PM_HISTORY_DATA  236
+#define MDMOID_GEM_PORT_PM_HISTORY_DATA  238
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.AniManagement.GalEthernetProfile.{i}. */
-#define MDMOID_GAL_ETHERNET_PROFILE  237
+#define MDMOID_GAL_ETHERNET_PROFILE  239
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.AniManagement.GalEthernetPmHistoryData.{i}. */
-#define MDMOID_GAL_ETHERNET_PM_HISTORY_DATA  238
+#define MDMOID_GAL_ETHERNET_PM_HISTORY_DATA  240
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.AniManagement.FecPmHistoryData.{i}. */
-#define MDMOID_FEC_PM_HISTORY_DATA  239
+#define MDMOID_FEC_PM_HISTORY_DATA  241
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices. */
-#define MDMOID_LAYER2_DATA_SERVICES  240
+#define MDMOID_LAYER2_DATA_SERVICES  242
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices.MacBridgeServiceProfile.{i}. */
-#define MDMOID_MAC_BRIDGE_SERVICE_PROFILE  241
+#define MDMOID_MAC_BRIDGE_SERVICE_PROFILE  243
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices.X_BROADCOM_COM_MacBridgeServiceProfile.{i}. */
-#define MDMOID_BC_MAC_BRIDGE_SERVICE_PROFILE  242
+#define MDMOID_BC_MAC_BRIDGE_SERVICE_PROFILE  244
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices.MacBridgeConfigData.{i}. */
-#define MDMOID_MAC_BRIDGE_CONFIG_DATA  243
+#define MDMOID_MAC_BRIDGE_CONFIG_DATA  245
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices.MacBridgePmHistoryData.{i}. */
-#define MDMOID_MAC_BRIDGE_PM_HISTORY_DATA  244
+#define MDMOID_MAC_BRIDGE_PM_HISTORY_DATA  246
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices.MacBridgePortConfigData.{i}. */
-#define MDMOID_MAC_BRIDGE_PORT_CONFIG_DATA  245
+#define MDMOID_MAC_BRIDGE_PORT_CONFIG_DATA  247
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices.MacBridgePortDesignationData.{i}. */
-#define MDMOID_MAC_BRIDGE_PORT_DESIGNATION_DATA  246
+#define MDMOID_MAC_BRIDGE_PORT_DESIGNATION_DATA  248
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices.MacBridgePortFilterTableData.{i}. */
-#define MDMOID_MAC_BRIDGE_PORT_FILTER_TABLE_DATA  247
+#define MDMOID_MAC_BRIDGE_PORT_FILTER_TABLE_DATA  249
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices.MacBridgePortFilterTableData.{i}.MacFilterTable.{i}. */
-#define MDMOID_MAC_FILTER_TABLE  248
+#define MDMOID_MAC_FILTER_TABLE  250
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices.MacBridgePortFilterPreAssignTable.{i}. */
-#define MDMOID_MAC_BRIDGE_PORT_FILTER_PRE_ASSIGN_TABLE  249
+#define MDMOID_MAC_BRIDGE_PORT_FILTER_PRE_ASSIGN_TABLE  251
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices.MacBridgePortBridgeTableData.{i}. */
-#define MDMOID_MAC_BRIDGE_PORT_BRIDGE_TABLE_DATA  250
+#define MDMOID_MAC_BRIDGE_PORT_BRIDGE_TABLE_DATA  252
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices.MacBridgePortBridgeTableData.{i}.BridgeTable.{i}. */
-#define MDMOID_BRIDGE_TABLE  251
+#define MDMOID_BRIDGE_TABLE  253
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices.MacBridgePortPmHistoryData.{i}. */
-#define MDMOID_MAC_BRIDGE_PORT_PM_HISTORY_DATA  252
+#define MDMOID_MAC_BRIDGE_PORT_PM_HISTORY_DATA  254
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices.MapperServiceProfile.{i}. */
-#define MDMOID_MAPPER_SERVICE_PROFILE  253
+#define MDMOID_MAPPER_SERVICE_PROFILE  255
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices.X_BROADCOM_COM_MapperServiceProfile.{i}. */
-#define MDMOID_BC_MAPPER_SERVICE_PROFILE  254
+#define MDMOID_BC_MAPPER_SERVICE_PROFILE  256
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices.VlanTaggingFilterData.{i}. */
-#define MDMOID_VLAN_TAGGING_FILTER_DATA  255
+#define MDMOID_VLAN_TAGGING_FILTER_DATA  257
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices.VlanTaggingOperationConfigurationData.{i}. */
-#define MDMOID_VLAN_TAGGING_OPERATION_CONFIGURATION_DATA  256
+#define MDMOID_VLAN_TAGGING_OPERATION_CONFIGURATION_DATA  258
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices.ExtendedVlanTaggingOperationConfigurationData.{i}. */
-#define MDMOID_EXTENDED_VLAN_TAGGING_OPERATION_CONFIGURATION_DATA  257
+#define MDMOID_EXTENDED_VLAN_TAGGING_OPERATION_CONFIGURATION_DATA  259
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer2DataServices.ExtendedVlanTaggingOperationConfigurationData.{i}.ReceivedFrameVlanTaggingOperationTable.{i}. */
-#define MDMOID_RECEIVED_FRAME_VLAN_TAGGING_OPERATION_TABLE  258
+#define MDMOID_RECEIVED_FRAME_VLAN_TAGGING_OPERATION_TABLE  260
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer3DataServices. */
-#define MDMOID_LAYER3_DATA_SERVICES  259
+#define MDMOID_LAYER3_DATA_SERVICES  261
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer3DataServices.IpHostConfigData.{i}. */
-#define MDMOID_IP_HOST_CONFIG_DATA  260
+#define MDMOID_IP_HOST_CONFIG_DATA  262
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer3DataServices.X_BROADCOM_COM_IpHostConfigData.{i}. */
-#define MDMOID_BC_IP_HOST_CONFIG_DATA  261
+#define MDMOID_BC_IP_HOST_CONFIG_DATA  263
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer3DataServices.IpHostPmHistoryData.{i}. */
-#define MDMOID_IP_HOST_PM_HISTORY_DATA  262
+#define MDMOID_IP_HOST_PM_HISTORY_DATA  264
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.Layer3DataServices.TcpUdpConfigData.{i}. */
-#define MDMOID_TCP_UDP_CONFIG_DATA  263
+#define MDMOID_TCP_UDP_CONFIG_DATA  265
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.EthernetServices. */
-#define MDMOID_ETHERNET_SERVICES  264
+#define MDMOID_ETHERNET_SERVICES  266
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.EthernetServices.PptpEthernetUni.{i}. */
-#define MDMOID_PPTP_ETHERNET_UNI  265
+#define MDMOID_PPTP_ETHERNET_UNI  267
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.EthernetServices.EthernetPmHistoryData.{i}. */
-#define MDMOID_ETHERNET_PM_HISTORY_DATA  266
+#define MDMOID_ETHERNET_PM_HISTORY_DATA  268
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.EthernetServices.EthernetPmHistoryData2.{i}. */
-#define MDMOID_ETHERNET_PM_HISTORY_DATA2  267
+#define MDMOID_ETHERNET_PM_HISTORY_DATA2  269
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.EthernetServices.EthernetPmHistoryData3.{i}. */
-#define MDMOID_ETHERNET_PM_HISTORY_DATA3  268
+#define MDMOID_ETHERNET_PM_HISTORY_DATA3  270
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices. */
-#define MDMOID_VOICE_SERVICES  269
+#define MDMOID_VOICE_SERVICES  271
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.PptpPotsUni.{i}. */
-#define MDMOID_PPTP_POTS_UNI  270
+#define MDMOID_PPTP_POTS_UNI  272
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.SipUserData.{i}. */
-#define MDMOID_SIP_USER_DATA  271
+#define MDMOID_SIP_USER_DATA  273
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.SipAgentConfigData.{i}. */
-#define MDMOID_SIP_AGENT_CONFIG_DATA  272
+#define MDMOID_SIP_AGENT_CONFIG_DATA  274
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.VoIpVoiceCtp.{i}. */
-#define MDMOID_VO_IP_VOICE_CTP  273
+#define MDMOID_VO_IP_VOICE_CTP  275
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.VoIpMediaProfile.{i}. */
-#define MDMOID_VO_IP_MEDIA_PROFILE  274
+#define MDMOID_VO_IP_MEDIA_PROFILE  276
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.VoiceServiceProfile.{i}. */
-#define MDMOID_VOICE_SERVICE  275
+#define MDMOID_VOICE_SERVICE  277
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.RtpProfileData.{i}. */
-#define MDMOID_RTP_PROFILE_DATA  276
+#define MDMOID_RTP_PROFILE_DATA  278
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.VoIpAppServiceProfile.{i}. */
-#define MDMOID_VO_IP_APP_SERVICE_PROFILE  277
+#define MDMOID_VO_IP_APP_SERVICE_PROFILE  279
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.VoiceFeatureAccessCodes.{i}. */
-#define MDMOID_VOICE_FEATURE_ACCESS_CODES  278
+#define MDMOID_VOICE_FEATURE_ACCESS_CODES  280
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.NetworkDialPlanTable.{i}. */
-#define MDMOID_NETWORK_DIAL_PLAN_TABLE  279
+#define MDMOID_NETWORK_DIAL_PLAN_TABLE  281
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.NetworkDialPlanTable.{i}.DialPlanTable.{i}. */
-#define MDMOID_DIAL_PLAN_TABLE  280
+#define MDMOID_DIAL_PLAN_TABLE  282
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.VoIpLineStatus.{i}. */
-#define MDMOID_VO_IP_LINE_STATUS  281
+#define MDMOID_VO_IP_LINE_STATUS  283
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.CallControlPmHistoryData.{i}. */
-#define MDMOID_CALL_CONTROL_PM_HISTORY_DATA  282
+#define MDMOID_CALL_CONTROL_PM_HISTORY_DATA  284
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.RtpPmHistoryData.{i}. */
-#define MDMOID_RTP_PM_HISTORY_DATA  283
+#define MDMOID_RTP_PM_HISTORY_DATA  285
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.SipAgentPmHistoryData.{i}. */
-#define MDMOID_SIP_AGENT_PM_HISTORY_DATA  284
+#define MDMOID_SIP_AGENT_PM_HISTORY_DATA  286
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.SipCallInitPmHistoryData.{i}. */
-#define MDMOID_SIP_CALL_INIT_PM_HISTORY_DATA  285
+#define MDMOID_SIP_CALL_INIT_PM_HISTORY_DATA  287
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.MgcConfigData.{i}. */
-#define MDMOID_MGC_CONFIG_DATA  286
+#define MDMOID_MGC_CONFIG_DATA  288
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.MgcPmHistoryData.{i}. */
-#define MDMOID_MGC_PM_HISTORY_DATA  287
+#define MDMOID_MGC_PM_HISTORY_DATA  289
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.VoiceServices.VoIpConfigData.{i}. */
-#define MDMOID_VO_IP_CONFIG_DATA  288
+#define MDMOID_VO_IP_CONFIG_DATA  290
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.MocaServices. */
-#define MDMOID_MOCA_SERVICES  289
+#define MDMOID_MOCA_SERVICES  291
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.MocaServices.PptpMocaUni.{i}. */
-#define MDMOID_PPTP_MOCA_UNI  290
+#define MDMOID_PPTP_MOCA_UNI  292
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.MocaServices.X_BROADCOM_COM_PptpMocaUni.{i}. */
-#define MDMOID_BRCM_PPTP_MOCA_UNI  291
+#define MDMOID_BRCM_PPTP_MOCA_UNI  293
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.MocaServices.X_BROADCOM_COM_MocaStatus.{i}. */
-#define MDMOID_MOCA_STATUS  292
+#define MDMOID_MOCA_STATUS  294
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.MocaServices.X_BROADCOM_COM_MocaStats.{i}. */
-#define MDMOID_MOCA_STATS  293
+#define MDMOID_MOCA_STATS  295
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.MocaServices.MocaEthernetPmHistoryData.{i}. */
-#define MDMOID_MOCA_ETHERNET_PM_HISTORY_DATA  294
+#define MDMOID_MOCA_ETHERNET_PM_HISTORY_DATA  296
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.MocaServices.MocaInterfacePmHistoryData.{i}. */
-#define MDMOID_MOCA_INTERFACE_PM_HISTORY_DATA  295
+#define MDMOID_MOCA_INTERFACE_PM_HISTORY_DATA  297
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.MocaServices.MocaInterfacePmHistoryData.{i}.NodeTable.{i}. */
-#define MDMOID_MOCA_INTERFACE_PM_HISTORY_DATA_NODE_TABLE  296
+#define MDMOID_MOCA_INTERFACE_PM_HISTORY_DATA_NODE_TABLE  298
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.TrafficManagement. */
-#define MDMOID_TRAFFIC_MANAGEMENT  297
+#define MDMOID_TRAFFIC_MANAGEMENT  299
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.TrafficManagement.PriorityQueueG.{i}. */
-#define MDMOID_PRIORITY_QUEUE_G  298
+#define MDMOID_PRIORITY_QUEUE_G  300
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.TrafficManagement.TrafficSchedulerG.{i}. */
-#define MDMOID_TRAFFIC_SCHEDULER_G  299
+#define MDMOID_TRAFFIC_SCHEDULER_G  301
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.TrafficManagement.GemTrafficDescriptor.{i}. */
-#define MDMOID_GEM_TRAFFIC_DESCRIPTOR  300
+#define MDMOID_GEM_TRAFFIC_DESCRIPTOR  302
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.General. */
-#define MDMOID_GENERAL  301
+#define MDMOID_GENERAL  303
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.General.UniG.{i}. */
-#define MDMOID_UNI_G  302
+#define MDMOID_UNI_G  304
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.General.OltG. */
-#define MDMOID_OLT_G  303
+#define MDMOID_OLT_G  305
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.General.NetworkAddress.{i}. */
-#define MDMOID_NETWORK_ADDRESS  304
+#define MDMOID_NETWORK_ADDRESS  306
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.General.AuthenticationSecurityMethod.{i}. */
-#define MDMOID_AUTHENTICATION_SECURITY_METHOD  305
+#define MDMOID_AUTHENTICATION_SECURITY_METHOD  307
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.General.LargeString.{i}. */
-#define MDMOID_LARGE_STRING  306
+#define MDMOID_LARGE_STRING  308
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.General.ThresholdData1.{i}. */
-#define MDMOID_THRESHOLD_DATA1  307
+#define MDMOID_THRESHOLD_DATA1  309
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.General.ThresholdData2.{i}. */
-#define MDMOID_THRESHOLD_DATA2  308
+#define MDMOID_THRESHOLD_DATA2  310
 
 /*! \brief InternetGatewayDevice.X_ITU_T_ORG.G_984_4.General.Omci. */
-#define MDMOID_OMCI  309
+#define MDMOID_OMCI  311
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_OmciSystem. */
-#define MDMOID_OMCI_SYSTEM  310
+#define MDMOID_OMCI_SYSTEM  312
 
 /*! \brief InternetGatewayDevice.X_BROADCOM_COM_GponOmciStats. */
-#define MDMOID_GPON_OMCI_STATS  311
+#define MDMOID_GPON_OMCI_STATS  313
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_COM_Portmapping_Application.{i}. */
-#define MDMOID_PM_APP  312
+#define MDMOID_PM_APP  314
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_COM_PORTMAPPING_APPILCATIONS.{i}.X_ACTIONTEC_COM_App_Rules.{i}. */
-#define MDMOID_APP_RULE  313
+#define MDMOID_APP_RULE  315
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_COM_WAN_VLAN.{i}. */
-#define MDMOID_ACTIONTEC_WAN_VLAN  314
+#define MDMOID_ACTIONTEC_WAN_VLAN  316
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_COM_MULTIPLE_PVC.{i}. */
-#define MDMOID_ACTIONTEC_MULTIPLE_PVC  315
+#define MDMOID_ACTIONTEC_MULTIPLE_PVC  317
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_COM_ToolBoxCfg. */
-#define MDMOID_TOOL_BOX_CFG  316
+#define MDMOID_TOOL_BOX_CFG  318
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_GLOBALS. */
-#define MDMOID_GLOBALS  317
+#define MDMOID_GLOBALS  319
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_GLOBALS.Firewall. */
-#define MDMOID_IGD_GLOBAL_FW  318
+#define MDMOID_IGD_GLOBAL_FW  320
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_GLOBALS.NAT. */
-#define MDMOID_IGD_GLOBAL_N_A_T  319
+#define MDMOID_IGD_GLOBAL_N_A_T  321
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_GLOBALS.PortMapping.{i}. */
-#define MDMOID_GLOBALS_PORTMAPPING  320
+#define MDMOID_GLOBALS_PORTMAPPING  322
 
 /*! \brief InternetGatewayDevice.User.{i}. */
-#define MDMOID_IGD_USER  321
+#define MDMOID_IGD_USER  323
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_COM_WAN_Option_60. */
-#define MDMOID_WAN_OPT60  322
+#define MDMOID_WAN_OPT60  324
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_COM_IPTVSTB. */
-#define MDMOID_IPTV_STB  323
+#define MDMOID_IPTV_STB  325
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_COM_IGMP. */
-#define MDMOID_IGMP  324
+#define MDMOID_IGMP  326
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_COM_DHCPLeases.{i}. */
-#define MDMOID_DHCP_LEASES  325
+#define MDMOID_DHCP_LEASES  327
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_COM_STBDHCPConfig. */
-#define MDMOID_STB_DHCP_CONFIG  326
+#define MDMOID_STB_DHCP_CONFIG  328
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_COM_CLI_Access. */
-#define MDMOID_CLI_ACCESS  327
+#define MDMOID_CLI_ACCESS  329
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_COM_Performance. */
-#define MDMOID_IGD_PERFORMANCE  328
+#define MDMOID_IGD_PERFORMANCE  330
 
 /*! \brief InternetGatewayDevice.X_ACTIONTEC_COM_TR064. */
-#define MDMOID_TR064  329
+#define MDMOID_TR064  331
 
 /*! \brief maximum OID value */
-#define MDM_MAX_OID 329
+#define MDM_MAX_OID 331
 
 
 

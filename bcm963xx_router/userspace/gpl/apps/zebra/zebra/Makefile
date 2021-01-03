@@ -17,7 +17,7 @@
 #access/filter list support, add -DDBRCM_LIST_SUPPORT
 CFLAGS= -s -Os -fomit-frame-pointer -L$(LIB_PATH) -I$(BUILD_DIR)/userspace/public/include -I$(BUILD_DIR)/userspace/public/include/linux
 CFLAGS += -I$(TOOLCHAIN)/include
-
+CFLAGS += -L$(TOOLCHAIN)/lib
 ifeq ($(strip $(BUILD_ZEBRA)), static)
 CFLAGS += -DBUILD_STATIC
 endif

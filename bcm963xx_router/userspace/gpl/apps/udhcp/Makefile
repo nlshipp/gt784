@@ -58,10 +58,6 @@ LIBS=-Wl,-rpath,/lib:/lib/public:$(INSTALL_DIR)/lib:$(INSTALL_DIR)/lib/public -L
 CFLAGS += -Os -fomit-frame-pointer -fno-strict-aliasing
 CFLAGS += $(BRCM_WERROR_CFLAGS)
 
-ifneq ($(strip $(AEI_CONTROL_LAYER)),)
-CFLAGS += -I$(BUILD_DIR)/userspace/private/apps/ctl_layer/include -I$(BUILD_DIR)/userspace/private/apps/ctl_layer/tr69fw/include
-LIBS += -L$(BUILD_DIR)/userspace/private/apps/ctl_layer/lib -ldbussend_msg -ldbus
-endif
 
 ifeq ($(strip $(BUILD_UDHCP)), static)
 CFLAGS += -DBUILD_STATIC
@@ -71,7 +67,6 @@ ifeq ($(strip $(BUILD_UDHCP_RELAY)), y)
 CFLAGS += -DDHCP_RELAY
 DHCPD_OBJS += relay.o
 endif
-CFLAGS +=$(ACTION_TEC_DFLAGS)
 
 # BRCM begin
 #all: $(AR1)

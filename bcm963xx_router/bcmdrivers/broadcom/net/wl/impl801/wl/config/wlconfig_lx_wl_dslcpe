@@ -1,0 +1,107 @@
+# Broadcom 802.11abg Networking Device Driver Configuration file
+#
+# Copyright 2007, Broadcom Corporation
+# All Rights Reserved.
+# 
+# THIS SOFTWARE IS OFFERED "AS IS", AND BROADCOM GRANTS NO WARRANTIES OF ANY
+# KIND, EXPRESS OR IMPLIED, BY STATUTE, COMMUNICATION OR OTHERWISE. BROADCOM
+# SPECIFICALLY DISCLAIMS ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS
+# FOR A SPECIFIC PURPOSE OR NONINFRINGEMENT CONCERNING THIS SOFTWARE.
+#
+# $Id: wlconfig_lx_wl_dslcpe,v 1.1 2010/08/05 21:59:00 ywu Exp $
+#
+# src/wl/linux driver config file
+override WL=1
+#no need to PIO
+WLPIO=0
+
+#disable this, platform dependent
+ROUTER_COMA=0
+
+#WirelessOnChip
+ifeq ($(strip $(BRCM_CHIP)),6362)
+EXTRA_CFLAGS	+= -DDSLCPE_WOC  -DSI_ENUM_BASE_VARIABLE
+#DSLCPEWOC=1
+DSLCPE_WLFILES += ubutils.c
+endif
+
+#extra files
+DSLCPE_WLFILES += nvramstubs.c bcmsromio.c si_dslcpe.c
+
+ifeq ($(strip $(CONFIG_BCM_WLAN)),y) 
+DSLCPE_WLFILES += bcm4318_map.c bcm4312_map.c bcm4322_map.c bcm4306_map.c bcm4321_map.c bcm43222_map.c
+DSLCPE_WLFILES += bcm6362_map.c bcm43226_map.c
+WLFLAGS += -DDSLCPE_WOMBO_BUILTIN_SROM
+endif
+
+ifeq ($(DSLCPE),1)
+	WLFILES_SRC += wl_linux_dslcpe.c
+	WLFLAGS += -DDSLCPE
+	ifeq ($(DSLCPE_SCBLIST),1)
+		WLFLAGS += -DDSLCPE_SCBLIST
+	endif
+endif	
+
+
+
+#ifdef WMF
+ifeq ($(WMF), 1)
+	DSLCPE_WLFILES += emfc.c
+    DSLCPE_WLFILES += igsc.c
+    DSLCPE_WLFILES += osl_linux.c
+    DSLCPE_WLFILES += igsc_sdb.c
+endif 
+#endif
+
+ifeq ($(strip $(PROFILE)),ikos)
+BCMQT=1
+EXTRA_CFLAGS	+= -DDSLCPE_CANNEDTX
+else
+#EXTRA_CFLAGS	+= -DDSLCPE_DELAY -DDSLCPE_DELAYTASK -DDSLCPE_PERCAL_DELAY
+endif
+
+
+#$(warning Copy $(WLTUNEFILE))
+#$(shell cp -f $(WLCFGDIR)/$(WLTUNEFILE) $(WLCFGDIR)/../sys/wlconf.h)
+
+#
+# compiler flags
+#
+ifneq ($(strip $(OVERRIDEBASE)),)
+DSLCPEOVERRIDE=1
+EXTRA_CFLAGS	+= -I$(WLSRCBASE)/$(OVERRIDEBASE)
+endif
+EXTRA_CFLAGS	+= -I$(WLSRCBASE)/include
+EXTRA_CFLAGS    += -I$(WLSRCBASE)/shared
+EXTRA_CFLAGS    += -I$(WLSRCBASE)/wl/sys
+EXTRA_CFLAGS    += -I$(WLSRCBASE)/wl/phy
+EXTRA_CFLAGS    += -I$(WLSRCBASE)/emf/emf
+EXTRA_CFLAGS    += -I$(WLSRCBASE)/emf/igs
+EXTRA_CFLAGS    += -I$(WLSRCBASE)/router/shared
+EXTRA_CFLAGS    += -I$(WLSRCBASE)/router/emf/emf
+EXTRA_CFLAGS    += -I$(WLSRCBASE)/router/emf/igs
+EXTRA_CFLAGS    += -I$(WLSRCBASE)/include/emf/emf
+EXTRA_CFLAGS    += -I$(WLSRCBASE)/include/emf/igs
+EXTRA_CFLAGS 	+= -I$(INC_BRCMDRIVER_PUB_PATH)/$(BRCM_BOARD)
+EXTRA_CFLAGS    += -I$(INC_BRCMDRIVER_PRIV_PATH)/$(BRCM_BOARD)
+EXTRA_CFLAGS    += -I$(INC_BRCMSHARED_PUB_PATH)/$(BRCM_BOARD)
+EXTRA_CFLAGS    += -I$(INC_BRCMSHARED_PRIV_PATH)/$(BRCM_BOARD)
+EXTRA_CFLAGS    += -I$(INC_BRCMBOARDPARMS_PATH)/$(BRCM_BOARD)
+EXTRA_CFLAGS	+= -I$(TOOLCHAIN)/include
+EXTRA_CFLAGS	+= -DIL_BIGENDIAN
+EXTRA_CFLAGS	+= -DBCMDRIVER
+EXTRA_CFLAGS	+= -DDSLCPE_DGASP
+EXTRA_CFLAGS	+= -DDSLCPE_WOMBO -DSI_SPROM_PROBE
+EXTRA_CFLAGS	+= $(WLFLAGS)
+EXTRA_CFLAGS	+= -DWLTEST
+EXTRA_CFLAGS	+= -DDSLCPE_WDSSEC
+#Disable NAPI for SMP buid, which causes system crash.
+ifneq ($(strip $(CONFIG_SMP)),y)
+EXTRA_CFLAGS	+= -DDSLCPE_NAPI
+#EXTRA_CFLAGS	+= -DDSLCPE_BLOG
+endif
+EXTRA_CFLAGS	+= -DDSLCPE_BLOG
+
+#EXTRA_CFLAGS	+= -DBCMDBG -DBCMDBG_ERR -DBCMDBG_DUMP
+#EXTRA_CFLAGS	+= -DBCMDBG -DBCMDBG_ERR 
+EXTRA_CFLAGS	+= -DDSLCPE_IDLE_PWRSAVE

@@ -1,0 +1,78 @@
+#
+# Internal sources file (do not release)
+#
+# Copyright (C) 2006 Broadcom Corporation
+#
+# $Id: sources,v 1.1 2010/08/05 21:59:03 ywu Exp $
+#
+
+OEM             := bcm
+HOSTOS          := wince
+PROCESSOR       ?= X86
+WINCEVER        := 500
+LIB_PATH        ?= $(SRCBASE)/tools/bin/WINCE/$(WINCEVER)/Lib
+TARGETNAME      := ce_wpscli
+TARGETPATH=obj/sta/$(WINCEVER)/$(PROCESSOR)
+TARGETTYPE = LIB
+LIB_PATH       ?= $(SRCBASE)/tools/bin/WINCE/$(WINCEVER)/Lib
+_WINPCAP_CE_ROOT=$(SRCBASE)/8021x/winpcap/PacketCE
+
+vpath %.c $(SRCBASE)/wps/common $(SRCBASE)/wps/common/enrollee $(SRCBASE)/wps/common/shared $(SRCBASE)/wps/common/sta $(SRCBASE)/wps/common/ap $(SRCBASE)/wps/common/registrar $(SRCBASE)/wps/wpscli/common $(SRCBASE)/wps/wpscli/ce/wpscli_osl_lib $(SRCBASE)/bcmcrypto $(SRCBASE)/tools/epictrl
+
+ifdef BRAND
+  C_DEFINES += -D$(BRAND)
+endif
+
+C_DEFINES += -DWPS_WIRELESS_ENROLLEE -DAES_CBC_ONLY
+
+ifeq ($(WINCEVER),600)
+  C_DEFINES +=  -D_CRT_SECURE_NO_DEPRECATE
+endif
+
+
+ifeq ($(PROCESSOR),ARM)
+  SDK_LIB_PATH := "$(LIB_PATH)/ARMV4I"
+  INCLUDES += $(_WINCEROOT)/Include/Armv4i;
+endif
+
+ifeq ($(PROCESSOR),X86)
+  SDK_LIB_PATH := "$(LIB_PATH)/x86"
+  INCLUDES += $(_WINCEROOT)/Include/x86;
+endif
+
+ifneq ($(PROCESSOR),ARM)
+ifneq ($(PROCESSOR),X86)
+  $(error NEW PROCESSOR is defined, needs modification to this file)
+endif
+endif
+
+TARGETLIBS= $(SDK_LIB_PATH)/coredll.lib \
+            $(SDK_LIB_PATH)/ws2.lib \
+            $(SDK_LIB_PATH)/bcmwlpkt.lib
+
+
+INCLUDES +=$(_WINCEROOT)/include;$(_WINCEROOT)/public/common/oak/inc;$(_WINCEROOT)/public/common/ddk/inc;$(_WINCEROOT)/public/common/sdk/inc;
+INCLUDES += $(SRCBASE)/include;$(SRCBASE)/include/proto;;$(SRCBASE)/include/bcmcrypto;$(SRCBASE)/wps/common/include
+INCLUDES +=$(_WINPCAP_CE_ROOT)/Common;
+INCLUDES += $(SRCBASE)/wps/wpscli/include;  $(SRCBASE)/wps/wpscli/common/include;$(SRCBASE)/wps/wpscli/ce/include;
+
+
+SOURCES += ir_ce.c 
+
+# shared files
+SOURCES += buffobj.c reg_proto_msg.c reg_proto_utils.c slist.c
+SOURCES += state_machine.c tlv.c tutrace.c
+# ap files
+SOURCES += ap_api.c ap_eap_sm.c ap_upnp_sm.c dev_config.c
+# sta files
+SOURCES += sta_eap_sm.c
+# enrollee files
+SOURCES += enr_api.c enr_reg_sm.c
+# registrar files
+SOURCES += reg_sm.c
+
+SOURCES += aes.c rijndael-alg-fst.c dh.c bn.c sha256.c hmac_sha256.c random.c
+
+SOURCES += wps_osl_helper.c wpscli_osl_timer.c wpscli_pktdisp.c wpscli_wl_handler.c wpcli_wlan.c
+
+SOURCES += wpscli_api.c wpscli_softap.c wpscli_sta.c wpscli_wl.c wpscli_wpscore_hooks.c wpscli_adapter.c

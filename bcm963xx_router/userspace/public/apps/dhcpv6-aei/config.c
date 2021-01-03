@@ -1057,7 +1057,7 @@ configure_addr(cf_addr_list, list0, optname)
 			return -1;
 		}
 		if (dhcp6_add_listval(list0, DHCP6_LISTVAL_ADDR6,
-		    cl->ptr, NULL) == NULL) {
+		    cl->ptr, NULL, 0) == NULL) {
 			dprintf(LOG_ERR, FNAME, "failed to add a %s server",
 			    optname);
 			return -1;
@@ -1113,7 +1113,7 @@ configure_domain(cf_name_list, list0, optname)
 
 		/* add the name */
 		if (dhcp6_add_listval(list0, DHCP6_LISTVAL_VBUF,
-		    &name_vbuf, NULL) == NULL) {
+		    &name_vbuf, NULL, 0) == NULL) {
 			dprintf(LOG_ERR, FNAME, "failed to add a %s name",
 			    optname);
 			dhcp6_vbuf_free(&name_vbuf);
@@ -1699,7 +1699,7 @@ add_options(opcode, ifc, cfl0)
 					goto next; /* ignore it */
 				}
 				if (dhcp6_add_listval(&ifc->reqopt_list,
-				    DHCP6_LISTVAL_NUM, &opttype, NULL)
+				    DHCP6_LISTVAL_NUM, &opttype, NULL, 0)
 				    == NULL) {
 					dprintf(LOG_ERR, FNAME, "failed to "
 					    "configure an option");
@@ -1795,7 +1795,7 @@ add_prefix(head, name, type, prefix0)
 	}
 
 	/* insert the new prefix to the chain */
-	if (dhcp6_add_listval(head, type, &oprefix, NULL) == NULL) {
+	if (dhcp6_add_listval(head, type, &oprefix, NULL, 0) == NULL) {
 		return (-1);
 	}
 
@@ -2201,6 +2201,23 @@ is_available_in_pool(pool, addr)
 
 	return (0);
 }
+#ifdef AEI_DHCP6S_SERIALIZE
+int
+is_in_pool(addr)
+    struct in6_addr *addr;
+{
+    struct pool_conf *pool = NULL;
+    if (!addr)
+        return 0;
+    for (pool = pool_conflist; pool; pool = pool->next) {
+        if (in6_addr_cmp(addr, &pool->min) >= 0 &&
+            in6_addr_cmp(addr, &pool->max) <= 0) {
+            return (1);
+        }
+    }
+    return (0);
+}
+#endif
 
 static int 
 in6_addr_cmp(addr1, addr2)

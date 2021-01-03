@@ -113,301 +113,7 @@ static void add_bootp_options(struct dhcpMessage *packet)
                 strncpy(packet->file, cur_iface->boot_file,
 			sizeof(packet->file) - 1);
 }
-
-//add by vincent 2010-12-23
-#if defined(AEI_VDSL_CUSTOMER_TELUS)
-/*
- * check the ip is in the lease range
- */
-static int is_in_range(int vendor, u_int32_t req_align)
-{
-
-        if (vendor == 1) {
-            if (ntohl(req_align) >= ntohl(cur_iface->vendorClassIdMinAddress) &&
-	        ntohl(req_align) <= ntohl(cur_iface->vendorClassIdMaxAddress))
-                return 1;
-            else
-                return 0;
-        }
-        if (vendor == 2) {
-            if (ntohl(req_align) >= ntohl(cur_iface->start) &&
-                ntohl(req_align) <= ntohl(cur_iface->end))
-                return 1;
-        } 
-	return 0;
-}
-#endif
-
-#ifdef AEI_VDSL_CUSTOMER_QWEST
-void custom_dns_option(struct dhcpMessage *packet, struct option_set *curr)
-{
-    unsigned char data[256];
-    char mac_addr[20] = {0};
-    struct ip_list *p;
-    int len = 0;
-    
-    memset(data, 0, sizeof(data));
-
-    if (cur_iface->dns_proxy_ip != 0 && !IS_EMPTY_STRING(cur_iface->dns_passthru_chaddr))
-    {
-        cmsUtl_macNumToStr(packet->chaddr, mac_addr);
-
-        if (strcasecmp(cur_iface->dns_passthru_chaddr, mac_addr) == 0)
-        {
-            for (p = cur_iface->dns_srv_ips; p; p = p->next)
-            {
-                if (p->ip != cur_iface->dns_proxy_ip &&
-                    sizeof(u_int32_t) <= sizeof(data) - len)
-                {
-                    memcpy(data + len, &p->ip, sizeof(u_int32_t));
-                    len += sizeof(u_int32_t);
-                }
-            }
-        }
-        else
-        {
-            memcpy(data, &cur_iface->dns_proxy_ip, sizeof(u_int32_t));
-            len += sizeof(u_int32_t);
-        }
-    }
-    else
-    {
-        if (cur_iface->dns_proxy_ip != 0)
-        {
-            memcpy(data, &cur_iface->dns_proxy_ip, sizeof(u_int32_t));
-            len += sizeof(u_int32_t);
-        }
-
-        for (p = cur_iface->dns_srv_ips; p; p = p->next)
-        {
-            if (p->ip != cur_iface->dns_proxy_ip &&
-                sizeof(u_int32_t) <= sizeof(data) - len)
-            {
-                memcpy(data + len, &p->ip, sizeof(u_int32_t));
-                len += sizeof(u_int32_t);
-            }
-        }
-    }
-
-    if (curr->data)
-        free(curr->data);
-
-    curr->data = malloc(len + 2);
-    curr->data[OPT_CODE] = DHCP_DNS_SERVER;
-    curr->data[OPT_LEN] = len;
-    memcpy(curr->data + 2, data, len);
-}
-#endif
-
-#ifdef AEI_VDSL_TR098_TELUS
-static UBOOL8 wantOption(struct dhcpMessage *oldpacket,int option)
-{
-    int i, len;
-    char *param_list = NULL;
-    UBOOL8 found = FALSE;
-    
-    if (oldpacket)
-    {
-        param_list = get_option(oldpacket, DHCP_PARAM_REQ);
-        if (param_list)
-        {
-            len = *(param_list - 1);
-            for (i = 0; i < len; i++)
-            {
-                if (*(param_list + i) == option)
-                {
-                    found = TRUE;
-                    break;
-                }
-            }
-        }
-    }
-    return found;
-}
-
-static UBOOL8 is_IPTVSTB(struct dhcpMessage *oldpacket)
-{   
-    int i; 
-    UBOOL8 stb = FALSE;
-    int len = 0;
-    char vendorid[256] = {0};
-
-    if (oldpacket)
-    {
-        unsigned char *vid = get_option(oldpacket, DHCP_VENDOR);
-
-        if (vid)
-        {
-           len = *(vid - 1);
-           memcpy(vendorid, vid, (size_t)len);
- 
-           for (i = 0; i < VENDOR_CLASS_ID_TAB_SIZE; i++)
-           {
-               if (cur_iface->opt67WarrantVids[i] 
-#if defined (FUNCTION_ACTIONTEC_QOS)
-                   && !wstrcmp(cur_iface->opt67WarrantVids[i], vendorid)
-#endif
-                   )
-               {
-                   stb = TRUE;
-                   break;
-               }
-           }
-        }
-    }
-    return stb;
-}
-#endif
-
-#ifdef AEI_VDSL_CUSTOMER_TELUS
-
-#define NIPQUID(addr) \
-    ((unsigned char *)&addr)[0], \
-    ((unsigned char *)&addr)[1], \
-    ((unsigned char *)&addr)[2], \
-    ((unsigned char *)&addr)[3]
-
-UBOOL8 is_stb(const char *vid)
-{
-    int i;
-    UBOOL8 stb = FALSE;
-
-    if (vid && *vid)
-    {
-        for (i = 0; i < VENDOR_CLASS_ID_TAB_SIZE; i++)
-        {
-            if (cur_iface->stbVids[i] 
-#if defined(FUNCTION_ACTIONTEC_QOS)
-                && !wstrcmp(cur_iface->stbVids[i], vid)
-#endif
-                )
-            {
-                stb = TRUE;
-                break;
-            }
-        }
-    }
-
-    return stb;
-}
-
-static void do_mark(UBOOL8 mark)
-{
-    char cmd[256];
-    struct ip_list *ip;
-
-    for (ip = cur_iface->stb_ip_list; ip; ip = ip->next)
-    {
-        if (mark)
-        {
-            sprintf(cmd, "iptables -I INPUT 1 -i br0 -p UDP --dport 53 -s %u.%u.%u.%u -j ACCEPT", NIPQUID(ip->ip));
-            system(cmd);
-            sprintf(cmd, "iptables -I FORWARD 1 -s %u.%u.%u.%u -j ACCEPT", NIPQUID(ip->ip));
-            system(cmd);
-            sprintf(cmd, "iptables -I FORWARD 1 -d %u.%u.%u.%u -j ACCEPT", NIPQUID(ip->ip));
-            system(cmd);
-        }
-        else
-        {
-            sprintf(cmd, "iptables -D INPUT -i br0 -p UDP --dport 53 -s %u.%u.%u.%u -j ACCEPT", NIPQUID(ip->ip));
-            system(cmd);
-            sprintf(cmd, "iptables -D FORWARD -s %u.%u.%u.%u -j ACCEPT", NIPQUID(ip->ip));
-            system(cmd);
-            sprintf(cmd, "iptables -D FORWARD -d %u.%u.%u.%u -j ACCEPT", NIPQUID(ip->ip));
-            system(cmd);
-        }
-    }
-}
-
-static UBOOL8 find_ip(u_int32_t ip)
-{
-    UBOOL8 found = FALSE;
-    struct ip_list *item;
-
-    for (item = cur_iface->stb_ip_list; item; item = item->next)
-    {
-        if (item->ip == ip)
-        {
-            found = TRUE;
-            break;
-        }
-    }
-
-    return found;
-}
-
-static void clear_stb_list(void)
-{
-    struct ip_list *ip, *pre, *next;
-    struct dhcpOfferedAddr *lease;
-    UBOOL8 clear = TRUE;
-
-    ip = cur_iface->stb_ip_list;
-    pre = next = NULL;
-
-    while (ip)
-    {
-        clear = TRUE;
-
-        lease = find_lease_by_yiaddr(ip->ip);
-        if (lease && lease->is_stb && !lease_expired(lease))
-            clear = FALSE;
-
-        next = ip->next;
-        if (clear)
-        {
-            if (!pre)
-                cur_iface->stb_ip_list = next;
-            else
-                pre->next = next;
-
-            free(ip);
-            ip = next;
-        }
-        else
-        {
-            pre = ip;
-            ip = next;
-        }
-    }
-}
-
-void add_stb_list(u_int32_t ip)
-{
-    struct ip_list *item;
-
-    if (!find_ip(ip))
-    {
-        item = calloc(1, sizeof(struct ip_list));
-        if (item)
-        {
-            item->ip = ip;
-            item->next = cur_iface->stb_ip_list;
-            cur_iface->stb_ip_list = item;
-        }
-    }
-}
-
-void update_stb_mark(void)
-{
-    do_mark(FALSE);
-    clear_stb_list();
-    do_mark(TRUE);
-}
-
-void mark_stb(const char *vid, u_int32_t ip)
-{
-    do_mark(FALSE);
-
-    if (is_stb(vid))
-        add_stb_list(ip);
-
-    clear_stb_list();
-
-    do_mark(TRUE);
-}
-#endif 
-
+        
 
 /* send a DHCP OFFER to a DHCP DISCOVER */
 int sendOffer(struct dhcpMessage *oldpacket)
@@ -424,41 +130,6 @@ int sendOffer(struct dhcpMessage *oldpacket)
         //brcm begin
         char VIinfo[VENDOR_IDENTIFYING_INFO_LEN];
         //brcm end
-		
-	#if defined(AEI_VDSL_CUSTOMER_NCS) //add william 2012-1-11
-	    /* */
-        int vendor;
-        char vendorid[VENDOR_CLASS_ID_STR_SIZE + 1];
-        vendorid[0] = '\0';
-        /* */
-
-        vendor = is_vendor_equipped(oldpacket, vendorid);
-	
-        switch (vendor) {
-        case 1:
-            /* client discover match in the server config */
-#if 0 //debug
-            LOG(LOG_ERR, "(debug message) DHCP server equipped the"
-                " vendorClassId:'%s' MAC=%02X:%02X:%02X:%02X:%02X:%02X\n"
-                "Ignore this client DHCP DISCOVERY in the local server.",
-                vendorid,
-                oldpacket->chaddr[0],
-                oldpacket->chaddr[1],
-                oldpacket->chaddr[2],
-                oldpacket->chaddr[3],
-                oldpacket->chaddr[4],
-                oldpacket->chaddr[5],
-                oldpacket->chaddr[6]);
-#endif
-            return 1;
-        default:
-            /*
-             * == 0 client discover not match in the server config
-             * == 2 client send a DHCP discover not include option-60
-             */
-            break;
-        }
-#endif		
 
         init_packet(&packet, oldpacket, DHCPOFFER);
         
@@ -468,15 +139,8 @@ int sendOffer(struct dhcpMessage *oldpacket)
 
 	if(!static_lease_ip) {
         	/* the client is in our lease/offered table */
-#if defined(AEI_VDSL_CUSTOMER_NCS)
-                if ((lease = find_lease_by_chaddr(oldpacket->chaddr)) && (!lease_expired(lease))) {
-#else
-                if ((lease = find_lease_by_chaddr(oldpacket->chaddr))) {
-#endif
-#if defined(AEI_VDSL_CUSTOMER_NCS)
-#else
+        	if ((lease = find_lease_by_chaddr(oldpacket->chaddr))) {
                 	if (!lease_expired(lease)) 
-#endif
                         	lease_time_align = lease->expires - time(0);
                 	packet.yiaddr = lease->yiaddr;
         	/* Or the client has a requested ip */
@@ -486,13 +150,8 @@ int sendOffer(struct dhcpMessage *oldpacket)
 			memcpy(&req_align, req, 4) && 
 
 			/* and the ip is in the lease range */
-//add by vincent 2010-12-23
-//#if defined(AEI_VDSL_CUSTOMER_TELUS)
-//			is_in_range(vendor, req_align) &&
-//#else
 			ntohl(req_align) >= ntohl(cur_iface->start) &&
 			ntohl(req_align) <= ntohl(cur_iface->end) && 
-//#endif
 
 			/* and its not already taken/offered */
 			((!(lease = find_lease_by_yiaddr(req_align)) ||
@@ -538,86 +197,15 @@ int sendOffer(struct dhcpMessage *oldpacket)
 		/* It is a static lease... use it */
 		packet.yiaddr = static_lease_ip;
 	}
-
-#ifdef AEI_VDSL_CUSTOMER_TELUS
-	mark_stb(NULL, packet.yiaddr);
-#endif
                 
         add_simple_option(packet.options, DHCP_LEASE_TIME, lease_time_align);
 
         curr = cur_iface->options;
         while (curr) {
                 if (curr->data[OPT_CODE] != DHCP_LEASE_TIME)
-		{	
-#ifdef AEI_VDSL_CUSTOMER_QWEST
-			if (curr->data[OPT_CODE] == DHCP_DNS_SERVER)
-				custom_dns_option(&packet, curr);
-#endif
-
-#ifdef AEI_VDSL_TR098_TELUS
-			if (curr->data[OPT_CODE] == DHCP_BOOT_FILE)
-			{			
-					int i, len;
-					char vendorid[256];
-					char *vid;
-					char *param_list;
-					UBOOL8 isStb = FALSE;
-					UBOOL8 sendOpt67 = FALSE;
-						
-					memset(vendorid, 0, sizeof(vendorid));
-						
-					vid = get_option(oldpacket, DHCP_VENDOR);
-					
-					if (vid != NULL)
-					{
-						len = *(vid - 1);
-						memcpy(vendorid, vid, (size_t)len);
-
-						for (i = 0; i < VENDOR_CLASS_ID_TAB_SIZE; i++)
-						{						
-							if (cur_iface->opt67WarrantVids[i] 
-#if defined(FUNCTION_ACTIONTEC_QOS)
-                                && !wstrcmp(cur_iface->opt67WarrantVids[i], vendorid)
-#endif
-                                )
-								{
-									isStb = TRUE;
-									break;
-								}
-						}
-					}
-
-					if (isStb)
-					{
-						param_list = get_option(oldpacket, DHCP_PARAM_REQ);
-						if (param_list)
-						{
-							len = *(param_list - 1);
-							for (i = 0; i < len; i++)
-							{
-								if (*(param_list + i) == DHCP_BOOT_FILE)
-								{
-									sendOpt67 = TRUE;
-									break;
-								}
-							}
-						}
-					}
-
-					if (sendOpt67)
-						add_option_string(packet.options, curr->data);
-						
-					curr = curr->next;
-					continue;
-			}
-#endif
-
-            add_option_string(packet.options, curr->data);
-		}
-
-            curr = curr->next;
+                        add_option_string(packet.options, curr->data);
+                curr = curr->next;
         }
-		
 
         add_bootp_options(&packet);
 
@@ -678,28 +266,7 @@ int sendACK(struct dhcpMessage *oldpacket, u_int32_t yiaddr)
         curr = cur_iface->options;
         while (curr) {
                 if (curr->data[OPT_CODE] != DHCP_LEASE_TIME)
-		{
-#ifdef AEI_VDSL_CUSTOMER_QWEST
-			if (curr->data[OPT_CODE] == DHCP_DNS_SERVER)
-				custom_dns_option(&packet, curr);
-#endif
-
-#ifdef AEI_VDSL_TR098_TELUS			
-			if (curr->data[OPT_CODE] == DHCP_BOOT_FILE)
-			{
-				if (is_IPTVSTB(oldpacket) && wantOption(oldpacket,DHCP_BOOT_FILE))
-				{
-					add_option_string(packet.options, curr->data);
-				}
-
-				curr = curr->next;
-				continue;
-			}
-#endif
-
-			add_option_string(packet.options, curr->data);
-		}
-
+                        add_option_string(packet.options, curr->data);
                 curr = curr->next;
         }
 
@@ -745,17 +312,6 @@ int sendACK(struct dhcpMessage *oldpacket, u_int32_t yiaddr)
 	     offerlist->classid[length] = '\0';
         }
 
-#ifdef AEI_VDSL_CUSTOMER_TELUS
-	if (is_stb(offerlist->vendorid))
-		offerlist->is_stb = TRUE;
-
-	mark_stb(offerlist->vendorid, packet.yiaddr);
-#endif
-
-#if defined (AEI_VDSL_TR098_TELUS)
-       getClientIDOption(oldpacket, offerlist); 
-#endif
-
         return 0;
 }
 
@@ -775,28 +331,7 @@ int send_inform(struct dhcpMessage *oldpacket)
         curr = cur_iface->options;
         while (curr) {
                 if (curr->data[OPT_CODE] != DHCP_LEASE_TIME)
-		{
-#ifdef AEI_VDSL_CUSTOMER_QWEST
-			if (curr->data[OPT_CODE] == DHCP_DNS_SERVER)
-				custom_dns_option(&packet, curr);
-#endif
-
-#ifdef AEI_VDSL_TR098_TELUS                     
-			if (curr->data[OPT_CODE] == DHCP_BOOT_FILE)
-			{
-				if (is_IPTVSTB(oldpacket) && wantOption(oldpacket,DHCP_BOOT_FILE))
-				{
-					add_option_string(packet.options, curr->data);
-				}
-
-				curr = curr->next;
-				continue;
-			}
-#endif
-
-			add_option_string(packet.options, curr->data);
-		}
-
+                        add_option_string(packet.options, curr->data);
                 curr = curr->next;
         }
 

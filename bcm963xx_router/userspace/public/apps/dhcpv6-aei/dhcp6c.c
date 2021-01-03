@@ -94,8 +94,8 @@
 #include <linux/rtnetlink.h>
 #include <asm/byteorder.h>
 
-#include "../../../private/apps/ctl_layer/include/ctl_objectid.h"
-#include "../../../private/apps/ctl_layer/include/ctl_validstrings.h"
+#include "ctl_objectid.h"
+#include "ctl_validstrings.h"
 
 static int rad_ra_Mbit = -1;
 static int rad_ra_Obit = -1;
@@ -931,7 +931,38 @@ static DHCPV6_MODE get_dhcpv6_mode(int Mbit, int Obit)
 	fprintf(stdout, "get_dhcpv6_mode: mode(%d), M(%d), O(%d)\n", mode, Mbit, Obit);
 	return mode;
 }
+static int isUserDefineMode()
+{
+    int ret=0;
+    /*only pppv6 mode could define address type
+    * if dynamic address/pd and dynamic DNS,following normal case
+    * if dyncmic address/pd and static DNS, following normal case
+    * if static ddress/pd and dynamic DNS,should ignore RA M/O flag
+    * if static ddress/pd and static DNS,should not dhcp6c
+    */
+    tsl_bool_t b_enable=TSL_B_FALSE;
+    tsl_int_t tr69_type = 0;
+    char strPara[256]={0};
+    char strPPPOID[256]={0};
+    char *addrType=NULL;
 
+    getPppConnOID(strPPPOID);   
+    sprintf(strPara, "%s.Enable", strPPPOID);
+    tr69_get_unfresh_leaf_data(strPara,	&b_enable, &tr69_type );
+    fprintf(stdout, "%s[%d]: ===>>strPara=%s,b_enable=%d!\n", __FILE__, __LINE__, strPara,b_enable);    
+    if( TSL_B_FALSE == b_enable )  
+        return 0;
+    sprintf(strPara, "%s.X_BROADCOM_COM_IPv6AddressingType", strPPPOID);
+    tr69_get_unfresh_leaf_data(strPara,	&addrType, &tr69_type );
+    fprintf(stdout, "%s[%d]: addrType=%s!\n", __FILE__, __LINE__, addrType); 
+    if(!IS_EMPTY_STRING(addrType)&& cmsUtl_strcmp(addrType, CTLVS_STATIC)==0)
+        return 1;
+
+//tr69_get_unfresh_leaf_data( CTLOID_IPV6_LAN_HOST_CFG ".IPv6DNSConfigType",&ipv6dnstype, &type );
+    
+   
+    return ret;
+}
 static int gen_dhcp6c_conf(const char *ifName_info, tsl_bool dynamicIpEnabled, DHCPV6_MODE mode)
 {
    char cmdLine[128];
@@ -1309,6 +1340,7 @@ main(argc, argv)
 			return -1;
 		}
 		fprintf(stdout, "%s[%d]: ifname=%s!\n", __FILE__, __LINE__, p_ifname);
+        if(!isUserDefineMode())
 		gen_dhcp6c_conf(p_ifname, 1, get_dhcpv6_mode(rad_ra_Mbit, rad_ra_Obit));
 		fprintf(stdout, "dhcp6c mode when starting: %d\n", get_dhcpv6_mode(rad_ra_Mbit, rad_ra_Obit));						
 #endif
@@ -1777,6 +1809,8 @@ client6_mainloop()
 								}
 								else	//get ifname right
 								{
+								    if(!isUserDefineMode())
+								        {
 									//re-generate conf file 				
 									fprintf(stdout, "%s[%d]: ifname=%s!\n", __FILE__, __LINE__, p_ifname);
 									gen_dhcp6c_conf(p_ifname, 1, get_dhcpv6_mode(rad_ra_Mbit, rad_ra_Obit));
@@ -1790,6 +1824,7 @@ client6_mainloop()
 									client6_startall(1);
 								}
 							}					
+						}
 						}
 						
 						/* Check if router lifetime is changed */
@@ -2079,25 +2114,29 @@ static int all_ia_busy(ifp)
     struct ia_conf *iac;
     int tot_ia_cnt=0;
     int busy_ia_cnt=0;    
-	for (iac = TAILQ_FIRST(&ifp->iaconf_list); iac;
-	    iac = TAILQ_NEXT(iac, link)) {
-		tot_ia_cnt++;
+    for (iac = TAILQ_FIRST(&ifp->iaconf_list); iac; iac = TAILQ_NEXT(iac, link)) 
+    {
+        tot_ia_cnt++;
         
-		if (!TAILQ_EMPTY(&iac->iadata))
-		    {
-                ctllog_debug(LOG_NOTICE,FLNAME,LINENUM,FNAME,"iac->type=%d,iac->iaid=%d, busy now",iac->type,iac->iaid);
-                busy_ia_cnt++;
-		    }
-	     }
-              ctllog_debug(LOG_ERR,FLNAME,LINENUM,FNAME, "tot_ia_cnt=%d,busy_ia_cnt=%d",tot_ia_cnt,busy_ia_cnt);   
-       
-     if(tot_ia_cnt==busy_ia_cnt)
+        if (!TAILQ_EMPTY(&iac->iadata))
         {
-            ctllog_debug(LOG_NOTICE,FLNAME,LINENUM,FNAME,"all IA busy now");      
-            return 1;
+            ctllog_debug(LOG_NOTICE,FLNAME,LINENUM,FNAME,"iac->type=%d,iac->iaid=%d, busy now",iac->type,iac->iaid);
+            busy_ia_cnt++;
         }
-     else
+    }
+
+    ctllog_debug(LOG_ERR,FLNAME,LINENUM,FNAME, "tot_ia_cnt=%d,busy_ia_cnt=%d",tot_ia_cnt,busy_ia_cnt);   
+       
+    if(tot_ia_cnt && tot_ia_cnt==busy_ia_cnt)
+    {
+        ctllog_debug(LOG_NOTICE,FLNAME,LINENUM,FNAME,"all IA busy now");      
+        return 1;
+    }
+    else
+    {
         return 0;
+
+    }
 }
 #endif
 
@@ -2312,7 +2351,7 @@ construct_confdata(ifp, ev)
 			dhcp6_copy_list(&pl,
 			    &((struct iapd_conf *)iac)->iapd_prefix_list);
 			if (dhcp6_add_listval(ial, DHCP6_LISTVAL_IAPD,
-			    &iaparam, &pl) == NULL) {
+			    &iaparam, &pl, 0) == NULL) {
 				goto fail;
 			}
 			dhcp6_clear_list(&pl);
@@ -2333,7 +2372,7 @@ construct_confdata(ifp, ev)
 			dhcp6_copy_list(&pl,
 			    &((struct iana_conf *)iac)->iana_address_list);
 			if (dhcp6_add_listval(ial, DHCP6_LISTVAL_IANA,
-			    &iaparam, &pl) == NULL) {
+			    &iaparam, &pl, 0) == NULL) {
 				goto fail;
 			}
 			dhcp6_clear_list(&pl);
@@ -2411,7 +2450,7 @@ construct_reqdata(ifp, optinfo, ev)
 
 			TAILQ_INIT(ial);
 			if (dhcp6_add_listval(ial, DHCP6_LISTVAL_IAPD,
-			    &iaparam, &v->sublist) == NULL) {
+			    &iaparam, &v->sublist, 0) == NULL) {
 				goto fail;
 			}
 
@@ -2434,7 +2473,7 @@ construct_reqdata(ifp, optinfo, ev)
 
 			TAILQ_INIT(ial);
 			if (dhcp6_add_listval(ial, DHCP6_LISTVAL_IANA,
-			    &iaparam, &v->sublist) == NULL) {
+			    &iaparam, &v->sublist, 0) == NULL) {
 				goto fail;
 			}
 

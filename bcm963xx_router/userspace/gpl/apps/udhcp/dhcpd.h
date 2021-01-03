@@ -61,9 +61,6 @@
 #define DHCP_T2			0x3b
 #define DHCP_VENDOR		0x3c
 #define DHCP_CLIENT_ID		0x3d
-#ifdef AEI_VDSL_TR098_TELUS
-#define DHCP_BOOT_FILE		0x43
-#endif
 #define DHCP_VENDOR_IDENTIFYING	0x7d
 #define DHCP_USER_CLASS_ID 0x4d
 #define DHCP_END		0xFF
@@ -83,10 +80,6 @@
 #define DHCPNAK			6
 #define DHCPRELEASE		7
 #define DHCPINFORM		8
-#if defined(AEI_VDSL_CUSTOMER_DHCPFORCERENEW)
-#define DHCPFORCERENEW 9 //add william 2011-11-22
-#endif
-
 
 #define BROADCAST_FLAG		0x8000
 
@@ -100,10 +93,6 @@
 #define MAC_BCAST_ADDR		"\xff\xff\xff\xff\xff\xff"
 #define OPT_CODE 0
 #define OPT_LEN 1
-
-#ifdef AEI_VDSL_CUSTOMER_NCS
-#define VENDOR_CLASS_ID_TAB_SIZE    20 
-#endif
 
 struct option_set {
 	unsigned char *data;
@@ -144,27 +133,7 @@ struct server_config_t {
 
 	// BRCM decline_file
 	char *decline_file;
-};
-
-#ifdef AEI_VDSL_CUSTOMER_NCS
-struct ip_list
-{
-	u_int32_t ip; 
-	struct ip_list *next;
-};
-
-//add william 2012-1-11
-
-#define VENDOR_CLASS_ID_STR_SIZE    256
-#define VENDOR_CLASS_ID_TOKEN       ";" 
-
-struct vlanOption60 {
-	char *vendorClassId[VENDOR_CLASS_ID_TAB_SIZE];
-	char *vlanID;
-	struct vlanOption60 * next;
-};
-#endif
-	
+};	
 
 struct iface_config_t {
 	struct iface_config_t * next;	/* Next interface config in the list */
@@ -172,31 +141,6 @@ struct iface_config_t {
 	u_int32_t server;		/* Our IP, in network order */
 	u_int32_t start;		/* Start address of leases, network order */
 	u_int32_t end;			/* End of leases, network order */
-//add by vincent 2010-12-22
-#if defined(AEI_VDSL_CUSTOMER_NCS) //modify william 2012-1-11
-	char *vendorClassId[VENDOR_CLASS_ID_TAB_SIZE];
-	u_int32_t vendorClassIdMinAddress; /* Start address of option 60 lease, network order */
-	u_int32_t vendorClassIdMaxAddress; /* End of option 60 lease, network order */
-	struct vlanOption60 * vlanOption60list;
-#endif
-
-#ifdef AEI_VDSL_CUSTOMER_QWEST
-	u_int32_t dns_proxy_ip;         /* IP address of dns proxy server, network order */
-	struct ip_list *dns_srv_ips;    /* A list of DNS servers (IP address), network order */
-	char *dns_passthru_chaddr;      /* Hardware address of the LAN Host that
-                                           is used to passthrough a WAN IP address */
-#endif
-
-#ifdef AEI_VDSL_TR098_TELUS
-		char *opt67WarrantVids[VENDOR_CLASS_ID_TAB_SIZE];
-#endif
-	
-#ifdef AEI_VDSL_CUSTOMER_TELUS
-		char *stbVids[VENDOR_CLASS_ID_TAB_SIZE];
-		struct ip_list *stb_ip_list;
-#endif
-
-
 	struct option_set *options;	/* List of DHCP options loaded from the config file */
 	char *interface;		/* The name of the interface to use */
 	int ifindex;			/* Index number of the interface to use */

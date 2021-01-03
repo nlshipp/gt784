@@ -87,6 +87,13 @@ static int t1 =0;
 static int t2 = 0;
 #endif
 
+#ifdef AEI_DHCP6S_SERIALIZE
+#define AHB_MAX_DUID_LEN 128
+static const char* dhcp6sBindFile = "/var/tmp/dhcp6sbinding.conf";
+static void str2duid __P((const char*, struct duid*));
+static void act_load_binding __P((void));
+static void act_serialize_binding __P((void));
+#endif
 
 #define DUID_FILE LOCALDBDIR "/dhcp6s_duid"
 #define DHCP6S_CONF SYSCONFDIR "/dhcp6s.conf"
@@ -154,7 +161,7 @@ char *ctlport = DEFAULT_SERVER_CONTROL_PORT;
 
 static const struct sockaddr_in6 *sa6_any_downstream, *sa6_any_relay;
 static struct msghdr rmh;
-static char rdatabuf[BUFSIZ];
+static char rdatabuf[BUFSIZ+1024]; // Bugfix cdrouter_dhcpv6_server_14
 static int rmsgctllen;
 static char *conffile = DHCP6S_CONF;
 static char *rmsgctlbuf;
@@ -658,6 +665,9 @@ server6_init()
 		    strerror(errno));
 		exit(1);
 	}
+#ifdef AEI_DHCP6S_SERIALIZE
+        act_load_binding();
+#endif
 	return;
 }
 
@@ -1424,7 +1434,7 @@ react_solicit(ifp, dh6, len, optinfo, from, fromlen, relayinfohead)
 			u_int16_t stcode = DH6OPT_STCODE_NOPREFIXAVAIL;
 
 			if (dhcp6_add_listval(&roptinfo.stcode_list,
-			    DHCP6_LISTVAL_STCODE, &stcode, NULL) == NULL)
+			    DHCP6_LISTVAL_STCODE, &stcode, NULL, 0) == NULL)
 				goto fail;
 		}
 	}
@@ -1469,7 +1479,7 @@ react_solicit(ifp, dh6, len, optinfo, from, fromlen, relayinfohead)
 			u_int16_t stcode = DH6OPT_STCODE_NOADDRSAVAIL;
 
 			if (dhcp6_add_listval(&roptinfo.stcode_list,
-			    DHCP6_LISTVAL_STCODE, &stcode, NULL) == NULL)
+			    DHCP6_LISTVAL_STCODE, &stcode, NULL, 0) == NULL)
 				goto fail;
 		}
 	}
@@ -1495,6 +1505,65 @@ react_solicit(ifp, dh6, len, optinfo, from, fromlen, relayinfohead)
   fail:
 	dhcp6_clear_options(&roptinfo);
 	return (-1);
+}
+static int search_ia(struct dhcp6_listval *spec, struct host_conf *client_conf)
+{
+    struct dhcp6_listval *specia      = NULL;
+    struct pool_conf     *pool        = NULL;
+    struct pool_conf     *pool_ula    = NULL;
+    int                   poolFlag    = 0;
+    int                   poolUlaFlag = 0;
+    int                   found       = 0;
+    if(!client_conf)
+    {
+        dprintf(LOG_ERR, FNAME, "client_conf is NULL!");
+        return (1);
+    }
+    if(!spec)
+    {
+        dprintf(LOG_ERR, FNAME, "spec is NULL!");
+        return (1);
+    }
+    if ((pool = find_pool(client_conf->pool.name)) == NULL)
+    {
+        dprintf(LOG_ERR, FNAME, "pool '%s' not found", client_conf->pool.name);
+    }
+    else
+    {
+        poolFlag = 1;
+    }
+    if ((pool_ula = find_pool(ULA_POOL_NAME)) == NULL)
+    {
+        dprintf(LOG_ERR, FNAME, "pool '%s' not found", ULA_POOL_NAME);
+    }
+    else
+    {
+        poolUlaFlag = 1;
+    }
+    for (specia = TAILQ_FIRST(&spec->sublist); specia;
+                specia = TAILQ_NEXT(specia, link))
+    {  
+        found = 0;
+        if(poolFlag)
+        {
+            if (memcmp(&pool->min, &specia->val_statefuladdr6.addr, 8) == 0)
+            {
+                found++;
+            }
+        }
+        if(poolUlaFlag)
+        {
+            if (memcmp(&pool_ula->min, &specia->val_statefuladdr6.addr, 8) == 0)
+            {
+                found++;
+            }
+        }
+        if(!found)
+        {
+            return (0);
+        }   
+    }   
+    return (1);
 }
 
 static int
@@ -1578,7 +1647,7 @@ react_request(ifp, pi, dh6, len, optinfo, from, fromlen, relayinfohead)
 		dprintf(LOG_INFO, FNAME, "unexpected unicast message from %s",
 		    addr2str(from));
 		if (dhcp6_add_listval(&roptinfo.stcode_list,
-		    DHCP6_LISTVAL_STCODE, &stcode, NULL) == NULL) {
+		    DHCP6_LISTVAL_STCODE, &stcode, NULL, 0) == NULL) {
 			dprintf(LOG_ERR, FNAME, "failed to add a status code");
 			goto fail;
 		}
@@ -1667,6 +1736,22 @@ react_request(ifp, pi, dh6, len, optinfo, from, fromlen, relayinfohead)
 
 		for (iana = TAILQ_FIRST(&optinfo->iana_list); iana;
 		    iana = TAILQ_NEXT(iana, link)) {
+            if(!search_ia(iana, client_conf))
+            {
+                if (make_ia_stcode(DHCP6_LISTVAL_IANA,
+                                  iana->val_ia.iaid,
+                                  DH6OPT_STCODE_NOTONLINK,
+                                  &roptinfo.iana_list)) 
+                {
+                    dprintf(LOG_NOTICE, FNAME, "failed to make an option list");
+                    dhcp6_clear_list(&conflist);
+                    goto fail;
+                }
+                (void)server6_send(DH6_REPLY, ifp, dh6, optinfo, from, fromlen,
+                                  &roptinfo, relayinfohead, client_conf);
+                dhcp6_clear_list(&conflist);
+                goto end;
+            }
 			/*
 			 * Find an appropriate address for each IA_NA,
 			 * removing the adopted addresses from the list.
@@ -1809,7 +1894,7 @@ react_renew(ifp, pi, dh6, len, optinfo, from, fromlen, relayinfohead)
 		dprintf(LOG_INFO, FNAME, "unexpected unicast message from %s",
 		    addr2str(from));
 		if (dhcp6_add_listval(&roptinfo.stcode_list,
-		    DHCP6_LISTVAL_STCODE, &stcode, NULL) == NULL) {
+		    DHCP6_LISTVAL_STCODE, &stcode, NULL, 0) == NULL) {
 			dprintf(LOG_ERR, FNAME, "failed to add a status code");
 			goto fail;
 		}
@@ -2040,7 +2125,7 @@ react_release(ifp, pi, dh6, len, optinfo, from, fromlen, relayinfohead)
 		dprintf(LOG_INFO, FNAME, "unexpected unicast message from %s",
 		    addr2str(from));
 		if (dhcp6_add_listval(&roptinfo.stcode_list,
-		    DHCP6_LISTVAL_STCODE, &stcode, NULL) == NULL) {
+		    DHCP6_LISTVAL_STCODE, &stcode, NULL, 0) == NULL) {
 			dprintf(LOG_ERR, FNAME, "failed to add a status code");
 			goto fail;
 		}
@@ -2071,7 +2156,7 @@ react_release(ifp, pi, dh6, len, optinfo, from, fromlen, relayinfohead)
 	 */
 	stcode = DH6OPT_STCODE_SUCCESS;
 	if (dhcp6_add_listval(&roptinfo.stcode_list,
-	    DHCP6_LISTVAL_STCODE, &stcode, NULL) == NULL) {
+	    DHCP6_LISTVAL_STCODE, &stcode, NULL, 0) == NULL) {
 		dprintf(LOG_NOTICE, FNAME, "failed to add a status code");
 		goto fail;
 	}
@@ -2169,7 +2254,7 @@ react_decline(ifp, pi, dh6, len, optinfo, from, fromlen, relayinfohead)
 		dprintf(LOG_INFO, FNAME, "unexpected unicast message from %s",
 		    addr2str(from));
 		if (dhcp6_add_listval(&roptinfo.stcode_list,
-		    DHCP6_LISTVAL_STCODE, &stcode, NULL) == NULL) {
+		    DHCP6_LISTVAL_STCODE, &stcode, NULL, 0) == NULL) {
 			dprintf(LOG_ERR, FNAME, "failed to add a status code");
 			goto fail;
 		}
@@ -2196,7 +2281,7 @@ react_decline(ifp, pi, dh6, len, optinfo, from, fromlen, relayinfohead)
 	 */
 	stcode = DH6OPT_STCODE_SUCCESS;
 	if (dhcp6_add_listval(&roptinfo.stcode_list,
-	    DHCP6_LISTVAL_STCODE, &stcode, NULL) == NULL) {
+	    DHCP6_LISTVAL_STCODE, &stcode, NULL, 0) == NULL) {
 		dprintf(LOG_NOTICE, FNAME, "failed to add a status code");
 		goto fail;
 	}
@@ -2309,14 +2394,17 @@ react_confirm(ifp, pi, dh6, len, optinfo, from, fromlen, relayinfohead)
 		 * the prefix from where the message originates.
 		 * XXX: prefix length is assumed to be 64
 		 */
+		struct sockaddr_in6 *src = (struct sockaddr_in6 *)from;
+		if (!IN6_IS_ADDR_LINKLOCAL(&src->sin6_addr)) {
 		for (iaaddr = TAILQ_FIRST(&iana->sublist); iaaddr;
 		    iaaddr = TAILQ_NEXT(iaaddr, link)) {
 		
 			struct in6_addr *confaddr = &iaaddr->val_statefuladdr6.addr;
 			struct in6_addr *linkaddr;
-			struct sockaddr_in6 *src = (struct sockaddr_in6 *)from;
+			//struct sockaddr_in6 *src = (struct sockaddr_in6 *)from;
 
-			if (!IN6_IS_ADDR_LINKLOCAL(&src->sin6_addr)) {
+			//if (!IN6_IS_ADDR_LINKLOCAL(&src->sin6_addr))
+			{
 				/* CONFIRM is relayed via a DHCP-relay */
 				struct relayinfo *relayinfo;
 
@@ -2329,9 +2417,7 @@ react_confirm(ifp, pi, dh6, len, optinfo, from, fromlen, relayinfohead)
 
 				/* XXX: link-addr is supposed to be a global address */
 				linkaddr = &relayinfo->linkaddr;
-			} else {
 				/* CONFIRM is directly arrived */
-				linkaddr = &ifp->addr;
 			}
 
 			if (memcmp(linkaddr, confaddr, 8) != 0) {
@@ -2339,6 +2425,13 @@ react_confirm(ifp, pi, dh6, len, optinfo, from, fromlen, relayinfohead)
 				    "%s does not seem to belong to %s's link",
 				    in6addr2str(confaddr, 0),
 				    in6addr2str(linkaddr, 0));
+				stcode = DH6OPT_STCODE_NOTONLINK;
+				goto send_reply;
+			}
+		}
+		} else {
+			if(!search_ia(iana, client_conf))
+			{
 				stcode = DH6OPT_STCODE_NOTONLINK;
 				goto send_reply;
 			}
@@ -2362,7 +2455,7 @@ react_confirm(ifp, pi, dh6, len, optinfo, from, fromlen, relayinfohead)
 
 send_reply:
 	if (dhcp6_add_listval(&roptinfo.stcode_list,
-	    DHCP6_LISTVAL_STCODE, &stcode, NULL) == NULL)
+	    DHCP6_LISTVAL_STCODE, &stcode, NULL, 0) == NULL)
 		goto fail;
 	error = server6_send(DH6_REPLY, ifp, dh6, optinfo, from, fromlen,
 			     &roptinfo, relayinfohead, client_conf);
@@ -2553,7 +2646,7 @@ update_ia(msgtype, iap, retlist, optinfo)
 				}
 
 				if (dhcp6_add_listval(&ialist,
-				    DHCP6_LISTVAL_PREFIX6, &prefix, NULL)
+				    DHCP6_LISTVAL_PREFIX6, &prefix, NULL, 0)
 				    == NULL) {
 					dprintf(LOG_NOTICE, FNAME,
 					    "failed  to copy binding info");
@@ -2583,7 +2676,7 @@ update_ia(msgtype, iap, retlist, optinfo)
 				}
 
 				if (dhcp6_add_listval(&ialist,
-				    DHCP6_LISTVAL_STATEFULADDR6, &saddr, NULL)
+				    DHCP6_LISTVAL_STATEFULADDR6, &saddr, NULL, 0)
 				    == NULL) {
 					dprintf(LOG_NOTICE, FNAME,
 					    "failed  to copy binding info");
@@ -2603,7 +2696,7 @@ update_ia(msgtype, iap, retlist, optinfo)
 		calc_ia_timo(&ia, &ialist, client_conf);
 
 		if (dhcp6_add_listval(retlist, iap->type,
-		    &ia, &ialist) == NULL) {
+		    &ia, &ialist, 0) == NULL) {
 			dhcp6_clear_list(&ialist);
 			return (-1);
 		}
@@ -2620,6 +2713,9 @@ release_binding_ia(iap, retlist, optinfo)
 	struct dhcp6_optinfo *optinfo;
 {
 	struct dhcp6_binding *binding;
+#ifdef AEI_DHCP6S_SERIALIZE
+    int found = 0;
+#endif
 
 	if ((binding = find_binding(&optinfo->clientID, DHCP6_BINDING_IA,
 	    iap->type, iap->val_ia.iaid)) == NULL) {
@@ -2661,6 +2757,9 @@ release_binding_ia(iap, retlist, optinfo)
 						    lvia->val_prefix6.plen);
 						break;
 					case DHCP6_LISTVAL_IANA:
+#ifdef AEI_DHCP6S_SERIALIZE
+                        found = 1;
+#endif                
 						release_address(&lvia->val_prefix6.addr);
 						dprintf(LOG_DEBUG, FNAME,
 						    "bound address %s "
@@ -2678,10 +2777,15 @@ release_binding_ia(iap, retlist, optinfo)
 					 * stop procedure.
 					 */
 					remove_binding(binding);
-					return (0);
 				}
 			}
 		}
+#ifdef AEI_DHCP6S_SERIALIZE
+        if(found)
+        {
+            act_serialize_binding();
+        }
+#endif                
 	}
 
 	return (0);
@@ -2695,6 +2799,9 @@ decline_binding_ia(iap, retlist, optinfo)
 {
 	struct dhcp6_binding *binding;
 	struct dhcp6_listval *lv, *lvia;
+#ifdef AEI_DHCP6S_SERIALIZE
+    int found = 0;
+#endif
 
 	if ((binding = find_binding(&optinfo->clientID, DHCP6_BINDING_IA,
 	    iap->type, iap->val_ia.iaid)) == NULL) {
@@ -2739,6 +2846,9 @@ decline_binding_ia(iap, retlist, optinfo)
 		    in6addr2str(&lvia->val_statefuladdr6.addr, 0));
 		decline_address(&lvia->val_statefuladdr6.addr);
 
+#ifdef AEI_DHCP6S_SERIALIZE
+        found = 1;
+#endif
 		TAILQ_REMOVE(&binding->val_list, lvia, link);
 		dhcp6_clear_listval(lvia);
 		if (TAILQ_EMPTY(&binding->val_list)) {
@@ -2747,9 +2857,14 @@ decline_binding_ia(iap, retlist, optinfo)
 			 * stop procedure.
 			 */
 			remove_binding(binding);
-			return (0);
 		}
 	}
+#ifdef AEI_DHCP6S_SERIALIZE
+    if(found)
+    {
+        act_serialize_binding();
+    }
+#endif                
 
 	return (0);
 }
@@ -2905,13 +3020,13 @@ make_ia_stcode(iatype, iaid, stcode, retlist)
 
 	TAILQ_INIT(&stcode_list);
 	if (dhcp6_add_listval(&stcode_list, DHCP6_LISTVAL_STCODE,
-	    &stcode, NULL) == NULL) {
+	    &stcode, NULL, 0) == NULL) {
 		dprintf(LOG_NOTICE, FNAME, "failed to make an option list");
 		return (-1);
 	}
 
 	if (dhcp6_add_listval(retlist, iatype,
-	    &ia_empty, &stcode_list) == NULL) {
+	    &ia_empty, &stcode_list, 0) == NULL) {
 		dprintf(LOG_NOTICE, FNAME, "failed to make an option list");
 		dhcp6_clear_list(&stcode_list);
 		return (-1);
@@ -3005,7 +3120,7 @@ make_ia(spec, conflist, retlist, client_conf, do_binding)
 		ia.iaid = spec->val_ia.iaid;
 		/* determine appropriate T1 and T2 */
 		calc_ia_timo(&ia, blist, client_conf);
-		if (dhcp6_add_listval(retlist, spec->type, &ia, blist)
+		if (dhcp6_add_listval(retlist, spec->type, &ia, blist, 0)
 		    == NULL) {
 			dprintf(LOG_NOTICE, FNAME,
 			    "failed to copy binding info");
@@ -3050,6 +3165,7 @@ make_ia(spec, conflist, retlist, client_conf, do_binding)
 			if (make_iana_from_pool(&client_conf->pool, specia, &ialist))
 				found++;
 #ifdef SUPPORT_DHCP6S_MULTI_ADDRESS
+			if( strcmp(client_conf->pool.name, ULA_POOL_NAME) != 0 )
 			{
 			struct host_conf client_conf_ula;
 			memcpy(&client_conf_ula,client_conf,sizeof(client_conf_ula));
@@ -3071,7 +3187,7 @@ make_ia(spec, conflist, retlist, client_conf, do_binding)
 				if (!is_leased(&v->val_statefuladdr6.addr))
 					break;
 			}
-			if (v && dhcp6_add_listval(&ialist, v->type, &v->uv, NULL)) {
+			if (v && dhcp6_add_listval(&ialist, v->type, &v->uv, NULL, 0)) {
 				found = 1;
 				TAILQ_REMOVE(conflist, v, link);
 				dhcp6_clear_listval(v);
@@ -3081,6 +3197,7 @@ make_ia(spec, conflist, retlist, client_conf, do_binding)
 			if (make_iana_from_pool(&client_conf->pool, NULL, &ialist))
 				found = 1;
 #ifdef SUPPORT_DHCP6S_MULTI_ADDRESS
+			if( strcmp(client_conf->pool.name, ULA_POOL_NAME) != 0 )
 			{
 			struct host_conf client_conf_ula;
 			memcpy(&client_conf_ula,client_conf,sizeof(client_conf_ula));
@@ -3109,7 +3226,7 @@ make_ia(spec, conflist, retlist, client_conf, do_binding)
 		if (found) {
 			/* make an IA for the set */
 			if (dhcp6_add_listval(retlist, spec->type,
-			    &ia, &ialist) == NULL)
+			    &ia, &ialist, 0) == NULL)
 				found = 0;
 		}
 		dhcp6_clear_list(&ialist);
@@ -3153,7 +3270,7 @@ make_match_ia(spec, conflist, retlist)
 	 */
 	if (match) {
 		if (dhcp6_add_listval(retlist, match->type,
-		    &match->uv, NULL)) {
+		    &match->uv, NULL, 0)) {
 			matched = 1;
 			TAILQ_REMOVE(conflist, match, link);
 			dhcp6_clear_listval(match);
@@ -3195,10 +3312,21 @@ make_iana_from_pool(poolspec, spec, retlist)
 	if (found) {
 		saddr.pltime = poolspec->pltime;
 		saddr.vltime = poolspec->vltime;
-
+        if(strcmp(poolspec->name, ULA_POOL_NAME) == 0)
+        {
 		if (!dhcp6_add_listval(retlist, DHCP6_LISTVAL_STATEFULADDR6,
-			&saddr, NULL)) {
+    			&saddr, NULL, 0)) 
+    	    {
 			return (0);
+    		}
+        }
+        else
+        {
+            if (!dhcp6_add_listval(retlist, DHCP6_LISTVAL_STATEFULADDR6,
+    			&saddr, NULL, 1)) 
+    	    {
+    			return (0);
+    		}
 		}
 	}
 
@@ -3435,6 +3563,9 @@ add_binding(clientid, btype, iatype, iaid, val0)
 
 	dprintf(LOG_DEBUG, FNAME, "add a new binding %s", bindingstr(binding));
 
+#ifdef AEI_DHCP6S_SERIALIZE
+        act_serialize_binding();
+#endif
 	return (binding);
 
   fail:
@@ -3862,3 +3993,194 @@ clientstr(conf, duid)
 
 	return (duidstr(duid));
 }
+#ifdef AEI_DHCP6S_SERIALIZE
+static void str2duid(str, duid)
+	const char* str;
+	struct duid* duid;
+{
+	char buf[AHB_MAX_DUID_LEN];
+	char* ptr = NULL;
+	int idx = 0;
+	int value;
+	strncpy(buf, str, sizeof(buf)-1);
+	duid->duid_id = malloc(AHB_MAX_DUID_LEN);
+	memset(duid->duid_id, 0, AHB_MAX_DUID_LEN);
+	ptr = strtok(buf, ":");
+	while (ptr) {
+		sscanf(ptr, "%x", &value);
+		duid->duid_id[idx++] = value;
+		ptr = strtok(NULL, ":");
+	}
+	duid->duid_len = idx;
+}
+static void act_load_binding(void)
+{
+    FILE *fp = NULL;
+	struct dhcp6_binding *binding = NULL;
+	char duid[128] = {0};
+    struct dhcp6_listval lv;
+	struct dhcp6_statefuladdr saddr;
+    char in6addr[128] = {0}; 
+    char c = 0;
+    int i = 0;    
+    if ((fp = fopen(dhcp6sBindFile, "r")) == NULL)
+    {
+        printf("failed to open %s\n", dhcp6sBindFile);
+        return;
+    }
+    while((c = fgetc(fp)) != EOF)
+    { 
+        if(c != '\n')
+        {
+            fseek(fp, -1, SEEK_CUR);
+        }
+        if ((binding = malloc(sizeof(*binding))) == NULL) {
+            dprintf(LOG_NOTICE, FNAME, "failed to allocate memory");
+            return ;
+        }
+        memset(binding, 0, sizeof(*binding));
+        fscanf(fp, "%s", duid); 
+        str2duid(duid, &binding->clientid);
+        fscanf(fp, "%d", &binding->type);
+        fscanf(fp, "%d", &binding->iatype);
+        fscanf(fp, "%u", &binding->iaid);
+        fscanf(fp, "%u", &binding->duration);
+        fscanf(fp, "%d", &binding->updatetime);
+        TAILQ_INIT(&binding->val_list);
+        memset(&saddr, 0, sizeof(saddr));
+        fscanf(fp, "%s", in6addr);        
+        fscanf(fp, "%u", &saddr.pltime);
+        fscanf(fp, "%u", &saddr.vltime);           
+        inet_pton(AF_INET6, in6addr, &saddr.addr);
+        if (!is_in_pool(&saddr.addr)) 
+        {
+            dprintf(LOG_NOTICE, FNAME, "addr %s not in any pool, delete reservations", 
+                   in6addr2str(&saddr.addr, 0));
+            if(binding)
+            {
+                free(binding->clientid.duid_id);
+                free(binding);
+                binding = NULL;
+            }
+            continue;
+        }
+        else
+        {
+            if (!lease_address(&saddr.addr)) {
+                dprintf(LOG_NOTICE, FNAME,
+                    "cannot lease address %s",
+                    in6addr2str(&saddr.addr, 0));
+                if(binding)
+                {
+                    free(binding->clientid.duid_id);
+                    free(binding);
+                    binding = NULL;
+                }
+                continue;
+            }
+            dhcp6_add_listval(&binding->val_list, DHCP6_LISTVAL_STATEFULADDR6,
+                             &saddr, NULL, 0);
+        }
+        if(fgetc(fp) != '\n')
+        {
+            memset(&saddr, 0, sizeof(saddr));
+            fscanf(fp, "%s", in6addr);        
+            fscanf(fp, "%u", &saddr.pltime);
+            fscanf(fp, "%u", &saddr.vltime);           
+            inet_pton(AF_INET6, in6addr, &saddr.addr);
+            if (!is_in_pool(&saddr.addr)) 
+            {
+                dprintf(LOG_NOTICE, FNAME, "addr %s not in any pool, delete reservations", 
+                       in6addr2str(&saddr.addr, 0));
+                if(binding)
+                {
+                    free(binding->clientid.duid_id);
+                    free(binding);
+                    binding = NULL;
+                }
+                continue;
+            }
+            else
+            {
+                if (!lease_address(&saddr.addr)) {
+                    dprintf(LOG_NOTICE, FNAME,
+                        "cannot lease address %s",
+                        in6addr2str(&saddr.addr, 0));
+                    if(binding)
+                    {
+                        free(binding->clientid.duid_id);
+                        free(binding);
+                        binding = NULL;
+                    }
+                    continue;
+                }
+                dhcp6_add_listval(&binding->val_list, DHCP6_LISTVAL_STATEFULADDR6,
+                                 &saddr, NULL, 0);
+            }
+            fgetc(fp);
+        }
+        update_binding_duration(binding);
+        if (binding->duration != DHCP6_DURATION_INFINITE) {
+            struct timeval timo;
+            binding->timer = dhcp6_add_timer(binding_timo, binding);
+            if (binding->timer == NULL) {
+                dprintf(LOG_NOTICE, FNAME, "failed to add timer");
+                if(binding)
+                {
+                    free(binding);
+                    binding = NULL;
+                }
+                exit (1);
+            }
+            timo.tv_sec = (long)binding->duration;
+            timo.tv_usec = 0;
+            dhcp6_set_timer(&timo, binding->timer);
+        }
+        TAILQ_INSERT_TAIL(&dhcp6_binding_head, binding, link);        
+    }
+    fclose(fp);
+    fp = NULL;
+    return;
+}
+static void act_serialize_binding(void)
+{
+	struct dhcp6_binding *bp;
+	char* duid = NULL;
+	struct dhcp6_listval *lv;
+	struct dhcp6_list *ia_list = NULL;
+	char* in6addr = NULL;
+    FILE *fp = NULL;
+    if ((fp = fopen(dhcp6sBindFile, "w")) == NULL)
+    {
+        printf("failed to open %s\n", dhcp6sBindFile);
+        return;
+    }
+	for (bp = TAILQ_FIRST(&dhcp6_binding_head); bp; bp = TAILQ_NEXT(bp, link)) 
+    {
+        duid = duidstr(&bp->clientid);
+        fprintf(fp, "%128s ", duid);        
+        fprintf(fp, "%8d ", bp->type);
+        fprintf(fp, "%8d ", bp->iatype);
+        fprintf(fp, "%8u ", bp->iaid);
+        fprintf(fp, "%8u ", bp->duration);
+        fprintf(fp, "%8d ", bp->updatetime);
+        ia_list = &bp->val_list;
+        for (lv = TAILQ_FIRST(ia_list); lv; lv = TAILQ_NEXT(lv, link))
+        {
+            if (lv->type != DHCP6_LISTVAL_STATEFULADDR6) {
+                dprintf(LOG_ERR, FNAME,
+                    "unexpected binding value type(%d)", lv->type);
+                return;
+            }
+            in6addr = in6addr2str(&lv->val_statefuladdr6.addr, 0);
+            fprintf(fp, "%128s ", in6addr);        
+            fprintf(fp, "%8u ", lv->val_statefuladdr6.pltime);
+            fprintf(fp, "%8u ", lv->val_statefuladdr6.vltime);           
+        }
+        fseek(fp, -1, SEEK_CUR);
+        fprintf(fp, "\n");
+	}
+    fclose(fp);
+    fp = NULL;
+}
+#endif

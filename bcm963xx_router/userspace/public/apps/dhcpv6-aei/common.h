@@ -127,6 +127,7 @@ extern char *device;
 /* search option for dhcp6_find_listval() */
 #define MATCHLIST_PREFIXLEN 0x1
 
+#define AEI_DHCP6S_SERIALIZE 0x1
 //brcm: moved from common.c
 #ifdef __linux__
 /* from /usr/include/linux/ipv6.h */
@@ -154,7 +155,7 @@ extern void dhcp6_clear_listval __P((struct dhcp6_listval *));
 extern struct dhcp6_listval *dhcp6_find_listval __P((struct dhcp6_list *,
     dhcp6_listval_type_t, void *, int));
 extern struct dhcp6_listval *dhcp6_add_listval __P((struct dhcp6_list *,
-    dhcp6_listval_type_t, void *, struct dhcp6_list *));
+    dhcp6_listval_type_t, void *, struct dhcp6_list *, int flag));
 extern int dhcp6_vbuf_copy __P((struct dhcp6_vbuf *, struct dhcp6_vbuf *));
 extern void dhcp6_vbuf_free __P((struct dhcp6_vbuf *));
 extern int dhcp6_vbuf_cmp __P((struct dhcp6_vbuf *, struct dhcp6_vbuf *));

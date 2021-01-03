@@ -24,3 +24,7 @@ ifneq ($(strip $(BUILD_OPROFILE)),)
 	TARGETS += $(LIBDIR)/libpthread.so.0
 endif
 
+ifneq ($(strip $(BUILD_DLNA)),)
+  TARGETS += $(LIBDIR)/libpthread.so.0
+  TARGETS += $(LIBDIR)/libm.so.0
+endif

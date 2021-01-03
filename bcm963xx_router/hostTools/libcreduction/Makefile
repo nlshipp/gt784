@@ -10,12 +10,21 @@ ifneq ($(strip $(BRCM_UCLIBC)),)
 else
   PLATFORM := glibc
 endif
+ifneq ($(strip $(CONFIG_AUXFS_JFFS2)),)
+  UNSTRIPLIBS := yes
+else
+  UNSTRIPLIBS := no
+endif 
 
 LIBOPT := y
 ifneq ($(strip $(BRCM_APP_PHONE)),)
 LIBOPT := n
 endif
 ifneq ($(strip $(BUILD_OPROFILE)),)
+LIBOPT := n
+endif
+
+ifneq ($(strip $(BUILD_DLNA)),)
 LIBOPT := n
 endif
 
@@ -40,9 +49,14 @@ endif
 
 ifneq ($(LIBOPT),y)
 
+# In this block, we are not doing optimization, so we don't get a generated
+# list of libraries we depend on, so we have to know exactly which libraries
+# are needed by our apps and add them to TARGETS (see also extralibs.mk)
+
 TARGETS := $(LIBDIR)/$(LIBC) $(LIBDIR)/$(LINKER)
 
 TARGETS += $(LIBDIR)/libresolv.so.0
+TARGETS += $(EXTRALIBDIR)/libgcc_s.so.1
 
 ifneq ($(strip $(BUILD_GDBSERVER)),)
 	TARGETS += $(LIBDIR)/libthread_db.so.1
@@ -93,6 +107,16 @@ libopt:
 	    fi; \
 	    if [ ! -e $(INSTALL_DIR)/lib/libdbus.so ]; then cp -f $(PLATFORM)/libdbus.so $(INSTALL_DIR)/lib; fi; \
 	    python ./mklibs.py -D $(LIBDIR_LIST) --target=$(TOOLCHAIN)/bin/mips-linux-uclibc- --ldlib ld-uClibc.so.0 -d $(PLATFORM) $(BINARIES); \
+		if [ "$(UNSTRIPLIBS)" = "yes" ]; then \
+            echo "putting libraries back unstripped";\
+			cp -f $(LIBDIR)/libc.so.0 ./uclibc; \
+			cp -f $(LIBDIR)/libm.so.0 ./uclibc; \
+			cp -f $(LIBDIR)/libcrypt.so.0 ./uclibc; \
+			cp -f $(LIBDIR)/libdl.so.0 ./uclibc; \
+			cp -f $(LIBDIR)/libutil.so.0 ./uclibc; \
+			cp -f $(LIBDIR)/libresolv.so.0 ./uclibc; \
+			cp -f $(LIBDIR)/libpthread.so.0 ./uclibc; \
+		fi; \
 	fi
 
 # Additional libraries to install

@@ -42,9 +42,6 @@ struct dhcp_option options[] = {
 	{"serverid",	OPTION_IP,			0x36},
 	{"tftp",	OPTION_STRING,			0x42},
 	{"bootfile",	OPTION_STRING,			0x43},
-#ifdef AEI_SUPPORT_6RD
-	{"6rd",		OPTION_STRING,			0xd4},
-#endif
 	{"",		0x00,				0x00}
 };
 
@@ -682,28 +679,3 @@ int saveVIoption(char *option, struct dhcpOfferedAddr *lease)
   return ret;
 }
 //brcm end
-
-#if defined(AEI_VDSL_TR098_TELUS)
-void getClientIDOption(struct dhcpMessage *packet, struct dhcpOfferedAddr *lease)
-{
-	char *clientid = NULL;
-	char strClientId[256] = {0};
-	int clientidLen = 0;
-	int i;
-	char chTemp[4] = {0};
-	if ((clientid = get_option(packet, DHCP_CLIENT_ID)) != NULL)
-	{
-		clientidLen = clientid[-1];
-		if (clientidLen >= (int) sizeof(lease->clientid))
-		clientidLen = sizeof(lease->clientid) - 1;
-		memcpy(strClientId, clientid, clientidLen);
-		for (i=0; i<clientidLen; i++)
-		{
-			sprintf(chTemp, "%02x", (unsigned char)strClientId[i]);
-			strcat(lease->clientid, chTemp);
-			memset(chTemp, 0, 4);
-		}
-	}
-}
-#endif
-

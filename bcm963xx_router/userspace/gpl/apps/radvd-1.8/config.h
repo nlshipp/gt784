@@ -29,7 +29,7 @@
 #define HAVE_MEMORY_H 1
 
 /* Linux netlink */
-//#define HAVE_NETLINK 1
+#define HAVE_NETLINK 1
 
 /* Define to 1 if you have the <net/if_arp.h> header file. */
 #define HAVE_NET_IF_ARP_H 1
