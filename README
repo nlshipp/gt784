@@ -1,0 +1,92 @@
+
+HOW TO BUILD A FIRMWARE FOR THE BROADCOM BCM963XX GT784WN NCS DSL MODEM/ROUTER
+
+Warning!! These instructions do not build a fully functional modem/router. You will need to add a way to access the device 
+into the code, before compiling it. (i.e. SSH, Telnet, or some type of GUI)
+
+These Instructions Explain:
+ 
+ * How to install the BCM963xx GPL source code onto the Linux workstation 
+ * How to build the image file for the Actiontec GT784WN NCS 
+ * How to upgrade the device using the new firmware image file. 
+ * How to recover the device to the original firmware. 
+
+NOTE: The following procedures are known to work with Fedora 9. 
+
+The Actiontec GT784WN Source Code can be obtained from the Actiontec support website at http://opensource.actiontec.com.
+
+
+1. INSTALL THE BCM963XX 4.06L.02 CONSUMER RELEASE GT784WN NCS.
+
+$ su
+                    (open a console window and login as "su")
+
+# mkdir /tmp/consumer
+                    (create a temp directory to install the source to)
+
+# cp bcm963xx_4.06L.02_consumer_release_GT784WN_NCS.tar.gz /tmp/consumer  
+                    (copy source code to temp directory)
+
+# cd /tmp/consumer
+                    (make /tmp/consumer the working directory)
+
+# tar xvfz bcm963xx_4.06L.02_consumer_release_GT784WN_NCS.tar.gz
+                    (decompress and extract the files so they can be installed)
+
+# ./consumer_install
+                    (install the source code and software tools)
+
+
+
+2. BUILD THE DESIRED IMAGE.
+
+# cd /tmp/consumer/bcm963xx_router
+                    (make /tmp/consumer/bcm963xx_router the working directory)
+
+# make PROFILE=96328GW
+                    (running this "make" command will build the firmware image)
+
+
+YOU CAN UPLOAD THE IMAGE TO THE ROUTER BY FOLLOWING THESE STEPS.
+
+1. Use a Web browser to access the GT784WN NCS at it's LAN IP Address
+
+2. Navigate to the "Firmware Upgrade" page
+
+3. Use the Browse button to locate the newly created image file
+       (It will be in the /tmp/consumer/bcm963xx_router/images directory)
+
+4. Click the button to upgrade the Firmware
+
+5. Once the GUI says the upgrade has completed successfully, reboot the device to load the new firmware image. 
+
+6. Now the modem/router will be ready for you to access it with the method that you included before compiling the image.  
+
+
+
+YOU CAN RECOVER THE ROUTER BY FOLLOWING THESE STEPS.
+
+1.	Connect an Ethernet cable from your computer to the router.
+
+2.	Set a static IP of 192.168.1.x with a default gateway of 192.168.1.1 to your NIC.
+
+3.	Power off your router.
+
+4.	Find a pen or something small that will fit into the reset button hole on the back of the unit.
+
+5.	Push and hold that reset button in and power on the unit.
+
+6.	Wait for the power light to go red.
+
+7.	Release the reset button.
+
+8.	Open your web browser and go to the IP address of 192.168.1.1 you should get a screen that will give you instructions 
+    on how to load the original firmware image to the router.
+
+PLEASE NOTE: The machine-readable software source code provided here is for Programmers who may wish to alter or customize 
+the code,and typically will not be of use to the vast majority of consumers. The software source code provided here is 
+subject to Version 2 of the GPL or other GPL or LGPL licenses which are all included in the download and are available 
+below and also at "http://www.gnu.org/licenses/" and as such, the software source code is distributed 
+WITHOUT ANY WARRANTY and subject to the copyrights of the authors. Compiling errors due to lack of public libraries/tools 
+in the customer's specific platform/OS are the responsibility of the user of this GPL source code.
+ 
